@@ -36,9 +36,21 @@ export function ChatWidget() {
     // Simulate API call to our backend Chat controller
     setTimeout(() => {
       let reply = "I'm here to help! Could you specify your destination or budget constraints?";
-      if (userMessage.toLowerCase().includes('hotel') || userMessage.toLowerCase().includes('stay')) {
+      const lowerMsg = userMessage.toLowerCase();
+      
+      if (lowerMsg.includes('goa') && lowerMsg.includes('20000')) {
+        reply = "A 5-day Goa trip under ₹20,000 is definitely doable! I recommend staying in North Goa hostels (₹800/night) and renting a scooter (₹400/day). Shall I generate this itinerary?";
+      } else if (lowerMsg.includes('vegetarian')) {
+        reply = "For pure vegetarian options, I highly recommend 'Navtara Veg Restaurant' and 'Jalsa'. I've added them to your Food Picks filter!";
+      } else if (lowerMsg.includes('closest') && lowerMsg.includes('beach')) {
+        reply = "'Ayana Resort' is located directly on Jimbaran beach and is only a 2-minute walk to the water.";
+      } else if (lowerMsg.includes('weather')) {
+        reply = "Tomorrow's forecast for your destination shows a high of 28°C with clear sunny skies. Perfect beach weather! ☀️";
+      } else if (lowerMsg.includes('optimize')) {
+        reply = "I've analyzed your itinerary. By moving the Sacred Monkey Forest visit to Day 2 morning, you can avoid peak afternoon crowds and save 2 hours of transit time. Would you like me to apply this change?";
+      } else if (lowerMsg.includes('hotel') || lowerMsg.includes('stay')) {
         reply = "I recommend checking out our premium stays. For example, Taj Lake Palace offers an incredible experience starting at ₹25,000/night.";
-      } else if (userMessage.toLowerCase().includes('food') || userMessage.toLowerCase().includes('restaurant')) {
+      } else if (lowerMsg.includes('food') || lowerMsg.includes('restaurant')) {
         reply = "Looking for food? Try 'Bukhara' for amazing North Indian cuisine, highly rated by our users.";
       }
 

@@ -6,6 +6,8 @@ import { ExplorePage } from './pages/ExplorePage';
 import { ExpenseTrackerPage } from './pages/ExpenseTrackerPage';
 import { DashboardHome } from './pages/dashboard/DashboardHome';
 import { TripPlannerPage } from './pages/TripPlannerPage';
+import { TravelJournalPage } from './pages/TravelJournalPage';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { useEffect } from 'react';
 import { useThemeStore } from './store/themeStore';
 
@@ -36,6 +38,8 @@ function App() {
           <Route path="/register" element={<PlaceholderPage title="Sign Up" />} />
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/expenses" element={<ExpenseTrackerPage />} />
+          <Route path="/journal" element={<TravelJournalPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
         </Route>
       </Routes>

@@ -6,9 +6,10 @@ import { formatCurrency } from '@/lib/utils';
 interface BudgetOverviewProps {
   totalBudget: number;
   totalSpent: number;
+  durationDays?: number;
 }
 
-export function BudgetOverview({ totalBudget, totalSpent }: BudgetOverviewProps) {
+export function BudgetOverview({ totalBudget, totalSpent, durationDays = 7 }: BudgetOverviewProps) {
   const percentageSpent = Math.min((totalSpent / totalBudget) * 100, 100);
   const remaining = totalBudget - totalSpent;
   const isOverBudget = remaining < 0;
@@ -66,6 +67,23 @@ export function BudgetOverview({ totalBudget, totalSpent }: BudgetOverviewProps)
             />
           </div>
         </div>
+
+        {durationDays > 0 && (
+          <div className="mt-6 pt-6 border-t">
+            <div className="flex justify-between items-center mb-2">
+              <div>
+                <p className="text-sm text-muted-foreground font-medium">Daily Limit</p>
+                <p className="font-bold text-foreground">{formatCurrency(totalBudget / durationDays)}/day</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground font-medium">Current Average</p>
+                <p className={`font-bold ${totalSpent / durationDays > totalBudget / durationDays ? 'text-destructive' : 'text-emerald-500'}`}>
+                  {formatCurrency(totalSpent / durationDays)}/day
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

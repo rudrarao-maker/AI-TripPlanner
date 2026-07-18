@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar as CalendarIcon, Users, Wallet, Loader2, Sparkles, Navigation, Hotel, Map as MapLucide, Plane, Sun, Download, Mic, Backpack } from 'lucide-react';
+import { MapPin, Calendar as CalendarIcon, Users, Wallet, Loader2, Sparkles, Navigation, Hotel, Map as MapLucide, Plane, Sun, Download, Mic, Backpack, Share2, BookmarkPlus, CalendarDays } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InteractiveMap } from '@/components/map/InteractiveMap';
 import { HotelCard } from '@/components/recommendations/HotelCard';
+import { RestaurantCard } from '@/components/recommendations/RestaurantCard';
+import { AttractionCard } from '@/components/recommendations/AttractionCard';
 import { DraggableItinerary } from '@/components/itinerary/DraggableItinerary';
 import { PackingList } from '@/components/itinerary/PackingList';
 import { TRAVEL_STYLES } from '@/lib/constants';
@@ -21,7 +24,15 @@ const MOCK_ITINERARY = {
   budget: "₹1,20,000",
   mapCenter: { lat: -8.409518, lng: 115.188919 },
   hotels: [
-    { id: '1', name: 'Ayana Resort', location: 'Jimbaran', rating: 4.8, pricePerNight: 22000, amenities: ['Pool', 'Spa', 'Wifi', 'Beachfront'], image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800' },
+    { id: 'h1', name: 'Ayana Resort', location: 'Jimbaran', rating: 4.8, pricePerNight: 22000, amenities: ['Pool', 'Spa', 'Wifi', 'Beachfront'], image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800' },
+  ],
+  restaurants: [
+    { id: 'r1', name: 'Locavore', location: 'Ubud', rating: 4.9, priceRange: '₹₹₹₹', cuisine: 'Fine Dining', specialDish: 'Tasting Menu', image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800' },
+    { id: 'r2', name: 'Babi Guling Pak Malen', location: 'Seminyak', rating: 4.5, priceRange: '₹', cuisine: 'Indonesian', specialDish: 'Roast Pork', image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800' }
+  ],
+  attractions: [
+    { id: 'a1', title: 'Uluwatu Temple', description: 'Ancient sea temple perched on a steep cliff with stunning sunset views.', location: 'Uluwatu', duration: '2-3 hours', cost: 150, rating: 4.7, image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800' },
+    { id: 'a2', title: 'Sacred Monkey Forest', description: 'Nature reserve and temple complex housing hundreds of long-tailed macaques.', location: 'Ubud', duration: '2 hours', cost: 300, rating: 4.6, image: 'https://images.unsplash.com/photo-1532185987396-d8f99e3a31c5?w=800' }
   ]
 };
 
@@ -36,13 +47,14 @@ export function TripPlannerPage() {
   
   // Google Travel style tab state
   const [activeTab, setActiveTab] = useState<'itinerary' | 'logistics' | 'packing'>('itinerary');
+  const [recTab, setRecTab] = useState<'hotels' | 'restaurants' | 'attractions'>('hotels');
 
   // Speech Recognition hook
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
   // Form State
   const [formData, setFormData] = useState({
-    destination: '',
+    destinations: [''],
     dates: '',
     travelers: '2',
     budget: '',
@@ -62,8 +74,10 @@ export function TripPlannerPage() {
   };
 
   // Sync speech transcript to destination
-  if (listening && transcript && formData.destination !== transcript) {
-    updateForm('destination', transcript);
+  if (listening && transcript && formData.destinations[formData.destinations.length - 1] !== transcript) {
+    const newDests = [...formData.destinations];
+    newDests[newDests.length - 1] = transcript;
+    setFormData(prev => ({ ...prev, destinations: newDests }));
   }
 
   const handleMicClick = () => {
@@ -81,13 +95,26 @@ export function TripPlannerPage() {
     
     const opt = {
       margin:       10,
-      filename:     `TripCraft-${formData.destination || 'Itinerary'}.pdf`,
+      filename:     `TripCraft-${formData.destinations[0] || 'Itinerary'}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
     html2pdf().set(opt).from(element).save();
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('Trip link copied to clipboard!');
+  };
+
+  const handleSave = () => {
+    toast.success('Trip saved to your profile!');
+  };
+
+  const handleCalendarSync = () => {
+    toast.success('Itinerary synced to Google Calendar!');
   };
 
   // ------------------
@@ -100,23 +127,51 @@ export function TripPlannerPage() {
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <h2 className="text-3xl font-bold mb-6 text-center">Where do you want to go?</h2>
-            <div className="relative max-w-xl mx-auto flex items-center">
-              <MapPin className="absolute left-4 text-muted-foreground h-6 w-6" />
-              <Input 
-                className="pl-14 pr-14 py-8 text-xl rounded-2xl glass shadow-lg border-primary/20 bg-background/50 focus-visible:ring-primary w-full"
-                placeholder="e.g. Bali, Paris, Tokyo..."
-                value={formData.destination}
-                onChange={(e) => updateForm('destination', e.target.value)}
-                autoFocus
-              />
-              {browserSupportsSpeechRecognition && (
+            <div className="space-y-4 max-w-xl mx-auto">
+              {formData.destinations.map((dest, index) => (
+                <div key={index} className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
+                    <Input 
+                      className="pl-14 pr-14 py-8 text-xl rounded-2xl glass shadow-lg border-primary/20 bg-background/50 focus-visible:ring-primary w-full"
+                      placeholder={index === 0 ? "e.g. Bali, Paris, Tokyo..." : "Add another city (optional)"}
+                      value={dest}
+                      onChange={(e) => {
+                        const newDests = [...formData.destinations];
+                        newDests[index] = e.target.value;
+                        setFormData(prev => ({ ...prev, destinations: newDests }));
+                      }}
+                      autoFocus={index === 0}
+                    />
+                    {browserSupportsSpeechRecognition && index === formData.destinations.length - 1 && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-full ${listening ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 animate-pulse' : 'text-muted-foreground'}`}
+                        onClick={handleMicClick}
+                      >
+                        <Mic className="h-5 w-5" />
+                      </Button>
+                    )}
+                  </div>
+                  {index > 0 && (
+                     <Button variant="ghost" size="icon" onClick={() => {
+                        const newDests = formData.destinations.filter((_, i) => i !== index);
+                        setFormData(prev => ({ ...prev, destinations: newDests }));
+                     }}>
+                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                     </Button>
+                  )}
+                </div>
+              ))}
+              
+              {formData.destinations.length < 5 && (
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={`absolute right-3 rounded-full ${listening ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 animate-pulse' : 'text-muted-foreground'}`}
-                  onClick={handleMicClick}
+                  variant="outline" 
+                  className="w-full py-6 border-dashed border-2 rounded-2xl text-muted-foreground hover:text-foreground"
+                  onClick={() => setFormData(prev => ({ ...prev, destinations: [...prev.destinations, ''] }))}
                 >
-                  <Mic className="h-5 w-5" />
+                  + Add another destination
                 </Button>
               )}
             </div>
@@ -233,7 +288,7 @@ export function TripPlannerPage() {
         <div className="relative h-[40vh] min-h-[300px] w-full flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-black/50 z-10" />
           <img 
-            src={`https://source.unsplash.com/1600x900/?${encodeURIComponent(formData.destination || 'landscape')}`}
+            src={`https://source.unsplash.com/1600x900/?${encodeURIComponent(formData.destinations[0] || 'landscape')}`}
             alt="Destination"
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -242,7 +297,7 @@ export function TripPlannerPage() {
               <Sparkles className="h-3 w-3" /> AI Generated Itinerary
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-xl">
-              {formData.destination || itinerary.destination}
+              {formData.destinations.join(' • ') || itinerary.destination}
             </h1>
             <div className="flex items-center justify-center gap-6 text-sm md:text-base font-medium drop-shadow-md">
               <span className="flex items-center gap-1.5"><CalendarIcon className="h-4 w-4" /> {formData.dates || itinerary.duration}</span>
@@ -278,6 +333,15 @@ export function TripPlannerPage() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleCalendarSync} className="hidden lg:flex border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400">
+                    <CalendarDays className="h-4 w-4 mr-2" /> Sync Calendar
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleSave} className="hidden sm:flex">
+                    <BookmarkPlus className="h-4 w-4 mr-2" /> Save Trip
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleShare} className="hidden sm:flex">
+                    <Share2 className="h-4 w-4 mr-2" /> Share
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
                     <Download className="h-4 w-4 mr-2" /> Download PDF
                   </Button>
@@ -400,12 +464,41 @@ export function TripPlannerPage() {
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-                    <Hotel className="h-5 w-5 text-accent" /> Recommended Stays
-                  </h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" /> AI Picks
+                    </h2>
+                    <div className="flex bg-muted p-1 rounded-lg">
+                      <button 
+                        onClick={() => setRecTab('hotels')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === 'hotels' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                      >
+                        Hotels
+                      </button>
+                      <button 
+                        onClick={() => setRecTab('restaurants')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === 'restaurants' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                      >
+                        Food
+                      </button>
+                      <button 
+                        onClick={() => setRecTab('attractions')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === 'attractions' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                      >
+                        Places
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 gap-4">
-                    {itinerary.hotels.map((hotel: any) => (
+                    {recTab === 'hotels' && itinerary.hotels.map((hotel: any) => (
                       <HotelCard key={hotel.id} hotel={hotel} />
+                    ))}
+                    {recTab === 'restaurants' && itinerary.restaurants.map((restaurant: any) => (
+                      <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+                    ))}
+                    {recTab === 'attractions' && itinerary.attractions.map((attraction: any) => (
+                      <AttractionCard key={attraction.id} activity={attraction} />
                     ))}
                   </div>
                 </div>

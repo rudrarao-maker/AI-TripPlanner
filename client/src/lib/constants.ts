@@ -174,7 +174,9 @@ export const NAV_LINKS = [
   { label: 'Home', path: '/' },
   { label: 'Explore', path: '/explore' },
   { label: 'Plan Trip', path: '/plan' },
-  { label: 'My Trips', path: '/dashboard' },
+  { label: 'Expenses', path: '/expenses' },
+  { label: 'Journal', path: '/journal' },
+  { label: 'Admin', path: '/admin' },
 ];
 
 export const DASHBOARD_NAV = [
