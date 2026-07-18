@@ -8,6 +8,13 @@ import { DashboardHome } from './pages/dashboard/DashboardHome';
 import { TripPlannerPage } from './pages/TripPlannerPage';
 import { TravelJournalPage } from './pages/TravelJournalPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AboutPage } from './pages/AboutPage';
+import { BlogPage } from './pages/BlogPage';
+import { LegalPage } from './pages/LegalPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
+
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { useEffect } from 'react';
 import { useThemeStore } from './store/themeStore';
 
@@ -34,12 +41,26 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/plan" element={<TripPlannerPage />} />
-          <Route path="/login" element={<PlaceholderPage title="Login" />} />
-          <Route path="/register" element={<PlaceholderPage title="Sign Up" />} />
-          <Route path="/dashboard" element={<DashboardHome />} />
-          <Route path="/expenses" element={<ExpenseTrackerPage />} />
-          <Route path="/journal" element={<TravelJournalPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/privacy" element={<LegalPage type="privacy" />} />
+          <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/cookies" element={<LegalPage type="cookies" />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          
+          {/* Protected User Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<DashboardHome />} />
+            <Route path="/expenses" element={<ExpenseTrackerPage />} />
+            <Route path="/journal" element={<TravelJournalPage />} />
+          </Route>
+
+          {/* Protected Admin Routes */}
+          <Route element={<ProtectedRoute adminOnly />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
+
           <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
         </Route>
       </Routes>

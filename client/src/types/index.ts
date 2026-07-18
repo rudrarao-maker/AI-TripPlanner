@@ -268,6 +268,22 @@ export interface TransportOption {
   arrival?: string;
 }
 
+export interface Transport {
+  id: string;
+  provider: string;
+  type: string;
+  departureTime: string;
+  arrivalTime: string;
+  duration: string;
+  origin: string;
+  destination: string;
+  price: number;
+  currency: string;
+  comfortLevel: string;
+  images: string[];
+  createdAt: string;
+}
+
 // ============================================================
 // Budget & Expense Types
 // ============================================================

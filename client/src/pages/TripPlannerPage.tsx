@@ -10,12 +10,15 @@ import { InteractiveMap } from '@/components/map/InteractiveMap';
 import { HotelCard } from '@/components/recommendations/HotelCard';
 import { RestaurantCard } from '@/components/recommendations/RestaurantCard';
 import { AttractionCard } from '@/components/recommendations/AttractionCard';
+import { TransportCard } from '@/components/recommendations/TransportCard';
 import { DraggableItinerary } from '@/components/itinerary/DraggableItinerary';
 import { PackingList } from '@/components/itinerary/PackingList';
 import { TRAVEL_STYLES } from '@/lib/constants';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import 'regenerator-runtime/runtime';
 import html2pdf from 'html2pdf.js';
+import { useGenerateTrip } from '@/hooks/useTrips';
+import { useHotels, useRestaurants, useAttractions, useTransport } from '@/hooks/useRecommendations';
 
 // Mock Generated Data for demo
 const MOCK_ITINERARY = {
@@ -41,13 +44,14 @@ export function TripPlannerPage() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
+  const generateTripMutation = useGenerateTrip();
   
   // Wanderlog style map sync state
   const [activeItemHover, setActiveItemHover] = useState<string>('');
   
   // Google Travel style tab state
   const [activeTab, setActiveTab] = useState<'itinerary' | 'logistics' | 'packing'>('itinerary');
-  const [recTab, setRecTab] = useState<'hotels' | 'restaurants' | 'attractions'>('hotels');
+  const [recTab, setRecTab] = useState<'hotels' | 'restaurants' | 'attractions' | 'transport'>('hotels');
 
   // Speech Recognition hook
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
@@ -58,15 +62,46 @@ export function TripPlannerPage() {
     dates: '',
     travelers: '2',
     budget: '',
-    style: ''
+    style: '',
+    transport: 'flight',
+    hotel: '4-star'
   });
 
-  const handleGenerate = () => {
+  // Recommendation Hooks
+  const destination = formData.destinations[0] || 'Bali';
+  const { data: hotels = [] } = useHotels({ location: destination, maxPrice: parseInt(formData.budget) || undefined });
+  const { data: restaurants = [] } = useRestaurants({ location: destination });
+  const { data: attractions = [] } = useAttractions({ location: destination });
+  const { data: transportOptions = [] } = useTransport({ destination, type: formData.transport });
+
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      setItinerary(MOCK_ITINERARY);
-    }, 4000);
+    
+    // In a real app, this maps all form states to TripInput
+    const tripData = {
+      origin: "Mumbai",
+      destination: formData.destinations[0] || "Bali",
+      startDate: new Date().toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+      travelers: formData.travelers,
+      budget: parseInt(formData.budget) || 120000,
+      currency: "INR",
+      travelStyle: formData.style,
+      transportPreference: formData.transport,
+      hotelCategory: formData.hotel,
+      foodPreference: "any"
+    };
+
+    generateTripMutation.mutate(tripData as any, {
+      onSuccess: (data) => {
+        setItinerary(data);
+        setIsGenerating(false);
+        setStep(4);
+      },
+      onError: () => {
+        setIsGenerating(false);
+      }
+    });
   };
 
   const updateForm = (field: string, value: string) => {
@@ -242,6 +277,36 @@ export function TripPlannerPage() {
                     value={formData.budget}
                     onChange={(e) => updateForm('budget', e.target.value)}
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl mx-auto">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Plane className="h-4 w-4" /> Transport</label>
+                  <select 
+                    className="w-full pl-4 pr-10 py-4 text-md rounded-xl glass border-primary/20 appearance-none bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={formData.transport}
+                    onChange={(e) => updateForm('transport', e.target.value)}
+                  >
+                    <option value="flight">Flight</option>
+                    <option value="train">Train</option>
+                    <option value="bus">Bus</option>
+                    <option value="car">Rental Car</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Hotel className="h-4 w-4" /> Accommodation</label>
+                  <select 
+                    className="w-full pl-4 pr-10 py-4 text-md rounded-xl glass border-primary/20 appearance-none bg-background/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={formData.hotel}
+                    onChange={(e) => updateForm('hotel', e.target.value)}
+                  >
+                    <option value="luxury">Luxury (5-star)</option>
+                    <option value="4-star">Premium (4-star)</option>
+                    <option value="budget">Budget / Hostel</option>
+                    <option value="resort">Resort</option>
+                    <option value="villa">Private Villa</option>
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -470,6 +535,12 @@ export function TripPlannerPage() {
                     </h2>
                     <div className="flex bg-muted p-1 rounded-lg">
                       <button 
+                        onClick={() => setRecTab('transport')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === 'transport' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                      >
+                        Transport
+                      </button>
+                      <button 
                         onClick={() => setRecTab('hotels')}
                         className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === 'hotels' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
                       >
@@ -491,13 +562,16 @@ export function TripPlannerPage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
-                    {recTab === 'hotels' && itinerary.hotels.map((hotel: any) => (
+                    {recTab === 'transport' && transportOptions.map((transport: any) => (
+                      <TransportCard key={transport.id} transport={transport} />
+                    ))}
+                    {recTab === 'hotels' && hotels.map((hotel: any) => (
                       <HotelCard key={hotel.id} hotel={hotel} />
                     ))}
-                    {recTab === 'restaurants' && itinerary.restaurants.map((restaurant: any) => (
+                    {recTab === 'restaurants' && restaurants.map((restaurant: any) => (
                       <RestaurantCard key={restaurant.id} restaurant={restaurant} />
                     ))}
-                    {recTab === 'attractions' && itinerary.attractions.map((attraction: any) => (
+                    {recTab === 'attractions' && attractions.map((attraction: any) => (
                       <AttractionCard key={attraction.id} activity={attraction} />
                     ))}
                   </div>

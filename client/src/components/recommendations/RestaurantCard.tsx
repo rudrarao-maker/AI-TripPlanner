@@ -1,14 +1,15 @@
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Star, MapPin, Utensils } from 'lucide-react';
-import { RestaurantRecommendation } from '@/types';
+import type { Restaurant } from '@/types';
 
 interface RestaurantCardProps {
-  restaurant: RestaurantRecommendation;
+  restaurant: Restaurant;
 }
 
 export function RestaurantCard({ restaurant }: RestaurantCardProps) {
-  const imageUrl = restaurant.image || `https://source.unsplash.com/600x400/?restaurant,food,${encodeURIComponent(restaurant.cuisine)}`;
+  const cuisineStr = restaurant.cuisine && restaurant.cuisine.length > 0 ? restaurant.cuisine.join(', ') : 'Various';
+  const imageUrl = (restaurant.images && restaurant.images.length > 0) ? restaurant.images[0] : `https://source.unsplash.com/600x400/?restaurant,food,${encodeURIComponent(cuisineStr)}`;
 
   return (
     <Card className="glass-card overflow-hidden group border-border/50 h-full flex flex-col">
@@ -33,9 +34,9 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
         <h3 className="text-lg font-bold line-clamp-1 mb-1 text-foreground">{restaurant.name}</h3>
         
         <div className="flex items-center text-muted-foreground text-xs mb-3 space-x-3">
-          <span className="flex items-center">
-            <Utensils className="h-3 w-3 mr-1" />
-            {restaurant.cuisine}
+          <span className="flex items-center line-clamp-1">
+            <Utensils className="h-3 w-3 mr-1 shrink-0" />
+            {cuisineStr}
           </span>
           <span className="flex items-center line-clamp-1">
             <MapPin className="h-3 w-3 mr-1" />
@@ -43,12 +44,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
           </span>
         </div>
 
-        {restaurant.specialDish && (
-          <div className="mt-auto mb-4 bg-muted/50 p-2.5 rounded-lg border border-border/50">
-            <p className="text-xs text-muted-foreground font-medium mb-1">Must Try</p>
-            <p className="text-sm font-semibold">{restaurant.specialDish}</p>
-          </div>
-        )}
+
 
         <Button variant="outline" size="sm" className="w-full mt-auto">View Menu</Button>
       </CardContent>

@@ -39,13 +39,13 @@ app.get('/api/v1', (req: Request, res: Response) => {
   res.status(200).json({ message: 'Welcome to TripCraft API v1' });
 });
 
-import authRoutes from './features/auth/auth.route';
-import tripRoutes from './features/trip/trip.route';
-import recRoutes from './features/recommendations/recommendations.route';
-import expenseRoutes from './features/expense/expense.route';
-import bookingRoutes from './features/booking/booking.route';
-import userRoutes from './features/user/user.route';
-import chatRoutes from './features/chat/chat.route';
+import authRoutes from './routes/auth.route';
+import tripRoutes from './routes/trip.route';
+import recRoutes from './routes/recommendations.route';
+import expenseRoutes from './routes/expense.route';
+import bookingRoutes from './routes/booking.route';
+import userRoutes from './routes/user.route';
+import chatRoutes from './routes/chat.route';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/trips', tripRoutes);
@@ -67,3 +67,4 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(errorHandler);
 
 export default app;
+

@@ -2,7 +2,7 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Star, MapPin, Clock, Ticket } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { Activity } from '@/types';
+import type { Activity } from '@/types';
 
 interface AttractionCardProps {
   activity: Activity;

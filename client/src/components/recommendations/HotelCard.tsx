@@ -2,15 +2,15 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Star, MapPin, Award, Wifi, Coffee, Waves } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import type { HotelRecommendation } from '@/types';
+import type { Hotel } from '@/types';
 
 interface HotelCardProps {
-  hotel: HotelRecommendation;
+  hotel: Hotel;
 }
 
 export function HotelCard({ hotel }: HotelCardProps) {
   // Mock image if not provided
-  const imageUrl = hotel.image || `https://source.unsplash.com/600x400/?hotel,resort,${encodeURIComponent(hotel.location)}`;
+  const imageUrl = (hotel.images && hotel.images.length > 0) ? hotel.images[0] : `https://source.unsplash.com/600x400/?hotel,resort,${encodeURIComponent(hotel.location)}`;
 
   return (
     <Card className="glass-card overflow-hidden group border-border/50 h-full flex flex-col">
@@ -42,7 +42,7 @@ export function HotelCard({ hotel }: HotelCardProps) {
               <MapPin className="h-3.5 w-3.5 mr-1 shrink-0" />
               <span className="line-clamp-1">{hotel.location}</span>
             </div>
-            <span className="text-xs text-muted-foreground">1,204 reviews</span>
+            <span className="text-xs text-muted-foreground">{hotel.reviewCount} reviews</span>
           </div>
         </div>
 

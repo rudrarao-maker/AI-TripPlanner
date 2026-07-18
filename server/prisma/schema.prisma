@@ -20,6 +20,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   trips     Trip[]
+  expenses  Expense[]
 }
 
 model Trip {
@@ -44,6 +45,7 @@ model Trip {
 
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   days                TripDay[]
+  expenses            Expense[]
 }
 
 model TripDay {
@@ -59,4 +61,89 @@ model TripDay {
   hotel     String?  // JSON string
   
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model Hotel {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  location      String
+  address       String
+  lat           Float
+  lng           Float
+  rating        Float
+  reviewCount   Int      @default(0)
+  pricePerNight Float
+  currency      String   @default("INR")
+  starRating    Int
+  amenities     String   // Stored as JSON string array
+  images        String   // Stored as JSON string array
+  createdAt     DateTime @default(now())
+}
+
+model Restaurant {
+  id            String   @id @default(uuid())
+  name          String
+  cuisine       String   // Stored as JSON string array
+  description   String
+  location      String
+  address       String
+  lat           Float
+  lng           Float
+  rating        Float
+  reviewCount   Int      @default(0)
+  priceRange    String   // $, $$, $$$, $$$$
+  openingHours  String
+  images        String   // Stored as JSON string array
+  createdAt     DateTime @default(now())
+}
+
+model Attraction {
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  category      String
+  location      String
+  address       String
+  lat           Float
+  lng           Float
+  rating        Float
+  reviewCount   Int      @default(0)
+  entryFee      Float
+  currency      String   @default("INR")
+  timings       String
+  duration      String
+  images        String   // Stored as JSON string array
+  createdAt     DateTime @default(now())
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  tripId      String
+  userId      String
+  category    String
+  amount      Float
+  currency    String   @default("INR")
+  description String
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Transport {
+  id            String   @id @default(uuid())
+  provider      String   // e.g. "Emirates", "Uber", "Eurostar"
+  type          String   // "flight", "train", "bus", "car", "taxi"
+  departureTime DateTime
+  arrivalTime   DateTime
+  duration      String   // e.g. "5h 30m"
+  origin        String
+  destination   String
+  price         Float
+  currency      String   @default("INR")
+  comfortLevel  String   // "economy", "business", "first", "luxury"
+  images        String   // JSON string array
+  createdAt     DateTime @default(now())
 }
