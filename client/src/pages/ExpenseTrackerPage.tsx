@@ -6,9 +6,10 @@ import { BudgetOptimizer } from '@/components/budget/BudgetOptimizer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Receipt, Search } from 'lucide-react';
+import { Plus, Receipt, Search, Users } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { EXPENSE_CATEGORIES } from '@/lib/constants';
+import { SplitExpenseModal } from '@/components/expenses/SplitExpenseModal';
 
 // Mock Data
 const MOCK_TOTAL_BUDGET = 50000;
@@ -22,6 +23,15 @@ const MOCK_EXPENSES = [
 
 export function ExpenseTrackerPage() {
   const [search, setSearch] = useState('');
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+  const [selectedExpenseForSplit, setSelectedExpenseForSplit] = useState<any>(null);
+  
+  // Mock collaborators for demo
+  const mockCollaborators = [
+    { id: 'user1', name: 'You (Alex)', avatar: 'https://i.pravatar.cc/150?u=user1' },
+    { id: 'user2', name: 'Sarah', avatar: 'https://i.pravatar.cc/150?u=user2' },
+    { id: 'user3', name: 'Mike', avatar: 'https://i.pravatar.cc/150?u=user3' },
+  ];
   
   const totalSpent = MOCK_EXPENSES.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -105,8 +115,19 @@ export function ExpenseTrackerPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end justify-center">
                       <p className="font-bold text-lg">{formatCurrency(expense.amount)}</p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-xs text-muted-foreground mt-1 gap-1"
+                        onClick={() => {
+                          setSelectedExpenseForSplit(expense);
+                          setIsSplitModalOpen(true);
+                        }}
+                      >
+                        <Users className="h-3 w-3" /> Split
+                      </Button>
                     </div>
                   </div>
                 );
@@ -119,6 +140,22 @@ export function ExpenseTrackerPage() {
           </div>
         </CardContent>
       </Card>
+
+      {selectedExpenseForSplit && (
+        <SplitExpenseModal
+          isOpen={isSplitModalOpen}
+          onClose={() => {
+            setIsSplitModalOpen(false);
+            setSelectedExpenseForSplit(null);
+          }}
+          totalAmount={selectedExpenseForSplit.amount}
+          collaborators={mockCollaborators}
+          onSave={(splits, type) => {
+            console.log('Saved splits:', splits, type);
+            alert('Expense split saved successfully!');
+          }}
+        />
+      )}
     </div>
   );
 }

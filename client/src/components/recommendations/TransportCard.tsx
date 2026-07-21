@@ -3,12 +3,16 @@ import { Button } from '../ui/button';
 import { Plane, Train, Bus, Car, Clock, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Transport } from '@/types';
+import { useState } from 'react';
+import { BookingModal } from '../booking/BookingModal';
 
 interface TransportCardProps {
-  transport: Transport;
+  transport: Transport & { vehicleType?: string; bookingUrl?: string };
 }
 
 export function TransportCard({ transport }: TransportCardProps) {
+  const [showModal, setShowModal] = useState(false);
+
   const getIcon = () => {
     switch (transport.type) {
       case 'flight': return <Plane className="h-5 w-5" />;
@@ -41,7 +45,7 @@ export function TransportCard({ transport }: TransportCardProps) {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-lg font-bold text-foreground">{transport.provider}</h3>
-            <span className="text-xs text-muted-foreground capitalize bg-muted px-2 py-0.5 rounded-full">{transport.comfortLevel}</span>
+            <span className="text-xs text-muted-foreground capitalize bg-muted px-2 py-0.5 rounded-full">{transport.vehicleType || transport.comfortLevel}</span>
           </div>
           <div className="text-right">
             <p className="font-bold text-lg text-foreground">{formatCurrency(transport.price)}</p>
@@ -68,9 +72,24 @@ export function TransportCard({ transport }: TransportCardProps) {
         </div>
 
         <div className="mt-auto pt-3">
-          <Button variant="outline" className="w-full">Select Option</Button>
+          {transport.bookingUrl ? (
+            <Button variant="outline" className="w-full" onClick={() => window.open(transport.bookingUrl, '_blank')}>
+              Book on {transport.provider}
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={() => setShowModal(true)}>
+              Select Option
+            </Button>
+          )}
         </div>
       </CardContent>
+      
+      <BookingModal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        item={transport} 
+        type="transport" 
+      />
     </Card>
   );
 }

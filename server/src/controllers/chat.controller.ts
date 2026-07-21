@@ -1,21 +1,37 @@
-import { Request, Response } from 'express';
-import { sendSuccess } from '../utils/response';
+import { Request, Response, NextFunction } from 'express';
+import { sendSuccess, sendError } from '../utils/response';
+import { chatWithContext } from '../services/ai.service';
 
-export const chatWithAI = async (req: Request, res: Response) => {
-  const { message } = req.body;
-  
-  // Simulate AI latency
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  let reply = "I'm your AI travel assistant! How can I help you plan your next adventure?";
-  
-  if (message.toLowerCase().includes('goa')) {
-    reply = "Goa is a fantastic choice! The best time to visit is from November to February when the weather is cool and pleasant. Would you like me to find some beachfront resorts?";
-  } else if (message.toLowerCase().includes('budget')) {
-    reply = "I can help you optimize your travel budget. For a 5-day trip, adjusting your hotel category from 4-star to 3-star could save you around ₹15,000.";
+export const chatWithAI = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { message, tripContext, chatHistory } = req.body;
+
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      return sendError(res, 400, 'Message is required');
+    }
+
+    // Build context from request
+    const context = {
+      tripDestination: tripContext?.destination,
+      tripBudget: tripContext?.budget,
+      tripCurrency: tripContext?.currency || 'INR',
+      tripDays: tripContext?.days,
+      travelStyle: tripContext?.travelStyle,
+      transportPreference: tripContext?.transportPreference,
+      hotelCategory: tripContext?.hotelCategory,
+      foodPreference: tripContext?.foodPreference,
+    };
+
+    // Map chat history to the expected format
+    const history = (chatHistory || []).map((msg: any) => ({
+      role: msg.type === 'user' ? 'user' : 'assistant',
+      content: msg.text,
+    }));
+
+    const response = await chatWithContext(message.trim(), context, history);
+
+    sendSuccess(res, 200, response);
+  } catch (error) {
+    next(error);
   }
-
-  sendSuccess(res, 200, { reply });
 };
-
-

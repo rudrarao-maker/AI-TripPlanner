@@ -19,8 +19,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trips     Trip[]
-  expenses  Expense[]
+  trips         Trip[]
+  expenses      Expense[]
+  bookings      Booking[]
+  reviews       Review[]
+  wishlists     Wishlist[]
+  notifications Notification[]
+  tripMembers   TripMember[]
+  expenseSplits ExpenseSplit[]
 }
 
 model Trip {
@@ -43,9 +49,11 @@ model Trip {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   days                TripDay[]
   expenses            Expense[]
+  bookings            Booking[]
+  members             TripMember[]
 }
 
 model TripDay {
@@ -126,10 +134,12 @@ model Expense {
   currency    String   @default("INR")
   description String
   date        DateTime
+  splitType   String   @default("equal") // "equal", "exact", "percentage", "none"
   createdAt   DateTime @default(now())
 
-  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip        Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  splits      ExpenseSplit[]
 }
 
 model Transport {
@@ -146,4 +156,138 @@ model Transport {
   comfortLevel  String   // "economy", "business", "first", "luxury"
   images        String   // JSON string array
   createdAt     DateTime @default(now())
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  userId        String
+  tripId        String?
+  type          String   // "flight", "hotel", "activity"
+  status        String   @default("pending") // "pending", "confirmed", "cancelled"
+  totalAmount   Float
+  currency      String   @default("INR")
+  bookingRef    String?  // Reference from provider (e.g., Amadeus PNR)
+  provider      String   // "amadeus", "mock"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip          Trip?    @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  payment       Payment?
+  flightDetails FlightBooking?
+  hotelDetails  HotelBooking?
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  bookingId     String   @unique
+  amount        Float
+  currency      String   @default("INR")
+  status        String   @default("pending") // "pending", "completed", "failed", "refunded"
+  paymentMethod String?  // "card", "upi", "mock"
+  transactionId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model FlightBooking {
+  id            String   @id @default(uuid())
+  bookingId     String   @unique
+  origin        String
+  destination   String
+  departureTime DateTime
+  arrivalTime   DateTime
+  airline       String
+  flightNumber  String
+  pnr           String?
+  class         String   // "economy", "business"
+  passengers    Int      @default(1)
+
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model HotelBooking {
+  id            String   @id @default(uuid())
+  bookingId     String   @unique
+  hotelName     String
+  location      String
+  checkIn       DateTime
+  checkOut      DateTime
+  roomType      String
+  guests        Int      @default(1)
+
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  userId        String
+  targetId      String   // ID of the hotel, restaurant, or attraction
+  targetType    String   // "hotel", "restaurant", "attraction"
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Wishlist {
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  createdAt     DateTime @default(now())
+  
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favorites     Favorite[]
+}
+
+model Favorite {
+  id            String   @id @default(uuid())
+  wishlistId    String
+  targetId      String   // ID of the hotel, restaurant, attraction, etc.
+  targetType    String   // "hotel", "restaurant", "attraction", "destination"
+  createdAt     DateTime @default(now())
+
+  wishlist      Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  type          String   // "flight_alert", "booking_confirmed", "system"
+  title         String
+  message       String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TripMember {
+  id        String   @id @default(uuid())
+  tripId    String
+  userId    String
+  role      String   @default("viewer") // "owner", "editor", "viewer"
+  joinedAt  DateTime @default(now())
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+}
+
+model ExpenseSplit {
+  id          String   @id @default(uuid())
+  expenseId   String
+  userId      String
+  amount      Float
+  status      String   @default("pending") // "pending", "settled"
+  createdAt   DateTime @default(now())
+
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
 }

@@ -8,6 +8,8 @@ import { DashboardHome } from './pages/dashboard/DashboardHome';
 import { TripPlannerPage } from './pages/TripPlannerPage';
 import { TravelJournalPage } from './pages/TravelJournalPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { FlightSearchPage } from './pages/FlightSearchPage';
+import { HotelSearchPage } from './pages/HotelSearchPage';
 import { AboutPage } from './pages/AboutPage';
 import { BlogPage } from './pages/BlogPage';
 import { LegalPage } from './pages/LegalPage';
@@ -15,6 +17,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { OfflineBanner } from './components/layout/OfflineBanner';
 import { useEffect } from 'react';
 import { useThemeStore } from './store/themeStore';
 
@@ -36,11 +39,14 @@ function App() {
 
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/plan" element={<TripPlannerPage />} />
+          <Route path="/flights" element={<FlightSearchPage />} />
+          <Route path="/hotels" element={<HotelSearchPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/privacy" element={<LegalPage type="privacy" />} />

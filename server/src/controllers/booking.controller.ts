@@ -1,34 +1,40 @@
 import { Request, Response } from 'express';
-import { sendSuccess } from '../utils/response';
+import { sendSuccess, sendError } from '../utils/response';
+import { bookingService } from '../services/booking.service';
 
 export const getBookings = async (req: Request, res: Response) => {
-  // Mock data
-  const bookings = [
-    {
-      id: '1',
-      tripId: req.params.tripId,
-      type: 'hotel',
-      status: 'confirmed',
-      amount: 25000,
-      currency: 'INR',
-      details: {
-        hotelName: 'Taj Lake Palace',
-        checkIn: '2026-08-01',
-        checkOut: '2026-08-03'
-      }
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return sendError(res, 401, 'Unauthorized');
     }
-  ];
-  sendSuccess(res, 200, bookings);
+
+    const bookings = await bookingService.getUserBookings(userId);
+    sendSuccess(res, 200, bookings);
+  } catch (error) {
+    console.error('Failed to get bookings:', error);
+    sendError(res, 500, 'Failed to fetch bookings');
+  }
 };
 
 export const createBooking = async (req: Request, res: Response) => {
-  // Mock booking creation
-  const newBooking = {
-    id: Date.now().toString(),
-    status: 'pending',
-    ...req.body
-  };
-  sendSuccess(res, 201, newBooking, 'Booking created successfully');
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return sendError(res, 401, 'Unauthorized');
+    }
+
+    const bookingData = {
+      ...req.body,
+      userId
+    };
+
+    const newBooking = await bookingService.createBooking(bookingData);
+    sendSuccess(res, 201, newBooking, 'Booking created successfully');
+  } catch (error) {
+    console.error('Failed to create booking:', error);
+    sendError(res, 500, 'Failed to create booking');
+  }
 };
 
 

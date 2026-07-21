@@ -36,8 +36,43 @@ export const useTransport = (filters?: { destination?: string; type?: string }) 
   return useQuery({
     queryKey: ['transport', filters],
     queryFn: async () => {
-      const response = await api.get('/recommendations/transport', { params: filters });
-      return response.data.data as Transport[];
+      const type = filters?.type || 'flight';
+      const destination = filters?.destination || 'Goa';
+      
+      if (type === 'flight') {
+        // Use the flight search API
+        const response = await api.get('/flights/search', {
+          params: {
+            origin: 'DEL', // Default mock origin
+            destination: destination,
+            departureDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+            adults: 1
+          }
+        });
+        
+        // Map to TransportCard format temporarily if needed, 
+        // or just return as is if TransportCard supports it (it does now)
+        return response.data.data.map((flight: any) => ({
+          ...flight,
+          type: 'flight',
+          vehicleType: flight.airline,
+          provider: flight.provider,
+          price: flight.price,
+          currency: flight.currency,
+        }));
+      } else {
+        // Use the new multi-transport API for Train, Bus, Cab
+        const transportType = type === 'car' ? 'cab' : type;
+        const response = await api.get('/transport/search', {
+          params: {
+            origin: 'DEL',
+            destination: destination,
+            date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+            type: transportType
+          }
+        });
+        return response.data.data.map((t: any) => ({ ...t, type: transportType }));
+      }
     }
   });
 };

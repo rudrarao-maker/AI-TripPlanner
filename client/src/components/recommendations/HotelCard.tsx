@@ -3,12 +3,16 @@ import { Button } from '../ui/button';
 import { Star, MapPin, Award, Wifi, Coffee, Waves } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Hotel } from '@/types';
+import { useState } from 'react';
+import { BookingModal } from '../booking/BookingModal';
 
 interface HotelCardProps {
-  hotel: Hotel;
+  hotel: Hotel & { bookingUrl?: string; description?: string };
 }
 
 export function HotelCard({ hotel }: HotelCardProps) {
+  const [showModal, setShowModal] = useState(false);
+
   // Mock image if not provided
   const imageUrl = (hotel.images && hotel.images.length > 0) ? hotel.images[0] : `https://source.unsplash.com/600x400/?hotel,resort,${encodeURIComponent(hotel.location)}`;
 
@@ -67,9 +71,22 @@ export function HotelCard({ hotel }: HotelCardProps) {
             <p className="text-xs text-muted-foreground mb-0.5">Price per night</p>
             <p className="font-bold text-lg text-foreground">{formatCurrency(hotel.pricePerNight)}</p>
           </div>
-          <Button variant="gradient" size="sm">Book Now</Button>
+          {hotel.bookingUrl ? (
+            <Button variant="gradient" size="sm" onClick={() => window.open(hotel.bookingUrl, '_blank')}>
+              Book on {hotel.description || 'Provider'}
+            </Button>
+          ) : (
+            <Button variant="gradient" size="sm" onClick={() => setShowModal(true)}>Book Now</Button>
+          )}
         </div>
       </CardContent>
+      
+      <BookingModal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        item={hotel} 
+        type="hotel" 
+      />
     </Card>
   );
 }

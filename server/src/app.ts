@@ -46,6 +46,10 @@ import expenseRoutes from './routes/expense.route';
 import bookingRoutes from './routes/booking.route';
 import userRoutes from './routes/user.route';
 import chatRoutes from './routes/chat.route';
+import weatherRoutes from './routes/weather.route';
+import flightRoutes from './routes/flight.route';
+import placesRoutes from './routes/places.route';
+import transportRoutes from './routes/transport.route';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/trips', tripRoutes);
@@ -54,6 +58,10 @@ app.use('/api/v1/expenses', expenseRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/weather', weatherRoutes);
+app.use('/api/v1/flights', flightRoutes);
+app.use('/api/v1/places', placesRoutes);
+app.use('/api/v1/transport', transportRoutes);
 
 // Handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {

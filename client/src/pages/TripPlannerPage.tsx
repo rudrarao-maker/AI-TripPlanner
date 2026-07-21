@@ -13,38 +13,69 @@ import { AttractionCard } from '@/components/recommendations/AttractionCard';
 import { TransportCard } from '@/components/recommendations/TransportCard';
 import { DraggableItinerary } from '@/components/itinerary/DraggableItinerary';
 import { PackingList } from '@/components/itinerary/PackingList';
+import { AIChatSidebar } from '@/components/itinerary/AIChatSidebar';
+import { WeatherWidget } from '@/components/weather/WeatherWidget';
+import { NearbyPlaces } from '@/components/map/NearbyPlaces';
+import { ItinerarySkeleton } from '@/components/ui/Skeletons';
+import { Bot } from 'lucide-react';
 import { TRAVEL_STYLES } from '@/lib/constants';
+import { exportTripToPdf } from '@/lib/pdfExport';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import 'regenerator-runtime/runtime';
-import html2pdf from 'html2pdf.js';
 import { useGenerateTrip } from '@/hooks/useTrips';
 import { useHotels, useRestaurants, useAttractions, useTransport } from '@/hooks/useRecommendations';
+import { useSocket } from '@/hooks/useSocket';
 
-// Mock Generated Data for demo
-const MOCK_ITINERARY = {
-  destination: "Bali, Indonesia",
-  duration: "7 Days",
-  budget: "₹1,20,000",
-  mapCenter: { lat: -8.409518, lng: 115.188919 },
-  hotels: [
-    { id: 'h1', name: 'Ayana Resort', location: 'Jimbaran', rating: 4.8, pricePerNight: 22000, amenities: ['Pool', 'Spa', 'Wifi', 'Beachfront'], image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800' },
-  ],
-  restaurants: [
-    { id: 'r1', name: 'Locavore', location: 'Ubud', rating: 4.9, priceRange: '₹₹₹₹', cuisine: 'Fine Dining', specialDish: 'Tasting Menu', image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800' },
-    { id: 'r2', name: 'Babi Guling Pak Malen', location: 'Seminyak', rating: 4.5, priceRange: '₹', cuisine: 'Indonesian', specialDish: 'Roast Pork', image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800' }
-  ],
-  attractions: [
-    { id: 'a1', title: 'Uluwatu Temple', description: 'Ancient sea temple perched on a steep cliff with stunning sunset views.', location: 'Uluwatu', duration: '2-3 hours', cost: 150, rating: 4.7, image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800' },
-    { id: 'a2', title: 'Sacred Monkey Forest', description: 'Nature reserve and temple complex housing hundreds of long-tailed macaques.', location: 'Ubud', duration: '2 hours', cost: 300, rating: 4.6, image: 'https://images.unsplash.com/photo-1532185987396-d8f99e3a31c5?w=800' }
-  ]
+// Destination coordinate lookup for weather/map integration
+const DESTINATION_COORDS: Record<string, { lat: number; lng: number }> = {
+  'bali': { lat: -8.409518, lng: 115.188919 },
+  'goa': { lat: 15.2993, lng: 74.124 },
+  'manali': { lat: 32.2396, lng: 77.1887 },
+  'jaipur': { lat: 26.9124, lng: 75.7873 },
+  'kerala': { lat: 10.8505, lng: 76.2711 },
+  'ladakh': { lat: 34.1526, lng: 77.5771 },
+  'udaipur': { lat: 24.5854, lng: 73.7125 },
+  'paris': { lat: 48.8566, lng: 2.3522 },
+  'tokyo': { lat: 35.6762, lng: 139.6503 },
+  'dubai': { lat: 25.2048, lng: 55.2708 },
+  'london': { lat: 51.5074, lng: -0.1278 },
+  'new york': { lat: 40.7128, lng: -74.0060 },
+  'singapore': { lat: 1.3521, lng: 103.8198 },
+  'mumbai': { lat: 19.0760, lng: 72.8777 },
+  'delhi': { lat: 28.6139, lng: 77.2090 },
+  'bangalore': { lat: 12.9716, lng: 77.5946 },
+  'chennai': { lat: 13.0827, lng: 80.2707 },
+  'kolkata': { lat: 22.5726, lng: 88.3639 },
+  'hyderabad': { lat: 17.3850, lng: 78.4867 },
+  'varanasi': { lat: 25.3176, lng: 82.9739 },
+  'agra': { lat: 27.1767, lng: 78.0081 },
+  'shimla': { lat: 31.1048, lng: 77.1734 },
+  'rishikesh': { lat: 30.0869, lng: 78.2676 },
+  'ooty': { lat: 11.4064, lng: 76.6932 },
+  'mysore': { lat: 12.2958, lng: 76.6394 },
 };
+
+function getCoordinates(destination: string): { lat: number; lng: number } {
+  const key = destination.toLowerCase().trim();
+  for (const [name, coords] of Object.entries(DESTINATION_COORDS)) {
+    if (key.includes(name) || name.includes(key)) {
+      return coords;
+    }
+  }
+  // Default: center of India
+  return { lat: 20.5937, lng: 78.9629 };
+}
 
 export function TripPlannerPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const generateTripMutation = useGenerateTrip();
+  
+  // Real-time socket
+  const { collaborators, emit, subscribe, socketId } = useSocket(itinerary?.id);
   
   // Wanderlog style map sync state
   const [activeItemHover, setActiveItemHover] = useState<string>('');
@@ -74,10 +105,12 @@ export function TripPlannerPage() {
   const { data: attractions = [] } = useAttractions({ location: destination });
   const { data: transportOptions = [] } = useTransport({ destination, type: formData.transport });
 
+  // Get coordinates for the destination
+  const destCoords = getCoordinates(formData.destinations[0] || 'Bali');
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     
-    // In a real app, this maps all form states to TripInput
     const tripData = {
       origin: "Mumbai",
       destination: formData.destinations[0] || "Bali",
@@ -124,19 +157,22 @@ export function TripPlannerPage() {
     }
   };
 
-  const handleDownloadPdf = () => {
-    const element = document.getElementById('itinerary-content');
-    if (!element) return;
-    
-    const opt = {
-      margin:       10,
-      filename:     `TripCraft-${formData.destinations[0] || 'Itinerary'}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    
-    html2pdf().set(opt).from(element).save();
+  // Rich PDF Export
+  const handleDownloadPdf = async () => {
+    toast.loading('Generating PDF...', { id: 'pdf-export' });
+    try {
+      await exportTripToPdf({
+        destination: formData.destinations.join(' → ') || 'Trip',
+        dates: formData.dates || '7 Days',
+        budget: `₹${(parseInt(formData.budget) || 120000).toLocaleString()}`,
+        travelers: formData.travelers || '2',
+        travelStyle: formData.style || 'Adventure',
+        days: itinerary?.days || [],
+      });
+      toast.success('PDF downloaded!', { id: 'pdf-export' });
+    } catch (error) {
+      toast.error('Failed to export PDF', { id: 'pdf-export' });
+    }
   };
 
   const handleShare = () => {
@@ -312,10 +348,10 @@ export function TripPlannerPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {TRAVEL_STYLES.map(style => (
                   <div 
-                    key={style.id}
-                    onClick={() => updateForm('style', style.id)}
+                    key={style.value}
+                    onClick={() => updateForm('style', style.value)}
                     className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 text-center flex flex-col items-center gap-2 ${
-                      formData.style === style.id 
+                      formData.style === style.value 
                         ? 'border-primary bg-primary/10 shadow-md shadow-primary/20' 
                         : 'border-border/50 hover:border-primary/50 glass hover:bg-background/80'
                     }`}
@@ -341,6 +377,9 @@ export function TripPlannerPage() {
             <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               AI is drafting your trip...
             </h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Analyzing weather, hotels, restaurants, and attractions for {formData.destinations[0] || 'your destination'}
+            </p>
           </Card>
         </div>
       </div>
@@ -366,7 +405,8 @@ export function TripPlannerPage() {
             </h1>
             <div className="flex items-center justify-center gap-6 text-sm md:text-base font-medium drop-shadow-md">
               <span className="flex items-center gap-1.5"><CalendarIcon className="h-4 w-4" /> {formData.dates || itinerary.duration}</span>
-              <span className="flex items-center gap-1.5"><Wallet className="h-4 w-4" /> {formData.budget || itinerary.budget}</span>
+              <span className="flex items-center gap-1.5"><Wallet className="h-4 w-4" /> ₹{(parseInt(formData.budget) || 120000).toLocaleString()}</span>
+              <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {formData.travelers} travelers</span>
             </div>
           </div>
         </div>
@@ -415,22 +455,35 @@ export function TripPlannerPage() {
 
               {activeTab === 'itinerary' && (
                 <div className="space-y-6">
-                  {/* Wanderlog style drag and drop itinerary */}
-                  <DraggableItinerary onHoverItem={setActiveItemHover} />
-                  <DraggableItinerary onHoverItem={setActiveItemHover} />
+                  {collaborators.length > 0 && (
+                    <div className="flex -space-x-2 mb-2">
+                      {collaborators.map((c, i) => (
+                        <div key={c} className="h-8 w-8 rounded-full border-2 border-background bg-primary/20 flex items-center justify-center text-xs font-bold z-10" title={`User ${c}`}>
+                          U{i+1}
+                        </div>
+                      ))}
+                      <span className="ml-4 text-xs text-muted-foreground flex items-center">{collaborators.length} viewing</span>
+                    </div>
+                  )}
+                  <DraggableItinerary
+                    onHoverItem={setActiveItemHover}
+                    itineraryDays={itinerary?.days}
+                    emitSocket={emit}
+                    subscribeSocket={subscribe}
+                    socketId={socketId}
+                  />
                 </div>
               )}
               
               {activeTab === 'logistics' && (
                 <div className="space-y-6">
-                  {/* Transport Comparison (Google Travel Style) */}
+                  {/* Transport Comparison */}
                   <Card className="glass-card overflow-hidden">
                     <CardHeader className="bg-muted/30 pb-4">
                       <CardTitle className="text-lg flex items-center gap-2"><Plane className="h-5 w-5 text-primary" /> Transport Comparison</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/50">
-                        {/* Flight Option */}
                         <div className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center bg-primary/5 cursor-pointer">
                           <div className="flex items-center gap-4">
                             <div className="bg-primary/20 p-2 rounded-lg text-primary"><Plane className="h-5 w-5" /></div>
@@ -444,8 +497,6 @@ export function TripPlannerPage() {
                             <span className="text-xs text-primary font-medium hover:underline">Select</span>
                           </div>
                         </div>
-
-                        {/* Train Option */}
                         <div className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer">
                           <div className="flex items-center gap-4">
                             <div className="bg-accent/10 p-2 rounded-lg text-accent">
@@ -461,8 +512,6 @@ export function TripPlannerPage() {
                             <span className="text-xs text-muted-foreground font-medium hover:underline">View</span>
                           </div>
                         </div>
-
-                        {/* Bus Option */}
                         <div className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer">
                           <div className="flex items-center gap-4">
                             <div className="bg-orange-500/10 p-2 rounded-lg text-orange-500">
@@ -482,20 +531,12 @@ export function TripPlannerPage() {
                     </CardContent>
                   </Card>
 
-                  <Card className="glass-card">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2"><Sun className="h-5 w-5 text-yellow-500" /> Weather-Aware Adjustments</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex gap-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-yellow-700 dark:text-yellow-400">
-                        <Sun className="h-6 w-6 shrink-0" />
-                        <div>
-                          <p className="font-bold">Sunny & 28°C expected.</p>
-                          <p className="text-sm mt-1">Perfect conditions for your Day 1 City Tour. Remember to pack sunscreen from your checklist!</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Weather Widget — Real data */}
+                  <WeatherWidget
+                    lat={destCoords.lat}
+                    lng={destCoords.lng}
+                    location={formData.destinations[0] || 'Destination'}
+                  />
                 </div>
               )}
 
@@ -514,19 +555,33 @@ export function TripPlannerPage() {
                     <MapLucide className="h-5 w-5 text-primary" /> Interactive Map
                   </h2>
                   <InteractiveMap 
-                    center={itinerary.mapCenter} 
+                    center={destCoords} 
                     zoom={12} 
                     className="h-[300px] rounded-2xl"
                     activeMarkerId={activeItemHover}
                     markers={[
-                      { id: 'a1', position: { lat: -8.409518, lng: 115.188919 }, title: 'Cultural City Tour', type: 'attraction' },
-                      { id: 'a2', position: { lat: -8.420000, lng: 115.200000 }, title: 'Local Cuisine Lunch', type: 'restaurant' }
+                      { id: 'a1', position: { lat: destCoords.lat + 0.005, lng: destCoords.lng + 0.005 }, title: 'Morning Activity', type: 'attraction' },
+                      { id: 'a2', position: { lat: destCoords.lat - 0.003, lng: destCoords.lng + 0.01 }, title: 'Afternoon Activity', type: 'restaurant' },
+                      { id: 'a3', position: { lat: destCoords.lat + 0.008, lng: destCoords.lng - 0.005 }, title: 'Evening Activity', type: 'attraction' },
                     ].map(m => ({
                       ...m,
                       description: activeItemHover === m.id ? 'Currently viewing...' : undefined
                     }))}
                   />
                 </div>
+
+                {/* Compact Weather in sidebar */}
+                <WeatherWidget
+                  lat={destCoords.lat}
+                  lng={destCoords.lng}
+                  location={formData.destinations[0]}
+                  compact
+                />
+
+                <NearbyPlaces
+                  center={destCoords}
+                  locationName={formData.destinations[0] || 'Destination'}
+                />
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -581,6 +636,40 @@ export function TripPlannerPage() {
 
           </div>
         </div>
+
+        {/* AI Chat Sidebar — now with trip context */}
+        <AIChatSidebar
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          tripContext={{
+            destination: formData.destinations[0],
+            budget: parseInt(formData.budget) || 120000,
+            currency: 'INR',
+            days: itinerary?.days,
+            travelStyle: formData.style,
+            transportPreference: formData.transport,
+            hotelCategory: formData.hotel,
+            foodPreference: 'any',
+          }}
+        />
+
+        {/* Floating AI Chat Button */}
+        {!isChatOpen && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5, type: 'spring' }}
+          >
+            <Button 
+              onClick={() => setIsChatOpen(true)}
+              size="icon"
+              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl z-40 bg-gradient-to-r from-primary to-accent hover:scale-105 transition-transform"
+            >
+              <Bot className="h-6 w-6 text-white" />
+            </Button>
+          </motion.div>
+        )}
+
       </div>
     );
   }

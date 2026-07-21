@@ -4,24 +4,36 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+import { hotelService } from '../services/hotel.service';
+
 export const getHotels = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { location, maxPrice } = req.query;
     
-    const where: any = {};
-    if (location) where.location = { contains: location as string };
-    if (maxPrice) where.pricePerNight = { lte: parseFloat(maxPrice as string) };
+    // Convert to unified search params
+    const searchParams = {
+      destination: (location as string) || 'Goa',
+      checkIn: new Date().toISOString().split('T')[0],
+      checkOut: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+      guests: 2,
+      rooms: 1,
+      maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined
+    };
 
-    const hotels = await prisma.hotel.findMany({ 
-      where,
-      take: 10,
-      orderBy: { rating: 'desc' }
-    });
+    const hotels = await hotelService.search(searchParams);
     
-    const formattedHotels = hotels.map(hotel => ({
-      ...hotel,
-      amenities: JSON.parse(hotel.amenities || '[]'),
-      images: JSON.parse(hotel.images || '[]'),
+    // Map to old schema format for frontend compatibility if needed
+    // The frontend HotelCard expects certain fields, let's make sure they align.
+    const formattedHotels = hotels.map((h, i) => ({
+      id: h.id,
+      name: h.name,
+      location: searchParams.destination,
+      description: h.provider,
+      pricePerNight: h.price,
+      rating: h.rating,
+      amenities: h.amenities,
+      images: [h.imageUrl || `https://source.unsplash.com/400x300/?hotel,room&sig=${i}`],
+      bookingUrl: h.bookingUrl
     }));
     
     sendSuccess(res, 200, formattedHotels);
