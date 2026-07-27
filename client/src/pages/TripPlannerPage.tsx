@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, Calendar as CalendarIcon, Users, Wallet, Loader2, Sparkles, Navigation, Hotel, Map as MapLucide, Plane, Sun, Download, Mic, Backpack, Share2, BookmarkPlus, CalendarDays } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -14,6 +14,8 @@ import { AttractionCard } from '@/components/recommendations/AttractionCard';
 import { TransportCard } from '@/components/recommendations/TransportCard';
 import { DraggableItinerary } from '@/components/itinerary/DraggableItinerary';
 import { PackingList } from '@/components/itinerary/PackingList';
+import { BudgetOptimizer } from '@/components/itinerary/BudgetOptimizer';
+import { TravelTools } from '@/components/itinerary/TravelTools';
 import { AIChatSidebar } from '@/components/itinerary/AIChatSidebar';
 import { WeatherWidget } from '@/components/weather/WeatherWidget';
 import { NearbyPlaces } from '@/components/map/NearbyPlaces';
@@ -23,7 +25,7 @@ import { TRAVEL_STYLES } from '@/lib/constants';
 import { exportTripToPdf } from '@/lib/pdfExport';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import 'regenerator-runtime/runtime';
-import { useGenerateTrip } from '@/hooks/useTrips';
+import { useGenerateTrip, useParsePrompt } from '@/hooks/useTrips';
 import { useHotels, useRestaurants, useAttractions, useTransport } from '@/hooks/useRecommendations';
 import { useSocket } from '@/hooks/useSocket';
 
@@ -75,7 +77,9 @@ export function TripPlannerPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState<number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [searchParams] = useSearchParams();
   const generateTripMutation = useGenerateTrip();
+  const parsePromptMutation = useParsePrompt();
   
   // Real-time socket
   const { collaborators, emit, subscribe, socketId } = useSocket(itinerary?.id);
@@ -108,43 +112,64 @@ export function TripPlannerPage() {
     'Historical', 'Wildlife', 'Nightlife', 'Photography', 'Adventure', 'Relaxation'
   ];
 
-  // Recommendation Hooks
-  const destination = formData.destinations[0] || 'Bali';
-  const { data: hotels = [] } = useHotels({ location: destination, maxPrice: parseInt(formData.budget) || undefined });
-  const { data: restaurants = [] } = useRestaurants({ location: destination });
-  const { data: attractions = [] } = useAttractions({ location: destination });
-  const { data: transportOptions = [] } = useTransport({ destination, type: formData.transport });
+  // AI Prompt Parsing Logic
+  useEffect(() => {
+    const initialPrompt = searchParams.get('prompt');
+    if (initialPrompt && step === 1 && !isGenerating) {
+      const processPrompt = async () => {
+        setIsGenerating(true);
+        try {
+          const parsed = await parsePromptMutation.mutateAsync(initialPrompt);
+          
+          // Apply parsed data to form
+          const newFormData = { ...formData };
+          if (parsed.destinations?.length > 0) newFormData.destinations = parsed.destinations;
+          if (parsed.budget) newFormData.budget = parsed.budget.toString();
+          if (parsed.travelers) {
+            newFormData.adults = Math.min(10, Math.max(1, parsed.travelers));
+            newFormData.children = 0;
+          }
+          if (parsed.travelStyle) newFormData.style = parsed.travelStyle.toLowerCase();
+          if (parsed.hotelCategory) {
+            const h = parsed.hotelCategory.toLowerCase();
+            if (h.includes('lux')) newFormData.hotel = 'luxury';
+            else if (h.includes('budg') || h.includes('hostel')) newFormData.hotel = 'budget';
+            else newFormData.hotel = '4-star';
+          }
+          setFormData(newFormData);
+          
+          // Auto-advance to generation using the extracted data
+          // We must wait for state to update, or just pass the data directly
+          await generateWithData(newFormData);
+          
+        } catch (e) {
+          console.error("Failed to parse prompt", e);
+          setIsGenerating(false);
+        }
+      };
+      processPrompt();
+    }
+  }, [searchParams]);
 
-  // Get coordinates for the destination
-  const destCoords = getCoordinates(formData.destinations[0] || 'Bali');
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    
-    // Parse dates from form
-    const dateParts = formData.dates.split('to').map(s => s.trim());
-    const startDate = dateParts[0] ? new Date(dateParts[0]).toISOString() : new Date().toISOString();
-    const endDate = dateParts[1] ? new Date(dateParts[1]).toISOString() : new Date(new Date().setDate(new Date().getDate() + 7)).toISOString();
-    const baseBudget = parseInt(formData.budget) || 120000;
-
+  const generateWithData = async (dataToUse: typeof formData) => {
+    const baseBudget = parseInt(dataToUse.budget) || 120000;
     const baseTripData = {
       origin: "Mumbai",
-      destination: formData.destinations[0] || "Bali",
-      startDate,
-      endDate,
-      travelers: formData.adults + formData.children,
+      destination: dataToUse.destinations[0] || "Bali",
+      startDate: new Date().toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+      travelers: dataToUse.adults + dataToUse.children,
       currency: "INR",
-      travelStyle: formData.style || "adventure",
-      transportPreference: formData.transport,
-      hotelCategory: formData.hotel,
+      travelStyle: dataToUse.style || "adventure",
+      transportPreference: dataToUse.transport,
+      hotelCategory: dataToUse.hotel,
       foodPreference: "any",
-      interests: formData.interests
+      interests: dataToUse.interests
     };
 
-    // Generate 3 plan tiers: Budget, Standard, Premium
     const planTiers = [
       { label: '💰 Budget', hotel: 'budget', budget: Math.round(baseBudget * 0.6), tag: 'Cheapest' },
-      { label: '⭐ Standard', hotel: formData.hotel || '4-star', budget: baseBudget, tag: 'Best Value' },
+      { label: '⭐ Standard', hotel: dataToUse.hotel || '4-star', budget: baseBudget, tag: 'Best Value' },
       { label: '👑 Premium', hotel: 'luxury', budget: Math.round(baseBudget * 1.5), tag: 'Most Comfort' },
     ];
 
@@ -168,6 +193,21 @@ export function TripPlannerPage() {
       toast.error('Failed to generate plans. Please try again.');
       setIsGenerating(false);
     }
+  };
+
+  // Recommendation Hooks
+  const destination = formData.destinations[0] || 'Bali';
+  const { data: hotels = [] } = useHotels({ location: destination, maxPrice: parseInt(formData.budget) || undefined });
+  const { data: restaurants = [] } = useRestaurants({ location: destination });
+  const { data: attractions = [] } = useAttractions({ location: destination });
+  const { data: transportOptions = [] } = useTransport({ destination, type: formData.transport });
+
+  // Get coordinates for the destination
+  const destCoords = getCoordinates(formData.destinations[0] || 'Bali');
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    await generateWithData(formData);
   };
 
   const updateForm = (field: string, value: any) => {
@@ -562,7 +602,7 @@ export function TripPlannerPage() {
         <div className="relative h-[40vh] min-h-[300px] w-full flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-black/50 z-10" />
           <img 
-            src={`https://source.unsplash.com/1600x900/?${encodeURIComponent(formData.destinations[0] || 'landscape')}`}
+            src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2000&auto=format&fit=crop"
             alt="Destination"
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -744,6 +784,14 @@ export function TripPlannerPage() {
                     }))}
                   />
                 </div>
+
+                {/* Budget Optimizer & Travel Tools */}
+                <BudgetOptimizer 
+                  budget={activeItinerary?._tier?.budget || parseInt(formData.budget) || 120000} 
+                  itineraryDays={activeItinerary?.days || []} 
+                />
+                
+                <TravelTools destination={formData.destinations[0] || 'Destination'} />
 
                 {/* Compact Weather in sidebar */}
                 <WeatherWidget

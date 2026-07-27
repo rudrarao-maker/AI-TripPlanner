@@ -4,6 +4,10 @@ import { AppError } from '../middlewares/errorHandler';
 
 const prisma = new PrismaClient();
 
+export const parseUserPrompt = async (prompt: string) => {
+  return await aiService.parseUserPrompt(prompt);
+};
+
 export const generateTrip = async (userId: string, tripData: any) => {
   // 1. Ask AI to generate the itinerary
   const generatedItinerary = await aiService.generateItinerary(tripData);

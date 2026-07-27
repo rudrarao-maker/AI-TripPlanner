@@ -1,201 +1,116 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, MapPin, Building2, UtensilsCrossed, Landmark, Compass, Clock, Search, X } from 'lucide-react';
+import { Sparkles, Mic, Navigation, ArrowRight } from 'lucide-react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-const SEARCH_CATEGORIES = [
-  { id: 'destinations', label: 'Destinations', icon: MapPin, placeholder: 'Where do you want to go?' },
-  { id: 'hotels', label: 'Hotels', icon: Building2, placeholder: 'Search hotels...' },
-  { id: 'restaurants', label: 'Restaurants', icon: UtensilsCrossed, placeholder: 'Find restaurants...' },
-  { id: 'attractions', label: 'Attractions', icon: Landmark, placeholder: 'Discover attractions...' },
-  { id: 'things', label: 'Things to Do', icon: Compass, placeholder: 'Activities & experiences...' },
-];
-
-const AUTO_SUGGESTIONS: Record<string, string[]> = {
-  destinations: ['Bali, Indonesia', 'Paris, France', 'Goa, India', 'Tokyo, Japan', 'Dubai, UAE', 'Maldives', 'Santorini, Greece', 'Kerala, India'],
-  hotels: ['Taj Mahal Palace, Mumbai', 'Marina Bay Sands, Singapore', 'Burj Al Arab, Dubai', 'The Leela, Goa', 'Oberoi Udaivilas, Udaipur'],
-  restaurants: ['Indian Accent, Delhi', 'Bukhara, Delhi', 'Le Cirque, Mumbai', 'Karavalli, Bangalore', 'Wasabi by Morimoto, Mumbai'],
-  attractions: ['Taj Mahal, Agra', 'Eiffel Tower, Paris', 'Great Wall of China', 'Machu Picchu, Peru', 'Hawa Mahal, Jaipur'],
-  things: ['Scuba Diving', 'Safari', 'Hot Air Balloon', 'Cooking Class', 'Trekking', 'Surfing', 'City Walking Tour'],
-};
-
-const QUICK_TAGS = [
-  'Group trip', 'Honeymoon', 'Solo escape', 'Family', 'Weekend', 'Beach', 'Adventure',
+const SUGGESTED_PROMPTS = [
+  "A 5-day luxury honeymoon in Bali for two, $3000 budget.",
+  "Weekend getaway to Goa with friends, budget-friendly.",
+  "Solo backpacking trip across Europe for 2 weeks.",
+  "Family road trip to Manali, kid-friendly activities.",
 ];
 
 export function HeroSearchBar() {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState('destinations');
-  const [query, setQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [prompt, setPrompt] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load recent searches from localStorage
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+
   useEffect(() => {
-    const stored = localStorage.getItem('tripcraft_recent_searches');
-    if (stored) setRecentSearches(JSON.parse(stored));
-  }, []);
+    if (listening && transcript) {
+      setPrompt(transcript);
+    }
+  }, [transcript, listening]);
 
-  // Close suggestions on click outside
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  const filteredSuggestions = AUTO_SUGGESTIONS[activeCategory]?.filter(
-    (s) => s.toLowerCase().includes(query.toLowerCase())
-  ) || [];
+  const handleMicClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (listening) {
+      SpeechRecognition.stopListening();
+    } else {
+      resetTranscript();
+      SpeechRecognition.startListening({ continuous: true });
+    }
+  };
 
   const handleSearch = (e?: React.FormEvent, preset?: string) => {
     if (e) e.preventDefault();
-    const searchQuery = preset || query;
-    if (!searchQuery.trim()) return;
-
-    // Save to recent searches
-    const updated = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem('tripcraft_recent_searches', JSON.stringify(updated));
-    setShowSuggestions(false);
-
-    // Route based on category
-    const routeMap: Record<string, string> = {
-      destinations: `/plan?dest=${encodeURIComponent(searchQuery)}`,
-      hotels: `/hotels?q=${encodeURIComponent(searchQuery)}`,
-      restaurants: `/restaurants?q=${encodeURIComponent(searchQuery)}`,
-      attractions: `/explore?q=${encodeURIComponent(searchQuery)}`,
-      things: `/things-to-do?q=${encodeURIComponent(searchQuery)}`,
-    };
-    navigate(routeMap[activeCategory] || `/plan?dest=${encodeURIComponent(searchQuery)}`);
+    const finalPrompt = preset || prompt;
+    if (!finalPrompt.trim()) return;
+    
+    // Pass the raw prompt to the planner page to parse and generate
+    navigate(`/plan?prompt=${encodeURIComponent(finalPrompt)}`);
   };
 
-  const clearRecent = () => {
-    setRecentSearches([]);
-    localStorage.removeItem('tripcraft_recent_searches');
+  const autoResize = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
   };
-
-  const activeConfig = SEARCH_CATEGORIES.find(c => c.id === activeCategory)!;
 
   return (
-    <div className="w-full max-w-2xl mt-8 flex flex-col gap-4 animate-slide-up" ref={containerRef} style={{ animationDelay: '0.2s' }}>
+    <div className="w-full max-w-3xl mt-8 flex flex-col gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
       
-      {/* Category Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar px-1">
-        {SEARCH_CATEGORIES.map((cat) => {
-          const Icon = cat.icon;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => { setActiveCategory(cat.id); setQuery(''); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-                activeCategory === cat.id
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                  : 'bg-card/80 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {cat.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Main Search Pill */}
-      <div className="relative">
-        <form 
-          onSubmit={handleSearch}
-          className="bg-white dark:bg-card border-2 border-border/30 dark:border-border/50 p-1.5 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.3)] flex items-center w-full transition-all hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary/30"
-        >
-          <div className="flex-1 flex items-center px-4">
-            <Search className="h-5 w-5 text-primary/60 mr-3 shrink-0" />
-            <input 
-              ref={inputRef}
-              type="text" 
-              placeholder={activeConfig.placeholder}
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)}
-              className="bg-transparent border-none outline-none text-lg text-foreground w-full placeholder:text-muted-foreground/60"
+      {/* AI Search Box */}
+      <div className={`relative bg-background/80 dark:bg-card/90 backdrop-blur-2xl border-2 p-2 rounded-3xl transition-all duration-300 ${isFocused ? 'border-primary/50 shadow-[0_8px_40px_rgba(0,0,0,0.15)] ring-4 ring-primary/10' : 'border-border/50 shadow-xl'}`}>
+        <form onSubmit={handleSearch} className="flex flex-col relative z-10">
+          <div className="relative">
+            <textarea 
+              ref={textareaRef}
+              value={prompt}
+              onChange={(e) => { setPrompt(e.target.value); autoResize(); }}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
+              placeholder="e.g. Plan a 5-day honeymoon to Bali for two with a budget of $2000..."
+              className="w-full bg-transparent border-none outline-none text-xl sm:text-2xl text-foreground placeholder:text-muted-foreground/50 resize-none px-6 py-5 min-h-[90px] overflow-hidden leading-relaxed"
+              rows={1}
             />
-            {query && (
-              <button type="button" onClick={() => setQuery('')} className="p-1 hover:bg-muted rounded-full mr-2 transition-colors">
-                <X className="h-4 w-4 text-muted-foreground" />
+            {browserSupportsSpeechRecognition && (
+              <button 
+                type="button"
+                onClick={handleMicClick}
+                className={`absolute top-4 right-4 p-3 rounded-full transition-all ${listening ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse' : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              >
+                <Mic className="h-6 w-6" />
               </button>
             )}
           </div>
-
-          <button 
-            type="submit" 
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 rounded-xl font-semibold flex items-center gap-2 transition-all shrink-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">Start Planning</span>
-            <ArrowRight className="h-4 w-4 sm:hidden" />
-          </button>
-        </form>
-
-        {/* Suggestions Dropdown */}
-        {showSuggestions && (query || recentSearches.length > 0) && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50 animate-slide-down">
+          
+          <div className="flex items-center justify-between px-4 pb-3 pt-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Powered by Gemini AI</span>
+            </div>
             
-            {/* Recent Searches */}
-            {!query && recentSearches.length > 0 && (
-              <div className="p-3 border-b border-border/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Clock className="h-3 w-3" /> Recent Searches
-                  </span>
-                  <button onClick={clearRecent} className="text-xs text-primary hover:underline font-medium">Clear</button>
-                </div>
-                {recentSearches.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSearch(undefined, s)}
-                    className="w-full text-left px-3 py-2 rounded-xl text-sm hover:bg-muted/60 flex items-center gap-3 transition-colors"
-                  >
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{s}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Auto-suggestions */}
-            {filteredSuggestions.length > 0 && (
-              <div className="p-3">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block px-3 mb-2">
-                  {query ? 'Suggestions' : 'Popular'}
-                </span>
-                {filteredSuggestions.slice(0, 6).map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSearch(undefined, s)}
-                    className="w-full text-left px-3 py-2.5 rounded-xl text-sm hover:bg-muted/60 flex items-center gap-3 transition-colors group"
-                  >
-                    <activeConfig.icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="flex-1">{s}</span>
-                    <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                ))}
-              </div>
-            )}
+            <button 
+              type="submit" 
+              disabled={!prompt.trim() && !listening}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 rounded-full font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-95"
+            >
+              <span>Generate Trip</span>
+              <Navigation className="h-4 w-4" />
+            </button>
           </div>
-        )}
+        </form>
       </div>
 
-      {/* Quick Suggestions */}
-      <div className="flex flex-wrap items-center justify-start gap-2 px-1">
-        {QUICK_TAGS.map((tag) => (
+      {/* Quick AI Prompts */}
+      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-4 px-2">
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-2">Try:</span>
+        {SUGGESTED_PROMPTS.map((tag, i) => (
           <button
-            key={tag}
+            key={i}
             type="button"
             onClick={() => handleSearch(undefined, tag)}
-            className="px-4 py-1.5 rounded-full bg-card/60 backdrop-blur-sm border border-border/40 text-foreground/70 text-sm font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-lg hover:shadow-primary/20 transition-all duration-200 active:scale-95"
+            className="px-4 py-2 rounded-full bg-card/60 backdrop-blur-sm border border-border/40 text-foreground/80 text-xs sm:text-sm font-medium hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200"
           >
             {tag}
           </button>

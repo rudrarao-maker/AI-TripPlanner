@@ -5,8 +5,10 @@ import { Users, Building2, Map, CreditCard, Activity, ArrowUpRight, TrendingUp, 
 import { formatCurrency } from '@/lib/utils';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { BookingManagement } from '@/components/admin/BookingManagement';
+import { AIUsageTracking } from '@/components/admin/AIUsageTracking';
+import { CMSManagement } from '@/components/admin/CMSManagement';
 
-type AdminTab = 'overview' | 'users' | 'bookings' | 'destinations' | 'hotels' | 'restaurants' | 'activities' | 'blogs' | 'reviews' | 'ai-prompts';
+type AdminTab = 'overview' | 'users' | 'bookings' | 'destinations' | 'hotels' | 'restaurants' | 'activities' | 'blogs' | 'reviews' | 'ai-usage' | 'cms';
 
 const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
@@ -18,7 +20,8 @@ const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   { id: 'activities', label: 'Activities', icon: <Compass className="h-4 w-4" /> },
   { id: 'blogs', label: 'Blogs', icon: <BookOpen className="h-4 w-4" /> },
   { id: 'reviews', label: 'Reviews', icon: <Star className="h-4 w-4" /> },
-  { id: 'ai-prompts', label: 'AI Prompts', icon: <Bot className="h-4 w-4" /> },
+  { id: 'ai-usage', label: 'AI Usage', icon: <Bot className="h-4 w-4" /> },
+  { id: 'cms', label: 'CMS', icon: <BarChart3 className="h-4 w-4" /> },
 ];
 
 function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNode }) {
@@ -203,7 +206,7 @@ export function AdminDashboard() {
                       </div>
                     </div>
                   ))}
-                </div>
+                 </div>
               </CardContent>
             </Card>
           </div>
@@ -212,13 +215,12 @@ export function AdminDashboard() {
 
       {activeTab === 'users' && <UserManagement />}
       {activeTab === 'bookings' && <BookingManagement />}
-      {activeTab === 'destinations' && <AdminPlaceholder title="Destinations" icon={<Map className="h-6 w-6 text-blue-500" />} />}
-      {activeTab === 'hotels' && <AdminPlaceholder title="Hotels" icon={<Building2 className="h-6 w-6 text-purple-500" />} />}
-      {activeTab === 'restaurants' && <AdminPlaceholder title="Restaurants" icon={<UtensilsCrossed className="h-6 w-6 text-orange-500" />} />}
-      {activeTab === 'activities' && <AdminPlaceholder title="Activities" icon={<Compass className="h-6 w-6 text-emerald-500" />} />}
-      {activeTab === 'blogs' && <AdminPlaceholder title="Blog Posts" icon={<BookOpen className="h-6 w-6 text-sky-500" />} />}
-      {activeTab === 'reviews' && <AdminPlaceholder title="Reviews" icon={<Star className="h-6 w-6 text-amber-500" />} />}
-      {activeTab === 'ai-prompts' && <AdminPlaceholder title="AI Prompt Templates" icon={<Bot className="h-6 w-6 text-violet-500" />} />}
+      {activeTab === 'ai-usage' && <AIUsageTracking />}
+      {activeTab === 'cms' && <CMSManagement />}
+      
+      {activeTab !== 'overview' && activeTab !== 'users' && activeTab !== 'bookings' && activeTab !== 'ai-usage' && activeTab !== 'cms' && (
+        <AdminPlaceholder title={ADMIN_TABS.find(t => t.id === activeTab)?.label || ''} icon={ADMIN_TABS.find(t => t.id === activeTab)?.icon} />
+      )}
     </div>
   );
 }

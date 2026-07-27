@@ -41,3 +41,15 @@ export const useGetTrip = (id: string) => {
     enabled: !!id
   });
 };
+
+export const useParsePrompt = () => {
+  return useMutation({
+    mutationFn: async (prompt: string) => {
+      const response = await api.post('/trips/parse-prompt', { prompt });
+      return response.data.data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to parse prompt');
+    }
+  });
+};

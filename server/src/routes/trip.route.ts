@@ -9,6 +9,7 @@ const router = Router();
 // All trip routes require authentication
 router.use(protect);
 
+router.post('/parse-prompt', tripController.parsePrompt);
 router.post('/generate', validate(createTripSchema), tripController.generate);
 router.get('/', tripController.getMyTrips);
 router.get('/:id', tripController.getTrip);

@@ -11,6 +11,19 @@ export const generate = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
+export const parsePrompt = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ status: 'error', message: 'Prompt is required' });
+    }
+    const parsedData = await tripService.parseUserPrompt(prompt);
+    sendSuccess(res, 200, parsedData, 'Prompt parsed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getMyTrips = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const trips = await tripService.getUserTrips(req.user.id);

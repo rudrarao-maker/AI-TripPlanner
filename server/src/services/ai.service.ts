@@ -4,6 +4,58 @@ import { DESTINATION_DATA } from '../data/destinations';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'mock' });
 
 // ============================================================
+// Prompt Parsing
+// ============================================================
+
+export const parseUserPrompt = async (prompt: string) => {
+  const schema = {
+    destinations: ["string"],
+    travelers: "number",
+    budget: "number (optional)",
+    currency: "string (e.g., INR, USD)",
+    dates: "string (e.g., December, next week, or specific dates)",
+    travelStyle: "string (e.g., adventure, relaxation, honeymoon, family)",
+    hotelCategory: "string (e.g., luxury, 4-star, budget)",
+  };
+
+  const sysPrompt = `Extract travel parameters from the following user prompt. Return ONLY valid JSON matching this schema: ${JSON.stringify(schema)}. If a parameter is not mentioned, make a reasonable guess or leave it empty.
+  
+  User Prompt: "${prompt}"`;
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: sysPrompt,
+      });
+      
+      let text = response.text || '';
+      text = text.replace(/```json\n?/g, '').replace(/\n?```/g, '').trim();
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('Failed to parse prompt with AI, using fallback:', e);
+    }
+  }
+
+  // Very basic regex fallback if no API key
+  const destMatch = prompt.match(/to\s+([A-Z][a-z]+(\s+[A-Z][a-z]+)*)/);
+  const budgetMatch = prompt.match(/(?:for|budget)\s*(?:\$|₹|INR|USD)?\s*(\d+(?:,\d+)*)/);
+  const travelersMatch = prompt.match(/(two|three|four|five|\d+)\s+people/);
+  
+  const wordToNum: Record<string, number> = { two: 2, three: 3, four: 4, five: 5 };
+  
+  return {
+    destinations: destMatch ? [destMatch[1]] : ['Goa'],
+    travelers: travelersMatch ? (wordToNum[travelersMatch[1].toLowerCase()] || parseInt(travelersMatch[1])) : 2,
+    budget: budgetMatch ? parseInt(budgetMatch[1].replace(/,/g, '')) : 50000,
+    currency: prompt.includes('$') ? 'USD' : 'INR',
+    dates: 'next month',
+    travelStyle: prompt.toLowerCase().includes('honeymoon') ? 'honeymoon' : 'adventure',
+    hotelCategory: prompt.toLowerCase().includes('luxury') ? 'luxury' : '4-star',
+  };
+};
+
+// ============================================================
 // Itinerary Generation
 // ============================================================
 
