@@ -13,11 +13,14 @@ model User {
   password  String?
   name      String
   avatar    String?
-  role      String   @default("user") // "user" or "admin"
-  provider  String   @default("email") // "email" or "google"
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role             String   @default("user") // "user" or "admin"
+  provider         String   @default("email") // "email" or "google"
+  verified         Boolean  @default(false)
+  status           String   @default("active") // "active" or "restricted"
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   trips         Trip[]
   expenses      Expense[]

@@ -14,10 +14,11 @@ export function HotelSearchPage() {
     checkOut: '',
     guests: '2',
   });
+  const [maxPrice, setMaxPrice] = useState(50000);
   
   const [hasSearched, setHasSearched] = useState(false);
 
-  const { data: hotels = [], isLoading, refetch } = useHotels({ location: searchParams.location }, { enabled: false });
+  const { data: hotels = [], isLoading, refetch } = useHotels({ location: searchParams.location, maxPrice }, { enabled: false });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +88,23 @@ export function HotelSearchPage() {
             <div className="glass-card p-5 space-y-4 sticky top-24">
               <h3 className="font-bold flex items-center gap-2 border-b pb-2"><Filter className="h-4 w-4" /> Filters</h3>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price Range</label>
-                <input type="range" className="w-full" />
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Max Price</label>
+                  <span className="text-sm font-bold text-primary">₹{maxPrice.toLocaleString()}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="1000" 
+                  max="50000" 
+                  step="1000"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(parseInt(e.target.value))}
+                  onMouseUp={() => refetch()}
+                  onTouchEnd={() => refetch()}
+                  className="w-full accent-primary" 
+                />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>₹0</span>
+                  <span>₹1,000</span>
                   <span>₹50,000+</span>
                 </div>
               </div>

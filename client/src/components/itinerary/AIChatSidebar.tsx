@@ -57,6 +57,19 @@ export function AIChatSidebar({ isOpen, onClose, tripContext }: AIChatSidebarPro
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Dynamic welcome message
+  useEffect(() => {
+    if (tripContext?.destination) {
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        if (newMsgs.length > 0 && newMsgs[0].id === '1') {
+          newMsgs[0].text = `Hi! I'm your AI Travel Assistant for your trip to ${tripContext.destination}. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?`;
+        }
+        return newMsgs;
+      });
+    }
+  }, [tripContext?.destination]);
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {

@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { DESTINATION_DATA } from '../data/destinations';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'mock' });
 
@@ -43,7 +44,7 @@ export const generateItinerary = async (tripDetails: any) => {
     }
   }
 
-  // Fallback / Mock
+  // Fallback / Smart Mock
   await new Promise((resolve) => setTimeout(resolve, 1500));
   
   const startDate = new Date(tripDetails.startDate);
@@ -53,22 +54,110 @@ export const generateItinerary = async (tripDetails: any) => {
   const days = [];
   let currentDate = new Date(startDate);
 
+  const dest = (tripDetails.destination || 'Goa').toLowerCase();
+  const style = (tripDetails.travelStyle || 'adventure').toLowerCase();
+  const foodPref = (tripDetails.foodPreference || 'any').toLowerCase();
+  const budget = tripDetails.budget || 50000;
+  const dailyBudget = budget / diffDays;
+  const hotelCat = tripDetails.hotelCategory || '4-star';
+
+  // Find matching destination data or use generic
+  const destKey = Object.keys(DESTINATION_DATA).find(k => dest.includes(k)) || '';
+  const dData = DESTINATION_DATA[destKey];
+
+  // ============ Build activities pool from destination data ============
+  let placesPool: { title: string; desc: string; location: string; costMul: number }[] = [];
+  let foodsPool: { title: string; desc: string; location: string; costMul: number }[] = [];
+  let hotelName = `${hotelCat} Stay ${tripDetails.destination}`;
+
+  if (dData) {
+    // Filter places by travel style if possible, otherwise use all
+    const styleMap: Record<string, string[]> = {
+      adventure: ['adventure'],
+      relaxation: ['relaxation'],
+      cultural: ['cultural', 'shopping'],
+    };
+    const matchTypes = styleMap[style] || [];
+    const filtered = matchTypes.length > 0 ? dData.places.filter(p => matchTypes.includes(p.type)) : dData.places;
+    placesPool = (filtered.length >= 3 ? filtered : dData.places).map(p => ({
+      title: p.title,
+      desc: p.desc,
+      location: p.location,
+      costMul: p.type === 'adventure' ? 0.15 : p.type === 'relaxation' ? 0.08 : 0.05,
+    }));
+
+    const foodFiltered = foodPref.includes('veg') ? dData.foods.filter(f => f.name.toLowerCase().includes('veg') || f.desc.toLowerCase().includes('plant')) : dData.foods;
+    foodsPool = (foodFiltered.length > 0 ? foodFiltered : dData.foods).map(f => ({
+      title: `🍽️ ${f.name}`,
+      desc: `${f.desc} 📍 ${f.spot}`,
+      location: f.spot,
+      costMul: f.cost,
+    }));
+
+    // Pick hotel based on category
+    if (hotelCat.includes('budget') || hotelCat.includes('hostel')) hotelName = dData.hotels.budget;
+    else if (hotelCat.includes('luxury') || hotelCat.includes('5')) hotelName = dData.hotels.luxury;
+    else hotelName = dData.hotels.standard;
+  } else {
+    // Generic fallback pool
+    placesPool = [
+      { title: `Explore ${tripDetails.destination} Old Town`, desc: 'Walk through the historic quarter, visiting local landmarks, street art, and hidden courtyards.', location: 'City Center', costMul: 0.05 },
+      { title: `${tripDetails.destination} Scenic Viewpoint`, desc: 'Panoramic views of the entire region. Best visited at golden hour for photographs.', location: 'Hilltop', costMul: 0.03 },
+      { title: 'Local Art & Craft Market', desc: 'Shop for handmade souvenirs, local spices, textiles, and artisan pottery.', location: 'Market Square', costMul: 0.05 },
+      { title: `Nature Trail & Wildlife Walk`, desc: 'Guided 2-hour walk through local flora and fauna with expert naturalist.', location: 'Nature Reserve', costMul: 0.08 },
+      { title: `${tripDetails.destination} Heritage Museum`, desc: 'Learn about the region\'s fascinating history, architecture, and cultural evolution.', location: 'Museum District', costMul: 0.04 },
+      { title: 'Sunset Boat Cruise', desc: 'Relaxing 90-minute cruise with snacks and live music as the sun sets.', location: 'Waterfront', costMul: 0.12 },
+    ];
+    foodsPool = [
+      { title: '🍽️ Local Thali Experience', desc: 'A grand platter of regional specialties — curries, breads, rice, and dessert.', location: 'Food Street', costMul: 0.04 },
+      { title: '🍽️ Street Food Walking Tour', desc: 'Guided tour sampling 6+ iconic street food stalls with a local foodie.', location: 'Old Town', costMul: 0.05 },
+      { title: '🍽️ Rooftop Fine Dining', desc: 'Multi-course dinner with panoramic views, craft cocktails, and live acoustic music.', location: 'City Center', costMul: 0.08 },
+    ];
+  }
+
+  // ============ Build days ============
   for (let i = 1; i <= diffDays; i++) {
+    const morningPlace = placesPool[(i - 1) % placesPool.length];
+    const afternoonPlace = placesPool[(i + 1) % placesPool.length];
+    const food = foodsPool[(i - 1) % foodsPool.length];
+
     days.push({
       dayNumber: i,
       date: new Date(currentDate).toISOString(),
-      morningActivity: { title: `Explore ${tripDetails.destination} Landmarks`, description: `Visit top sites in ${tripDetails.destination}.`, location: `City Center`, cost: 20, duration: '3 hours' },
-      afternoonActivity: { title: 'Local Market & Shopping', description: 'Discover local crafts and souvenirs.', location: 'Central Market', cost: 50, duration: '2 hours' },
-      eveningActivity: { title: 'Sunset Views & Dining', description: 'Enjoy a beautiful sunset.', location: 'Scenic Viewpoint', cost: 30, duration: '2.5 hours' },
-      hotel: { name: `Premium Stay ${tripDetails.destination}`, rating: 4.5, pricePerNight: (tripDetails.budget || 20000) * 0.2 },
+      morningActivity: {
+        title: morningPlace.title,
+        description: morningPlace.desc,
+        location: morningPlace.location,
+        cost: Math.round(dailyBudget * morningPlace.costMul),
+        duration: '3 hours',
+      },
+      afternoonActivity: {
+        title: afternoonPlace.title,
+        description: afternoonPlace.desc,
+        location: afternoonPlace.location,
+        cost: Math.round(dailyBudget * afternoonPlace.costMul),
+        duration: '2.5 hours',
+      },
+      eveningActivity: {
+        title: food.title,
+        description: food.desc,
+        location: food.location,
+        cost: Math.round(dailyBudget * food.costMul),
+        duration: '1.5 hours',
+      },
+      hotel: {
+        name: hotelName,
+        rating: hotelCat.includes('luxury') ? 4.9 : hotelCat.includes('budget') ? 3.8 : 4.5,
+        pricePerNight: Math.round(dailyBudget * (hotelCat.includes('luxury') ? 0.4 : hotelCat.includes('budget') ? 0.15 : 0.3)),
+      },
     });
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
   return {
-    title: `${tripDetails.travelStyle} trip to ${tripDetails.destination}`,
+    title: `${tripDetails.travelStyle} Trip to ${tripDetails.destination}`,
     days,
-    coverImage: `https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800`,
+    coverImage: dData?.coverImage || 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800',
   };
 };
 

@@ -51,6 +51,8 @@ import flightRoutes from './routes/flight.route';
 import placesRoutes from './routes/places.route';
 import transportRoutes from './routes/transport.route';
 
+import appRoutes from './routes/app.route';
+
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/trips', tripRoutes);
 app.use('/api/v1/recommendations', recRoutes);
@@ -62,6 +64,7 @@ app.use('/api/v1/weather', weatherRoutes);
 app.use('/api/v1/flights', flightRoutes);
 app.use('/api/v1/places', placesRoutes);
 app.use('/api/v1/transport', transportRoutes);
+app.use('/api/v1/app', appRoutes);
 
 // Handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {

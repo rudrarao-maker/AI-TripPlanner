@@ -114,6 +114,38 @@ export class BookingService {
       orderBy: { createdAt: 'desc' }
     });
   }
+
+  async getTripBookings(tripId: string, userId: string) {
+    return prisma.booking.findMany({
+      where: { tripId, userId },
+      include: {
+        payment: true,
+        flightDetails: true,
+        hotelDetails: true,
+        trip: {
+          select: { title: true, destination: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async getAllBookings() {
+    return prisma.booking.findMany({
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        },
+        payment: true,
+        flightDetails: true,
+        hotelDetails: true,
+        trip: {
+          select: { title: true, destination: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 }
 
 export const bookingService = new BookingService();

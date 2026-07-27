@@ -22,8 +22,12 @@ export function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     registerMutation.mutate(formData, {
-      onSuccess: () => {
-        navigate('/dashboard');
+      onSuccess: (data: any) => {
+        if (data?.data?.user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     });
   };

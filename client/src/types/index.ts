@@ -88,13 +88,15 @@ export interface TripInput {
   destination: string;
   startDate: string;
   endDate: string;
-  travelers: number;
+  adults: number;
+  children: number;
   budget: number;
   currency: string;
   travelStyle: TravelStyle;
   transportPreference: TransportPreference;
   hotelCategory: HotelCategory;
   foodPreference: FoodPreference;
+  interests: string[];
 }
 
 export interface Trip {
@@ -105,13 +107,15 @@ export interface Trip {
   destination: string;
   startDate: string;
   endDate: string;
-  travelers: number;
+  adults: number;
+  children: number;
   budget: number;
   currency: string;
   travelStyle: TravelStyle;
   transportPreference: TransportPreference;
   hotelCategory: HotelCategory;
   foodPreference: FoodPreference;
+  interests: string[];
   status: TripStatus;
   coverImage?: string;
   days: TripDay[];

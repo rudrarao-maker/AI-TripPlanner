@@ -8,10 +8,12 @@ const api = axios.create({
   withCredentials: true,
 });
 
+import { useAuthStore } from '../store/authStore';
+
 // Add a request interceptor to attach JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = useAuthStore.getState().accessToken;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,19 +29,31 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    
+    // Do not intercept 401s for login or refresh endpoints
+    if (
+      error.response?.status === 401 && 
+      !originalRequest._retry && 
+      !originalRequest.url?.includes('/auth/login') &&
+      !originalRequest.url?.includes('/auth/refresh')
+    ) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
+        const refreshToken = useAuthStore.getState().refreshToken;
+        if (!refreshToken) throw new Error("No refresh token");
+        
         const res = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
         if (res.data.success) {
-          localStorage.setItem('accessToken', res.data.data.accessToken);
-          api.defaults.headers.common['Authorization'] = `Bearer ${res.data.data.accessToken}`;
+          useAuthStore.getState().setCredentials(
+            useAuthStore.getState().user as any, 
+            res.data.data.accessToken, 
+            res.data.data.refreshToken || refreshToken
+          );
+          originalRequest.headers['Authorization'] = `Bearer ${res.data.data.accessToken}`;
           return api(originalRequest);
         }
       } catch (err) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        useAuthStore.getState().logout();
         window.location.href = '/login';
       }
     }

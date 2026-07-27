@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar as CalendarIcon, Users, Wallet, Loader2, Sparkles, Navigation, Hotel, Map as MapLucide, Plane, Sun, Download, Mic, Backpack, Share2, BookmarkPlus, CalendarDays } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,6 +72,8 @@ export function TripPlannerPage() {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState<number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const generateTripMutation = useGenerateTrip();
   
@@ -91,12 +94,19 @@ export function TripPlannerPage() {
   const [formData, setFormData] = useState({
     destinations: [''],
     dates: '',
-    travelers: '2',
+    adults: 2,
+    children: 0,
     budget: '',
     style: '',
     transport: 'flight',
-    hotel: '4-star'
+    hotel: '4-star',
+    interests: [] as string[]
   });
+
+  const AVAILABLE_INTERESTS = [
+    'Nature', 'Food', 'Beaches', 'Shopping', 
+    'Historical', 'Wildlife', 'Nightlife', 'Photography', 'Adventure', 'Relaxation'
+  ];
 
   // Recommendation Hooks
   const destination = formData.destinations[0] || 'Bali';
@@ -111,34 +121,66 @@ export function TripPlannerPage() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     
-    const tripData = {
+    // Parse dates from form
+    const dateParts = formData.dates.split('to').map(s => s.trim());
+    const startDate = dateParts[0] ? new Date(dateParts[0]).toISOString() : new Date().toISOString();
+    const endDate = dateParts[1] ? new Date(dateParts[1]).toISOString() : new Date(new Date().setDate(new Date().getDate() + 7)).toISOString();
+    const baseBudget = parseInt(formData.budget) || 120000;
+
+    const baseTripData = {
       origin: "Mumbai",
       destination: formData.destinations[0] || "Bali",
-      startDate: new Date().toISOString(),
-      endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
-      travelers: formData.travelers,
-      budget: parseInt(formData.budget) || 120000,
+      startDate,
+      endDate,
+      travelers: formData.adults + formData.children,
       currency: "INR",
-      travelStyle: formData.style,
+      travelStyle: formData.style || "adventure",
       transportPreference: formData.transport,
       hotelCategory: formData.hotel,
-      foodPreference: "any"
+      foodPreference: "any",
+      interests: formData.interests
     };
 
-    generateTripMutation.mutate(tripData as any, {
-      onSuccess: (data) => {
-        setItinerary(data);
-        setIsGenerating(false);
-        setStep(4);
-      },
-      onError: () => {
-        setIsGenerating(false);
-      }
-    });
+    // Generate 3 plan tiers: Budget, Standard, Premium
+    const planTiers = [
+      { label: '💰 Budget', hotel: 'budget', budget: Math.round(baseBudget * 0.6), tag: 'Cheapest' },
+      { label: '⭐ Standard', hotel: formData.hotel || '4-star', budget: baseBudget, tag: 'Best Value' },
+      { label: '👑 Premium', hotel: 'luxury', budget: Math.round(baseBudget * 1.5), tag: 'Most Comfort' },
+    ];
+
+    try {
+      const results = await Promise.all(
+        planTiers.map(async (tier) => {
+          const tripData = {
+            ...baseTripData,
+            budget: tier.budget,
+            hotelCategory: tier.hotel,
+          };
+          const res = await api.post('/trips/generate', tripData);
+          return { ...res.data.data, _tier: tier };
+        })
+      );
+      setPlans(results);
+      setIsGenerating(false);
+      setStep(4);
+    } catch (err) {
+      console.error('Plan generation failed:', err);
+      toast.error('Failed to generate plans. Please try again.');
+      setIsGenerating(false);
+    }
   };
 
-  const updateForm = (field: string, value: string) => {
+  const updateForm = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleInterest = (interest: string) => {
+    setFormData(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest)
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }));
   };
 
   // Sync speech transcript to destination
@@ -165,7 +207,7 @@ export function TripPlannerPage() {
         destination: formData.destinations.join(' → ') || 'Trip',
         dates: formData.dates || '7 Days',
         budget: `₹${(parseInt(formData.budget) || 120000).toLocaleString()}`,
-        travelers: formData.travelers || '2',
+        travelers: `${formData.adults} Adults, ${formData.children} Children`,
         travelStyle: formData.style || 'Adventure',
         days: itinerary?.days || [],
       });
@@ -282,17 +324,33 @@ export function TripPlannerPage() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Travelers</label>
-                <div className="relative">
-                  <Users className="absolute left-4 top-3.5 text-muted-foreground h-5 w-5" />
-                  <Input 
-                    type="number"
-                    min="1"
-                    className="pl-12 py-6 text-lg rounded-xl glass border-primary/20"
-                    value={formData.travelers}
-                    onChange={(e) => updateForm('travelers', e.target.value)}
-                  />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                    <span>Adults (12+ yrs)</span>
+                    <span className="text-xl font-bold">{formData.adults}</span>
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => updateForm('adults', Math.max(1, formData.adults - 1))}>-</Button>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${(formData.adults / 10) * 100}%` }} />
+                    </div>
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => updateForm('adults', Math.min(10, formData.adults + 1))}>+</Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-4">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                    <span>Children (0-11 yrs)</span>
+                    <span className="text-xl font-bold">{formData.children}</span>
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => updateForm('children', Math.max(0, formData.children - 1))}>-</Button>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${(formData.children / 10) * 100}%` }} />
+                    </div>
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => updateForm('children', Math.min(10, formData.children + 1))}>+</Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -361,6 +419,25 @@ export function TripPlannerPage() {
                   </div>
                 ))}
               </div>
+
+              <div className="space-y-4 pt-6 border-t border-border/50">
+                <h3 className="text-lg font-medium text-center text-muted-foreground">What are your interests?</h3>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {AVAILABLE_INTERESTS.map(interest => (
+                    <button
+                      key={interest}
+                      onClick={() => toggleInterest(interest)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        formData.interests.includes(interest) 
+                          ? 'bg-primary text-primary-foreground shadow-md' 
+                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                      }`}
+                    >
+                      {interest}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         );
@@ -386,7 +463,100 @@ export function TripPlannerPage() {
     );
   }
 
-  if (itinerary) {
+  // Derive itinerary from selected plan
+  const selectedPlan = selectedPlanIndex !== null ? plans[selectedPlanIndex] : null;
+  const activeItinerary = selectedPlan || itinerary;
+
+  if (plans.length > 0 && selectedPlanIndex === null) {
+    // ======= PLAN COMPARISON VIEW =======
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted pt-28 pb-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-4">
+              <Sparkles className="h-3 w-3" /> AI Generated Plans
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-3">
+              Choose Your Plan for {formData.destinations[0] || 'Your Trip'}
+            </h1>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              We crafted 3 unique itineraries tailored to your preferences. Compare prices, stays, and activities below.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan, idx) => {
+              const tier = plan._tier;
+              const totalHotelCost = plan.days?.reduce((sum: number, d: any) => {
+                const hotel = typeof d.hotel === 'string' ? JSON.parse(d.hotel) : d.hotel;
+                return sum + (hotel?.pricePerNight || 0);
+              }, 0) || 0;
+              const totalActivityCost = plan.days?.reduce((sum: number, d: any) => {
+                const m = typeof d.morning === 'string' ? JSON.parse(d.morning) : d.morning;
+                const a = typeof d.afternoon === 'string' ? JSON.parse(d.afternoon) : d.afternoon;
+                const e = typeof d.evening === 'string' ? JSON.parse(d.evening) : d.evening;
+                return sum + (m?.cost || 0) + (a?.cost || 0) + (e?.cost || 0);
+              }, 0) || 0;
+              const isRecommended = idx === 1;
+              const hotelName = plan.days?.[0] ? (typeof plan.days[0].hotel === 'string' ? JSON.parse(plan.days[0].hotel)?.name : plan.days[0].hotel?.name) : 'Hotel';
+              
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.15 }}
+                >
+                  <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${
+                    isRecommended ? 'border-primary shadow-xl shadow-primary/10 ring-2 ring-primary/20' : 'border-border/50 hover:border-primary/50'
+                  }`} onClick={() => { setSelectedPlanIndex(idx); setItinerary(plan); }}>
+                    {isRecommended && (
+                      <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-center text-xs font-bold py-1.5 uppercase tracking-wider">
+                        ⭐ Recommended
+                      </div>
+                    )}
+                    <CardContent className={`p-6 space-y-5 ${isRecommended ? 'pt-10' : ''}`}>
+                      <div className="text-center">
+                        <span className="text-4xl">{tier.label.split(' ')[0]}</span>
+                        <h3 className="text-xl font-bold mt-2">{tier.label.split(' ').slice(1).join(' ')}</h3>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full mt-2 inline-block ${
+                          idx === 0 ? 'bg-green-500/10 text-green-600' : idx === 1 ? 'bg-blue-500/10 text-blue-600' : 'bg-purple-500/10 text-purple-600'
+                        }`}>{tier.tag}</span>
+                      </div>
+
+                      <div className="text-center border-t border-b border-border/50 py-4">
+                        <p className="text-3xl font-extrabold">₹{tier.budget.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total Budget</p>
+                      </div>
+
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between"><span className="text-muted-foreground">🏨 Stay</span><span className="font-medium">{hotelName}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">🛏️ Hotel Cost</span><span className="font-medium">₹{totalHotelCost.toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">🎯 Activities</span><span className="font-medium">₹{totalActivityCost.toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">📅 Days</span><span className="font-medium">{plan.days?.length || 0}</span></div>
+                      </div>
+
+                      <Button variant={isRecommended ? 'gradient' : 'outline'} className="w-full gap-2 group-hover:shadow-lg transition-shadow">
+                        View Full Itinerary <Navigation className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 text-center">
+            <Button variant="ghost" onClick={() => { setPlans([]); setStep(3); }} className="text-muted-foreground">
+              ← Back to form
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeItinerary) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <div className="relative h-[40vh] min-h-[300px] w-full flex items-center justify-center overflow-hidden">
@@ -398,16 +568,21 @@ export function TripPlannerPage() {
           />
           <div className="relative z-20 text-center text-white px-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-widest mb-4">
-              <Sparkles className="h-3 w-3" /> AI Generated Itinerary
+              <Sparkles className="h-3 w-3" /> {activeItinerary._tier?.label || 'AI Generated'} Plan
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-xl">
-              {formData.destinations.join(' • ') || itinerary.destination}
+              {formData.destinations.join(' • ') || activeItinerary.destination}
             </h1>
             <div className="flex items-center justify-center gap-6 text-sm md:text-base font-medium drop-shadow-md">
-              <span className="flex items-center gap-1.5"><CalendarIcon className="h-4 w-4" /> {formData.dates || itinerary.duration}</span>
-              <span className="flex items-center gap-1.5"><Wallet className="h-4 w-4" /> ₹{(parseInt(formData.budget) || 120000).toLocaleString()}</span>
-              <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {formData.travelers} travelers</span>
+              <span className="flex items-center gap-1.5"><CalendarIcon className="h-4 w-4" /> {formData.dates || activeItinerary.duration}</span>
+              <span className="flex items-center gap-1.5"><Wallet className="h-4 w-4" /> ₹{(activeItinerary._tier?.budget || parseInt(formData.budget) || 120000).toLocaleString()}</span>
+              <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {formData.adults + formData.children} travelers</span>
             </div>
+            {plans.length > 0 && (
+              <Button variant="outline" size="sm" className="mt-4 bg-white/10 border-white/30 text-white hover:bg-white/20" onClick={() => setSelectedPlanIndex(null)}>
+                ← Compare All Plans
+              </Button>
+            )}
           </div>
         </div>
 
@@ -467,7 +642,7 @@ export function TripPlannerPage() {
                   )}
                   <DraggableItinerary
                     onHoverItem={setActiveItemHover}
-                    itineraryDays={itinerary?.days}
+                    itineraryDays={activeItinerary?.days}
                     emitSocket={emit}
                     subscribeSocket={subscribe}
                     socketId={socketId}
@@ -616,7 +791,7 @@ export function TripPlannerPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {recTab === 'transport' && transportOptions.map((transport: any) => (
                       <TransportCard key={transport.id} transport={transport} />
                     ))}
@@ -643,9 +818,9 @@ export function TripPlannerPage() {
           onClose={() => setIsChatOpen(false)}
           tripContext={{
             destination: formData.destinations[0],
-            budget: parseInt(formData.budget) || 120000,
+            budget: activeItinerary?._tier?.budget || parseInt(formData.budget) || 120000,
             currency: 'INR',
-            days: itinerary?.days,
+            days: activeItinerary?.days,
             travelStyle: formData.style,
             transportPreference: formData.transport,
             hotelCategory: formData.hotel,

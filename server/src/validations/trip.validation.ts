@@ -9,10 +9,11 @@ export const createTripSchema = z.object({
     travelers: z.number().min(1).default(1),
     budget: z.number().min(1, 'Budget must be greater than 0'),
     currency: z.string().default('INR'),
-    travelStyle: z.string(),
-    transportPreference: z.string(),
-    hotelCategory: z.string(),
-    foodPreference: z.string(),
+    travelStyle: z.string().default('adventure'),
+    transportPreference: z.string().default('flight'),
+    hotelCategory: z.string().default('4-star'),
+    foodPreference: z.string().default('any'),
+    interests: z.array(z.string()).optional(),
   }),
 });
 

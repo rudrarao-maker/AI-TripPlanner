@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import type { LoginCredentials, RegisterData } from '../types';
-import { useUserStore } from '../store/userStore';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export const useLogin = () => {
-  const setUser = useUserStore((state) => state.setUser);
+  const setCredentials = useAuthStore((state) => state.setCredentials);
   
   return useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
@@ -13,9 +13,7 @@ export const useLogin = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      localStorage.setItem('accessToken', data.data.accessToken);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
-      setUser(data.data.user);
+      setCredentials(data.data.user, data.data.accessToken, data.data.refreshToken);
       toast.success('Logged in successfully!');
     },
     onError: (error: any) => {
@@ -25,7 +23,7 @@ export const useLogin = () => {
 };
 
 export const useRegister = () => {
-  const setUser = useUserStore((state) => state.setUser);
+  const setCredentials = useAuthStore((state) => state.setCredentials);
 
   return useMutation({
     mutationFn: async (data: RegisterData) => {
@@ -33,9 +31,7 @@ export const useRegister = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      localStorage.setItem('accessToken', data.data.accessToken);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
-      setUser(data.data.user);
+      setCredentials(data.data.user, data.data.accessToken, data.data.refreshToken);
       toast.success('Registration successful!');
     },
     onError: (error: any) => {

@@ -8,10 +8,10 @@ export function Footer() {
   return (
     <footer className="bg-card border-t border-border mt-auto">
       <div className="container mx-auto px-4 md:px-6 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           
           {/* Brand Info */}
-          <div className="space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             <Logo />
             <p className="text-sm text-muted-foreground leading-relaxed">
               Your intelligent travel companion. We use AI to craft the perfect itineraries, find the best hotels, and optimize your travel budget.
@@ -32,27 +32,28 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Explore */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Quick Links</h4>
+            <h4 className="font-semibold text-foreground">Explore</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/" className="hover:text-primary transition-colors">Home</Link></li>
-              <li><Link to="/explore" className="hover:text-primary transition-colors">Explore Destinations</Link></li>
+              <li><Link to="/destinations" className="hover:text-primary transition-colors">Destinations</Link></li>
+              <li><Link to="/hotels" className="hover:text-primary transition-colors">Hotels</Link></li>
+              <li><Link to="/restaurants" className="hover:text-primary transition-colors">Restaurants</Link></li>
+              <li><Link to="/things-to-do" className="hover:text-primary transition-colors">Things To Do</Link></li>
+              <li><Link to="/travel-guides" className="hover:text-primary transition-colors">Travel Guides</Link></li>
               <li><Link to="/plan" className="hover:text-primary transition-colors">AI Trip Planner</Link></li>
-              <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link to="/blog" className="hover:text-primary transition-colors">Travel Blog</Link></li>
             </ul>
           </div>
 
-          {/* Top Destinations */}
+          {/* Company */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Top Destinations</h4>
+            <h4 className="font-semibold text-foreground">Company</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/explore/goa" className="hover:text-primary transition-colors">Goa, India</Link></li>
-              <li><Link to="/explore/bali" className="hover:text-primary transition-colors">Bali, Indonesia</Link></li>
-              <li><Link to="/explore/paris" className="hover:text-primary transition-colors">Paris, France</Link></li>
-              <li><Link to="/explore/tokyo" className="hover:text-primary transition-colors">Tokyo, Japan</Link></li>
-              <li><Link to="/explore/dubai" className="hover:text-primary transition-colors">Dubai, UAE</Link></li>
+              <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link to="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
+              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
 

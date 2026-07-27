@@ -34,6 +34,10 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       return next(new AppError('The user belonging to this token does no longer exist.', 401));
     }
 
+    if (currentUser.status === 'restricted') {
+      return next(new AppError('Your account has been restricted. Please contact support.', 403));
+    }
+
     req.user = currentUser;
     next();
   } catch (error) {

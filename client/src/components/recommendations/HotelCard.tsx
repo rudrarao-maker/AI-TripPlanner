@@ -20,10 +20,18 @@ export function HotelCard({ hotel }: HotelCardProps) {
     <Card className="glass-card overflow-hidden group border-border/50 h-full flex flex-col">
       <div className="relative h-48 overflow-hidden">
         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10" />
-        {/* Traveler's Choice Badge */}
-        <div className="absolute top-3 left-3 z-20 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 shadow-sm">
-          <Award className="h-3 w-3" /> Traveler's Choice
-        </div>
+        {/* Provider Badge */}
+        {(hotel as any).provider && (
+          <div className="absolute top-3 left-3 z-20 bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded shadow-sm shadow-black/20">
+            Book via {(hotel as any).provider}
+          </div>
+        )}
+        {/* Traveler's Choice Badge (moved below if provider exists) */}
+        {!(hotel as any).provider && (
+          <div className="absolute top-3 left-3 z-20 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 shadow-sm">
+            <Award className="h-3 w-3" /> Traveler's Choice
+          </div>
+        )}
         <div className="absolute top-3 right-3 z-20 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1">
           <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
           {hotel.rating}
@@ -71,9 +79,9 @@ export function HotelCard({ hotel }: HotelCardProps) {
             <p className="text-xs text-muted-foreground mb-0.5">Price per night</p>
             <p className="font-bold text-lg text-foreground">{formatCurrency(hotel.pricePerNight)}</p>
           </div>
-          {hotel.bookingUrl ? (
-            <Button variant="gradient" size="sm" onClick={() => window.open(hotel.bookingUrl, '_blank')}>
-              Book on {hotel.description || 'Provider'}
+          {(hotel as any).bookingUrl || (hotel as any).provider ? (
+            <Button variant="gradient" size="sm" onClick={() => (hotel as any).bookingUrl ? window.open((hotel as any).bookingUrl, '_blank') : setShowModal(true)}>
+              Book on {(hotel as any).provider || hotel.description || 'Provider'}
             </Button>
           ) : (
             <Button variant="gradient" size="sm" onClick={() => setShowModal(true)}>Book Now</Button>

@@ -28,34 +28,71 @@ export interface HotelProvider {
 
 export class MockHotelProvider implements HotelProvider {
   async searchHotels(params: HotelSearchParams): Promise<HotelSearchResult[]> {
-    console.log(`[MockHotel] Searching for hotels in ${params.destination}`);
+    console.log(`[MockHotel] Searching for 200+ hotels in ${params.destination}`);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    return [
-      {
-        id: 'h1',
-        name: `Grand Palace ${params.destination}`,
-        provider: 'MockHotels.com',
-        rating: 4.8,
-        price: 15000,
-        currency: 'INR',
-        imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        amenities: ['Pool', 'Spa', 'Free WiFi', 'Breakfast'],
-        bookingUrl: `https://mockbooking.com/hotel/grand-palace`
-      },
-      {
-        id: 'h2',
-        name: `${params.destination} Sea View Resort`,
-        provider: 'MockExpedia',
-        rating: 4.5,
-        price: 12000,
-        currency: 'INR',
-        imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        amenities: ['Beachfront', 'Bar', 'Gym'],
-        bookingUrl: `https://mockbooking.com/hotel/sea-view`
-      }
+    const providers = ['Agoda', 'MakeMyTrip', 'Booking.com', 'Airbnb', 'Expedia', 'Hotels.com', 'Trip.com'];
+    const prefixes = ['Grand', 'Royal', 'Sunset', 'Oasis', 'Crystal', 'Golden', 'Emerald', 'Sapphire', 'Pearl', 'Coral', 'Azure', 'Paradise', 'Majestic', 'Imperial', 'Regal', 'Boutique'];
+    const suffixes = ['Resort & Spa', 'Palace', 'Inn', 'Suites', 'Hotel', 'Lodge', 'Retreat', 'Hideaway', 'Villas', 'Residences', 'Gardens', 'Plaza', 'Towers'];
+    const propertyTypes = ['Resort', 'Hotel', 'Homestay', 'Hostel', 'Villa', 'Apartment'];
+    
+    const possibleAmenities = ['Pool', 'Spa', 'Free WiFi', 'Breakfast', 'Gym', 'Beachfront', 'Bar', 'Restaurant', 'Room Service', 'Airport Shuttle', 'Parking', 'Pet Friendly', 'AC'];
+    const images = [
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1455587734955-081b22074882?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1496417263034-38ec4f0b665a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     ];
+
+    const results: HotelSearchResult[] = [];
+    const count = 200 + Math.floor(Math.random() * 50); // 200 to 250 hotels
+
+    for (let i = 0; i < count; i++) {
+      const provider = providers[Math.floor(Math.random() * providers.length)];
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+      const propertyType = propertyTypes[Math.floor(Math.random() * propertyTypes.length)];
+      
+      let name = '';
+      if (Math.random() > 0.5) {
+        name = `${prefix} ${params.destination || 'City'} ${suffix}`;
+      } else {
+        name = `${params.destination || 'City'} ${prefix} ${propertyType}`;
+      }
+
+      const rating = 3.0 + Math.random() * 2.0; // 3.0 to 5.0
+      
+      // Price logic based on rating and random factor
+      let basePrice = 2000 + Math.floor(Math.random() * 5000);
+      if (rating > 4.5) basePrice += 10000 + Math.floor(Math.random() * 20000);
+      else if (rating > 4.0) basePrice += 5000 + Math.floor(Math.random() * 10000);
+      
+      const price = basePrice;
+      const imageUrl = images[Math.floor(Math.random() * images.length)];
+
+      // Random amenities (3 to 6)
+      const shuffledAmenities = [...possibleAmenities].sort(() => 0.5 - Math.random());
+      const amenities = shuffledAmenities.slice(0, 3 + Math.floor(Math.random() * 4));
+
+      results.push({
+        id: `h${i+1}-${Date.now()}`,
+        name,
+        provider,
+        rating: Number(rating.toFixed(1)),
+        price,
+        currency: 'INR',
+        imageUrl,
+        amenities,
+        bookingUrl: `https://mockbooking.com/hotel/${i+1}`
+      });
+    }
+
+    // Sort by rating descending
+    return results.sort((a, b) => b.rating - a.rating);
   }
 }
 

@@ -41,6 +41,7 @@ export class MockFlightProvider implements FlightProvider {
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const airlines = ['AirAsia', 'IndiGo', 'Air India', 'Vistara', 'Emirates', 'Qatar Airways'];
+    const aggregators = ['MakeMyTrip', 'Cleartrip', 'Skyscanner', 'Yatra', 'Goibibo'];
     const mockFlights: FlightOffer[] = [];
     const count = Math.floor(Math.random() * 5) + 3; // 3 to 7 flights
 
@@ -59,12 +60,14 @@ export class MockFlightProvider implements FlightProvider {
       flightArrDate.setHours(depHour + durationHours, depMinute + durationMinutes);
 
       const price = Math.floor(Math.random() * 30000) + 5000;
+      const airline = airlines[Math.floor(Math.random() * airlines.length)];
+      const aggregator = aggregators[Math.floor(Math.random() * aggregators.length)];
 
       mockFlights.push({
         id: uuidv4(),
-        provider: 'mock',
-        airline: airlines[Math.floor(Math.random() * airlines.length)],
-        flightNumber: `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}-${Math.floor(Math.random() * 9000) + 1000}`,
+        provider: aggregator,
+        airline: airline,
+        flightNumber: `${airline.substring(0,2).toUpperCase()}-${Math.floor(Math.random() * 9000) + 1000}`,
         origin: query.origin,
         destination: query.destination,
         departureTime: flightDepDate.toISOString(),

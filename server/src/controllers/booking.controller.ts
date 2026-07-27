@@ -5,11 +5,18 @@ import { bookingService } from '../services/booking.service';
 export const getBookings = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
+    const tripId = req.params.tripId;
     if (!userId) {
       return sendError(res, 401, 'Unauthorized');
     }
 
-    const bookings = await bookingService.getUserBookings(userId);
+    let bookings;
+    if (tripId) {
+      bookings = await bookingService.getTripBookings(tripId, userId);
+    } else {
+      bookings = await bookingService.getUserBookings(userId);
+    }
+    
     sendSuccess(res, 200, bookings);
   } catch (error) {
     console.error('Failed to get bookings:', error);
@@ -37,4 +44,12 @@ export const createBooking = async (req: Request, res: Response) => {
   }
 };
 
-
+export const getAllBookings = async (req: Request, res: Response) => {
+  try {
+    const bookings = await bookingService.getAllBookings();
+    sendSuccess(res, 200, bookings);
+  } catch (error) {
+    console.error('Failed to get all bookings:', error);
+    sendError(res, 500, 'Failed to fetch all bookings');
+  }
+};

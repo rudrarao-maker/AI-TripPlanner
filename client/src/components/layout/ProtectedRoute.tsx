@@ -1,12 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useUserStore } from '@/store/userStore';
+import { useAuthStore } from '@/store/authStore';
 
 interface ProtectedRouteProps {
   adminOnly?: boolean;
 }
 
 export function ProtectedRoute({ adminOnly = false }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useUserStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

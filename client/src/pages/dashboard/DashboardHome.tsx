@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useUserStore } from '@/store/userStore';
-import { Map, MapPin, Calendar, Clock, CreditCard, ChevronRight, Plus, Receipt, Ticket, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { Map, MapPin, Calendar, Clock, CreditCard, ChevronRight, Plus, Receipt, Ticket, Loader2, Shield, LogOut } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useGetTrips } from '@/hooks/useTrips';
+import { MonthlySpendingChart } from '@/components/dashboard/MonthlySpendingChart';
+import { TrendingDestinations } from '@/components/dashboard/TrendingDestinations';
 
 export function DashboardHome() {
-  const { user } = useUserStore();
+  const { user, logout } = useAuthStore();
   const { data: trips, isLoading } = useGetTrips();
   
   // Greeting based on time
@@ -116,6 +118,12 @@ export function DashboardHome() {
                 </Button>
               </Card>
             )}
+            
+            {/* Added Monthly Spending Chart */}
+            <MonthlySpendingChart />
+
+            {/* Added Trending Destinations */}
+            <TrendingDestinations />
           </div>
         </div>
 
@@ -126,18 +134,28 @@ export function DashboardHome() {
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
+            <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2" asChild>
                 <Link to="/expenses">
                   <Receipt className="h-5 w-5 text-primary" />
-                  <span>Add Expense</span>
+                  <span>Expenses</span>
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2" asChild>
-                <Link to="/dashboard/bookings">
+                <Link to="/bookings">
                   <Ticket className="h-5 w-5 text-accent" />
                   <span>Bookings</span>
                 </Link>
+              </Button>
+              <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 lg:col-span-1 col-span-2" asChild>
+                <Link to="/security">
+                  <Shield className="h-5 w-5 text-green-500" />
+                  <span>Security</span>
+                </Link>
+              </Button>
+              <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 lg:col-span-3 col-span-2 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
+                <LogOut className="h-5 w-5" />
+                <span>Logout</span>
               </Button>
             </CardContent>
           </Card>

@@ -9,8 +9,12 @@ router.use(protect);
 router.get('/profile', userController.getProfile);
 router.put('/profile', userController.updateProfile);
 
-// Admin only route
-router.get('/', restrictTo('admin'), userController.getAllUsers);
+// Admin only routes
+router.use('/', restrictTo('admin'));
+router.get('/', userController.getAllUsers);
+router.post('/', userController.createUser);
+router.put('/:id', userController.updateUser);
+router.delete('/:id', userController.deleteUser);
 
 export default router;
 
