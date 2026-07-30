@@ -1,16 +1,15 @@
 import axios from 'axios';
+import { useAuthStore } from '../store/authStore';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : 'http://localhost:5000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
 
-import { useAuthStore } from '../store/authStore';
-
-// Add a request interceptor to attach JWT token
+// Add a request interceptor to attach local JWT token
 api.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken;
@@ -24,38 +23,13 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling 401s (Token expiration)
+// Response interceptor for handling 401s
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    
-    // Do not intercept 401s for login or refresh endpoints
-    if (
-      error.response?.status === 401 && 
-      !originalRequest._retry && 
-      !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/refresh')
-    ) {
-      originalRequest._retry = true;
-      try {
-        const refreshToken = useAuthStore.getState().refreshToken;
-        if (!refreshToken) throw new Error("No refresh token");
-        
-        const res = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
-        if (res.data.success) {
-          useAuthStore.getState().setCredentials(
-            useAuthStore.getState().user as any, 
-            res.data.data.accessToken, 
-            res.data.data.refreshToken || refreshToken
-          );
-          originalRequest.headers['Authorization'] = `Bearer ${res.data.data.accessToken}`;
-          return api(originalRequest);
-        }
-      } catch (err) {
-        useAuthStore.getState().logout();
-        window.location.href = '/login';
-      }
+    if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
+      console.warn("API request failed with 401 Unauthorized. Logged out.");
     }
     return Promise.reject(error);
   }

@@ -12,6 +12,7 @@
     "prisma:push": "prisma db push"
   },
   "dependencies": {
+    "@clerk/express": "^2.1.48",
     "@google/genai": "^2.12.0",
     "@prisma/client": "^6.4.1",
     "axios": "^1.18.1",

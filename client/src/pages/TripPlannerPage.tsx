@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { MapPin, Calendar as CalendarIcon, Users, Wallet, Loader2, Sparkles, Navigation, Hotel, Map as MapLucide, Plane, Sun, Download, Mic, Backpack, Share2, BookmarkPlus, CalendarDays } from 'lucide-react';
+import { MapPin, Calendar as CalendarIcon, Users, Wallet, Loader2, Sparkles, Navigation, Hotel, Map as MapLucide, Plane, Sun, Download, Mic, Backpack, Share2, BookmarkPlus, CalendarDays, Receipt } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { TravelTools } from '@/components/itinerary/TravelTools';
 import { AIChatSidebar } from '@/components/itinerary/AIChatSidebar';
 import { WeatherWidget } from '@/components/weather/WeatherWidget';
 import { NearbyPlaces } from '@/components/map/NearbyPlaces';
+import { ExpenseTracker } from '@/components/itinerary/ExpenseTracker';
 import { ItinerarySkeleton } from '@/components/ui/Skeletons';
 import { Bot } from 'lucide-react';
 import { TRAVEL_STYLES } from '@/lib/constants';
@@ -88,7 +89,7 @@ export function TripPlannerPage() {
   const [activeItemHover, setActiveItemHover] = useState<string>('');
   
   // Google Travel style tab state
-  const [activeTab, setActiveTab] = useState<'itinerary' | 'logistics' | 'packing'>('itinerary');
+  const [activeTab, setActiveTab] = useState<'itinerary' | 'logistics' | 'packing' | 'expenses'>('itinerary');
   const [recTab, setRecTab] = useState<'hotels' | 'restaurants' | 'attractions' | 'transport'>('hotels');
 
   // Speech Recognition hook
@@ -651,6 +652,12 @@ export function TripPlannerPage() {
                   >
                     <Backpack className="h-4 w-4" /> Packing
                   </button>
+                  <button 
+                    onClick={() => setActiveTab('expenses')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-1 ${activeTab === 'expenses' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                  >
+                    <Receipt className="h-4 w-4" /> Expenses
+                  </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={handleCalendarSync} className="hidden lg:flex border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400">
@@ -671,13 +678,25 @@ export function TripPlannerPage() {
               {activeTab === 'itinerary' && (
                 <div className="space-y-6">
                   {collaborators.length > 0 && (
-                    <div className="flex -space-x-2 mb-2">
-                      {collaborators.map((c, i) => (
-                        <div key={c} className="h-8 w-8 rounded-full border-2 border-background bg-primary/20 flex items-center justify-center text-xs font-bold z-10" title={`User ${c}`}>
-                          U{i+1}
+                    <div className="flex -space-x-2 mb-2 items-center">
+                      {collaborators.map((c) => (
+                        <div 
+                          key={c.socketId} 
+                          className="h-8 w-8 rounded-full border-2 border-background flex items-center justify-center text-xs font-bold z-10 text-white overflow-hidden drop-shadow-sm" 
+                          title={`${c.name}`}
+                          style={{ backgroundColor: c.color }}
+                        >
+                          {c.avatar ? (
+                            <img src={c.avatar} alt={c.name} className="h-full w-full object-cover" />
+                          ) : (
+                            c.name.charAt(0).toUpperCase()
+                          )}
                         </div>
                       ))}
-                      <span className="ml-4 text-xs text-muted-foreground flex items-center">{collaborators.length} viewing</span>
+                      <span className="ml-4 text-xs font-medium bg-muted px-2 py-1 rounded-full text-muted-foreground flex items-center">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
+                        {collaborators.length} viewing live
+                      </span>
                     </div>
                   )}
                   <DraggableItinerary
@@ -686,7 +705,20 @@ export function TripPlannerPage() {
                     emitSocket={emit}
                     subscribeSocket={subscribe}
                     socketId={socketId}
+                    tripId={itinerary?.id}
                   />
+                </div>
+              )}
+
+              {activeTab === 'expenses' && (
+                <div className="space-y-6">
+                  {itinerary?.id ? (
+                    <ExpenseTracker tripId={itinerary.id} collaborators={collaborators} />
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
+                      Save this trip first to track shared expenses.
+                    </div>
+                  )}
                 </div>
               )}
               

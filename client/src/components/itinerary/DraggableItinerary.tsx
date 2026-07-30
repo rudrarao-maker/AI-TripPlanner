@@ -23,6 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GripVertical, Plus, Trash2, Clock, MapPin, IndianRupee, ChevronDown, ChevronRight, Edit3, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LiveCursors } from './LiveCursors';
+import { useRef } from 'react';
 
 interface Activity {
   id: string;
@@ -416,7 +418,7 @@ export function DraggableItinerary({ onHoverItem, itineraryDays, emitSocket, sub
   }, [itineraryDays]);
 
   const [days, setDays] = useState<DayData[]>(buildDays);
-  const [cursors, setCursors] = useState<Record<string, { x: number, y: number, color: string }>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (itineraryDays) setDays(buildDays());
@@ -427,20 +429,9 @@ export function DraggableItinerary({ onHoverItem, itineraryDays, emitSocket, sub
       const unsubSync = subscribeSocket('itinerary_sync', (updatedDays) => {
         setDays(updatedDays);
       });
-      const unsubCursor = subscribeSocket('cursor_update', (data) => {
-        if (data.socketId !== socketId) {
-          setCursors(prev => ({ ...prev, [data.socketId]: { x: data.x, y: data.y, color: data.color } }));
-        }
-      });
-      return () => { unsubSync(); unsubCursor(); };
+      return () => { unsubSync(); };
     }
-  }, [subscribeSocket, socketId]);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (emitSocket) {
-      emitSocket('cursor_move', { x: e.clientX, y: e.clientY, color: '#8B5CF6' });
-    }
-  };
+  }, [subscribeSocket]);
 
   const handleReorder = useCallback((dayId: string, oldIndex: number, newIndex: number) => {
     setDays(prev => {
@@ -498,7 +489,8 @@ export function DraggableItinerary({ onHoverItem, itineraryDays, emitSocket, sub
   }, [emitSocket]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative" ref={containerRef}>
+      {tripId && <LiveCursors tripId={tripId} containerRef={containerRef} />}
       {days.map(day => (
         <DayCard
           key={day.id}

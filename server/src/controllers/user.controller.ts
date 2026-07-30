@@ -99,7 +99,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { role, status, name } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id } });
@@ -140,7 +140,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {

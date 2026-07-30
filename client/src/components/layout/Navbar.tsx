@@ -1,19 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User as UserIcon, ChevronDown, Heart, Map, Receipt, BookOpen, LogOut, Shield, Settings } from 'lucide-react';
+import { Menu, X, User as UserIcon, ChevronDown, Heart, Map, Receipt, BookOpen, LogOut, Shield, Settings, LayoutDashboard } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { Button } from '../ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { NAV_LINKS, USER_NAV_LINKS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const location = useLocation();
   const { isAuthenticated, user, logout } = useAuthStore();
+  const location = useLocation();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,92 +80,70 @@ export function Navbar() {
           
           {isAuthenticated ? (
             <div className="relative" ref={userMenuRef}>
-              <button
+              <button 
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-full transition-all duration-200",
-                  "hover:bg-muted/60 border border-transparent",
-                  isUserMenuOpen && "bg-muted/60 border-border/50"
-                )}
+                className="flex items-center gap-2 hover:bg-muted/50 p-1.5 rounded-full transition-colors"
               >
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background shadow-sm flex items-center justify-center">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background shadow-sm flex items-center justify-center">
                   {user?.avatar ? (
                     <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
                   ) : (
-                    <UserIcon className="h-4 w-4 text-white" />
+                    <UserIcon className="h-5 w-5 text-white" />
                   )}
                 </div>
-                <span className="text-sm font-semibold hidden xl:inline-block max-w-[100px] truncate">{user?.name?.split(' ')[0]}</span>
-                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isUserMenuOpen && "rotate-180")} />
               </button>
 
-              {/* User Dropdown */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-card/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-border/60 overflow-hidden animate-slide-down z-50">
-                  {/* User Info */}
-                  <div className="p-4 border-b border-border/50 bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background shadow-md flex items-center justify-center">
-                        {user?.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <UserIcon className="h-6 w-6 text-white" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate">{user?.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                      </div>
+              <AnimatePresence>
+                {isUserMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 top-full mt-2 w-64 bg-background/95 backdrop-blur-xl border shadow-2xl rounded-2xl overflow-hidden py-2 z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
+                      <p className="font-semibold text-sm truncate">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
-                  </div>
-
-                  {/* Navigation Items */}
-                  <div className="p-2">
-                    <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted/60 transition-colors">
-                      <Map className="h-4 w-4 text-primary" />
-                      <span>My Trips</span>
-                    </Link>
-                    <Link to="/wishlist" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted/60 transition-colors">
-                      <Heart className="h-4 w-4 text-rose-500" />
-                      <span>Wishlist</span>
-                    </Link>
-                    <Link to="/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted/60 transition-colors">
-                      <Receipt className="h-4 w-4 text-amber-500" />
-                      <span>Expenses</span>
-                    </Link>
-                    <Link to="/journal" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted/60 transition-colors">
-                      <BookOpen className="h-4 w-4 text-emerald-500" />
-                      <span>Travel Journal</span>
-                    </Link>
-                    <Link to="/bookings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted/60 transition-colors">
-                      <Settings className="h-4 w-4 text-muted-foreground" />
-                      <span>Bookings</span>
-                    </Link>
-                    <Link to="/security" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-muted/60 transition-colors">
-                      <Shield className="h-4 w-4 text-green-500" />
-                      <span>Security</span>
-                    </Link>
-                  </div>
-
-                  {/* Logout */}
-                  <div className="p-2 pt-0 border-t border-border/50 mt-1">
-                    <button
-                      onClick={logout}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-destructive/10 text-destructive transition-colors w-full"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+                    <div className="p-2 flex flex-col gap-1">
+                      <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                        <LayoutDashboard className="h-4 w-4" /> Dashboard
+                      </Link>
+                      <Link to="/my-trips" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                        <Map className="h-4 w-4" /> My Trips
+                      </Link>
+                      <Link to="/wishlist" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                        <Heart className="h-4 w-4" /> Wishlist
+                      </Link>
+                      <Link to="/expenses" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                        <Receipt className="h-4 w-4" /> Expenses
+                      </Link>
+                      <Link to="/admin" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors">
+                        <Shield className="h-4 w-4" /> Admin Panel
+                      </Link>
+                    </div>
+                    <div className="p-2 border-t border-border/50 mt-1">
+                      <button 
+                        onClick={() => {
+                          logout();
+                          setIsUserMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-3 px-3 py-2 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" /> Logout
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" className="rounded-full" asChild>
+              <Button variant="ghost" className="rounded-full px-5" asChild>
                 <Link to="/login">Log in</Link>
               </Button>
-              <Button variant="gradient" className="rounded-full shadow-lg shadow-primary/20" asChild>
+              <Button variant="gradient" className="rounded-full shadow-lg px-5" asChild>
                 <Link to="/register">Sign up</Link>
               </Button>
             </div>
@@ -204,44 +183,53 @@ export function Navbar() {
             
             <hr className="my-3 border-border/50" />
             
-            {isAuthenticated ? (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-3 py-3 px-4 mb-2">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background flex items-center justify-center">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <UserIcon className="h-5 w-5 text-white" />
-                    )}
+            <div className="flex flex-col gap-1 py-4 border-t mt-2">
+              {isAuthenticated ? (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-3 py-3 px-4 mb-2">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background flex items-center justify-center">
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <UserIcon className="h-5 w-5 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-sm">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  </div>
+                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</div>
+                  <Link to="/dashboard" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
+                    <LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard
+                  </Link>
+                  <Link to="/my-trips" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
+                    <Map className="h-4 w-4 text-primary" /> My Trips
+                  </Link>
+                  <Link to="/wishlist" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
+                    <Heart className="h-4 w-4 text-rose-500" /> Wishlist
+                  </Link>
+                  <Link to="/expenses" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
+                    <Receipt className="h-4 w-4 text-amber-500" /> Expenses
+                  </Link>
+                  <Link to="/admin" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
+                    <Shield className="h-4 w-4 text-primary" /> Admin Panel
+                  </Link>
+                  <Button variant="destructive" className="w-full justify-start mt-2 rounded-xl" onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" /> Logout
+                  </Button>
                 </div>
-                <Link to="/dashboard" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
-                  <Map className="h-4 w-4 text-primary" /> My Trips
-                </Link>
-                <Link to="/wishlist" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
-                  <Heart className="h-4 w-4 text-rose-500" /> Wishlist
-                </Link>
-                <Link to="/expenses" className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium">
-                  <Receipt className="h-4 w-4 text-amber-500" /> Expenses
-                </Link>
-                <Button variant="destructive" className="w-full justify-start mt-2 rounded-xl" onClick={logout}>
-                  <LogOut className="h-4 w-4 mr-2" /> Logout
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 px-2">
-                <Button variant="outline" className="w-full rounded-xl" asChild>
-                  <Link to="/login">Log in</Link>
-                </Button>
-                <Button variant="gradient" className="w-full rounded-xl" asChild>
-                  <Link to="/register">Sign up</Link>
-                </Button>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col gap-2 px-2">
+                  <Button variant="outline" className="w-full rounded-xl" asChild>
+                    <Link to="/login">Log in</Link>
+                  </Button>
+                  <Button variant="gradient" className="w-full rounded-xl" asChild>
+                    <Link to="/register">Sign up</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

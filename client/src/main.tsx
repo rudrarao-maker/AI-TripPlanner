@@ -13,6 +13,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xlcmsuYWl0cmlwcGxhbm5lci50ZXN0LmNvbSQ";
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

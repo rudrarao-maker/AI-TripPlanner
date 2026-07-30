@@ -4,7 +4,7 @@ export const generateAccessToken = (userId: string, role: string) => {
   return jwt.sign(
     { id: userId, role },
     process.env.JWT_SECRET || 'secret',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+    { expiresIn: (process.env.JWT_EXPIRES_IN || '1d') } as jwt.SignOptions
   );
 };
 
@@ -12,7 +12,7 @@ export const generateRefreshToken = (userId: string) => {
   return jwt.sign(
     { id: userId },
     process.env.JWT_REFRESH_SECRET || 'refresh_secret',
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+    { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') } as jwt.SignOptions
   );
 };
 

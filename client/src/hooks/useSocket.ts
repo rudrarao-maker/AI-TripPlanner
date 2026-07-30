@@ -1,12 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useAuthStore } from '../store/authStore';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+export interface Collaborator {
+  id: string;
+  name: string;
+  avatar?: string;
+  color: string;
+  socketId: string;
+}
+
+// Generate consistent random color based on string
+const getStringColor = (str: string) => {
+  const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 export function useSocket(tripId?: string) {
+  const { user } = useAuthStore();
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [collaborators, setCollaborators] = useState<string[]>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
   useEffect(() => {
     // Initialize socket connection
@@ -19,7 +39,15 @@ export function useSocket(tripId?: string) {
     socket.on('connect', () => {
       setIsConnected(true);
       if (tripId) {
-        socket.emit('join_trip', tripId);
+        socket.emit('join_trip', {
+          tripId,
+          user: {
+            id: user?.id || socket.id,
+            name: user?.name || 'Anonymous',
+            avatar: user?.avatar,
+            color: getStringColor(user?.id || socket.id as string)
+          }
+        });
       }
     });
 
@@ -27,12 +55,20 @@ export function useSocket(tripId?: string) {
       setIsConnected(false);
     });
 
-    socket.on('user_joined', ({ socketId }) => {
-      setCollaborators((prev) => [...new Set([...prev, socketId])]);
+    // Receive the full list of collaborators when joining
+    socket.on('room_state', (users: Collaborator[]) => {
+      setCollaborators(users);
+    });
+
+    socket.on('user_joined', (newUser: Collaborator) => {
+      setCollaborators((prev) => {
+        if (prev.some(c => c.socketId === newUser.socketId)) return prev;
+        return [...prev, newUser];
+      });
     });
 
     socket.on('user_left', ({ socketId }) => {
-      setCollaborators((prev) => prev.filter((id) => id !== socketId));
+      setCollaborators((prev) => prev.filter((c) => c.socketId !== socketId));
     });
 
     return () => {
@@ -41,7 +77,7 @@ export function useSocket(tripId?: string) {
       }
       socket.disconnect();
     };
-  }, [tripId]);
+  }, [tripId, user?.id, user?.name, user?.avatar]);
 
   const emit = (event: string, data: any) => {
     if (socketRef.current && isConnected) {

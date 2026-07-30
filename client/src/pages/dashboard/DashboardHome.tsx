@@ -34,7 +34,7 @@ export function DashboardHome() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {greeting}, {user?.name?.split(' ')[0] || 'Traveler'}! 👋
+            {greeting}, {user?.firstName || 'Traveler'}! 👋
           </h1>
           <p className="text-muted-foreground mt-1">Ready for your next adventure?</p>
         </div>

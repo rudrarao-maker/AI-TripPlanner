@@ -35,7 +35,8 @@ export const getMyTrips = async (req: Request, res: Response, next: NextFunction
 
 export const getTrip = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const trip = await tripService.getTripById(req.params.id, req.user.id);
+    const id = req.params.id as string;
+    const trip = await tripService.getTripById(id, req.user.id);
     sendSuccess(res, 200, trip);
   } catch (error) {
     next(error);

@@ -5,7 +5,7 @@ import { bookingService } from '../services/booking.service';
 export const getBookings = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
-    const tripId = req.params.tripId;
+    const tripId = req.params.tripId as string;
     if (!userId) {
       return sendError(res, 401, 'Unauthorized');
     }
