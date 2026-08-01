@@ -1,21 +1,24 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 
 interface ProtectedRouteProps {
   adminOnly?: boolean;
 }
 
 export function ProtectedRoute({ adminOnly = false }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isLoaded, userId } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
-  // Bypass admin check for demo purposes, or check user?.role
-  // if (adminOnly && user?.role !== 'admin') {
-  //   return <Navigate to="/dashboard" replace />;
-  // }
+  if (!userId) {
+    return <Navigate to="/login" replace />;
+  }
 
   return <Outlet />;
 }

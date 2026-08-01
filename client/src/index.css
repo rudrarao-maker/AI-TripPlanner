@@ -35,8 +35,12 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-heading:
+    "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times,
+    serif;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -48,67 +52,105 @@
   --animate-shimmer: shimmer 2s linear infinite;
 
   @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
   @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   @keyframes fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
   }
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes slide-down {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes zoom-in {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
   @keyframes shimmer {
-    from { background-position: 200% 0; }
-    to { background-position: -200% 0; }
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
   }
 }
 
 /* Base Variables (Travelscape Premium Cream Theme) */
 :root {
-  --background: #F1E9D9; 
-  --foreground: #1A1410; 
-  --card: #FFFFFF;
-  --card-foreground: #1A1410;
-  --popover: #FFFFFF;
-  --popover-foreground: #1A1410;
-  
-  --primary: #1A1410; 
-  --primary-foreground: #FFFFFF;
-  
-  --secondary: #E5DCC9;
-  --secondary-foreground: #1A1410;
-  
-  --muted: #E5DCC9;
-  --muted-foreground: #5C5449;
-  
+  --background: #f1e9d9;
+  --foreground: #1a1410;
+  --card: #ffffff;
+  --card-foreground: #1a1410;
+  --popover: #ffffff;
+  --popover-foreground: #1a1410;
+
+  --primary: #1a1410;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e5dcc9;
+  --secondary-foreground: #1a1410;
+
+  --muted: #e5dcc9;
+  --muted-foreground: #5c5449;
+
   --accent: #113454; /* Travelscape Navy */
-  --accent-foreground: #FFFFFF;
-  
+  --accent-foreground: #ffffff;
+
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(1 0 0);
-  
-  --border: #DCD3BF;
-  --input: #DCD3BF;
-  --ring: #1A1410;
-  --radius: 0.5rem; 
+
+  --border: #dcd3bf;
+  --input: #dcd3bf;
+  --ring: #1a1410;
+  --radius: 0.5rem;
 
   /* Custom Design Tokens (Solid, no glass) */
   --glass-bg: rgba(255, 255, 255, 0.9);
@@ -117,28 +159,28 @@
 }
 
 .dark {
-  --background: oklch(0.12 0.01 260); 
+  --background: oklch(0.12 0.01 260);
   --foreground: oklch(0.98 0 0);
   --card: oklch(0.16 0.01 260);
   --card-foreground: oklch(0.98 0 0);
   --popover: oklch(0.16 0.01 260);
   --popover-foreground: oklch(0.98 0 0);
-  
+
   --primary: oklch(0.65 0.16 260); /* Lighter Blue for Dark Mode */
   --primary-foreground: oklch(1 0 0);
-  
+
   --secondary: oklch(0.2 0.02 260);
   --secondary-foreground: oklch(0.98 0 0);
-  
+
   --muted: oklch(0.2 0.02 260);
   --muted-foreground: oklch(0.7 0.02 260);
-  
+
   --accent: oklch(0.7 0.12 180);
   --accent-foreground: oklch(1 0 0);
-  
+
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(1 0 0);
-  
+
   --border: oklch(0.25 0.02 260);
   --input: oklch(0.25 0.02 260);
   --ring: oklch(0.65 0.16 260);
@@ -156,7 +198,12 @@
   body {
     @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading tracking-tight text-foreground font-semibold;
   }
 }

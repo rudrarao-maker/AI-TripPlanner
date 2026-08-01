@@ -1,9 +1,20 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Wind, Thermometer, Droplets, Eye, Sunrise, Sunset, CloudRain, AlertTriangle, Info, ShieldAlert } from 'lucide-react';
-import { useWeather } from '@/hooks/useWeather';
-import type { WeatherData } from '@/hooks/useWeather';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Wind,
+  Thermometer,
+  Droplets,
+  Eye,
+  Sunrise,
+  Sunset,
+  CloudRain,
+  AlertTriangle,
+  Info,
+  ShieldAlert,
+} from "lucide-react";
+import { useWeather } from "@/hooks/useWeather";
+import type { WeatherData } from "@/hooks/useWeather";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 interface WeatherWidgetProps {
   lat?: number;
@@ -26,12 +37,12 @@ function WeatherSkeleton() {
             <div className="h-12 w-20 bg-muted rounded" />
           </div>
           <div className="flex gap-4 pt-4">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="flex-1 h-8 bg-muted rounded" />
             ))}
           </div>
           <div className="grid grid-cols-5 gap-2 pt-2">
-            {[1, 2, 3, 4, 5].map(i => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="h-20 bg-muted rounded-lg" />
             ))}
           </div>
@@ -42,11 +53,16 @@ function WeatherSkeleton() {
 }
 
 // Alert severity badge
-function AlertBadge({ alert }: { alert: { severity: string; title: string; description: string } }) {
+function AlertBadge({
+  alert,
+}: {
+  alert: { severity: string; title: string; description: string };
+}) {
   const colors = {
-    info: 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400',
-    warning: 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400',
-    danger: 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400',
+    info: "bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400",
+    warning:
+      "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400",
+    danger: "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400",
   };
 
   const icons = {
@@ -58,7 +74,9 @@ function AlertBadge({ alert }: { alert: { severity: string; title: string; descr
   const severity = alert.severity as keyof typeof colors;
 
   return (
-    <div className={`flex gap-3 p-3 rounded-xl border ${colors[severity]} text-sm`}>
+    <div
+      className={`flex gap-3 p-3 rounded-xl border ${colors[severity]} text-sm`}
+    >
       {icons[severity]}
       <div>
         <p className="font-semibold text-xs">{alert.title}</p>
@@ -71,18 +89,23 @@ function AlertBadge({ alert }: { alert: { severity: string; title: string; descr
 // Weather condition background gradient
 function getWeatherGradient(condition: string): string {
   const gradients: Record<string, string> = {
-    'Clear': 'from-orange-400/20 via-yellow-300/15 to-sky-400/20',
-    'Clouds': 'from-slate-400/15 via-gray-300/15 to-blue-300/15',
-    'Rain': 'from-blue-500/20 via-slate-400/15 to-indigo-400/15',
-    'Drizzle': 'from-blue-400/15 via-gray-300/10 to-slate-400/15',
-    'Thunderstorm': 'from-purple-600/20 via-slate-500/15 to-indigo-500/15',
-    'Snow': 'from-blue-100/20 via-white/15 to-slate-200/20',
-    'Mist': 'from-gray-300/15 to-gray-400/15',
+    Clear: "from-orange-400/20 via-yellow-300/15 to-sky-400/20",
+    Clouds: "from-slate-400/15 via-gray-300/15 to-blue-300/15",
+    Rain: "from-blue-500/20 via-slate-400/15 to-indigo-400/15",
+    Drizzle: "from-blue-400/15 via-gray-300/10 to-slate-400/15",
+    Thunderstorm: "from-purple-600/20 via-slate-500/15 to-indigo-500/15",
+    Snow: "from-blue-100/20 via-white/15 to-slate-200/20",
+    Mist: "from-gray-300/15 to-gray-400/15",
   };
-  return gradients[condition] || gradients['Clear'];
+  return gradients[condition] || gradients["Clear"];
 }
 
-export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWidgetProps) {
+export function WeatherWidget({
+  lat,
+  lng,
+  location,
+  compact = false,
+}: WeatherWidgetProps) {
   const { data: weather, isLoading, error } = useWeather(lat, lng, location);
   const [showAlerts, setShowAlerts] = useState(true);
 
@@ -101,7 +124,9 @@ export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWi
         <span className="text-2xl">{current.conditionIcon}</span>
         <div>
           <span className="font-bold text-lg">{current.temperature}°C</span>
-          <span className="text-muted-foreground ml-2">{current.condition}</span>
+          <span className="text-muted-foreground ml-2">
+            {current.condition}
+          </span>
         </div>
         {current.rainChance > 30 && (
           <span className="flex items-center gap-1 text-blue-500 text-xs font-medium ml-auto">
@@ -115,18 +140,24 @@ export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWi
   return (
     <Card className="glass-card overflow-hidden relative group">
       {/* Dynamic gradient background */}
-      <div className={`absolute inset-0 z-0 transition-opacity duration-1000 bg-gradient-to-br ${getWeatherGradient(current.condition)}`} />
+      <div
+        className={`absolute inset-0 z-0 transition-opacity duration-1000 bg-gradient-to-br ${getWeatherGradient(current.condition)}`}
+      />
 
       {/* Floating weather icon */}
       <div className="absolute -right-6 -top-6 opacity-[0.08] group-hover:opacity-[0.15] transition-opacity duration-700 pointer-events-none">
-        <span className="text-[160px] block leading-none">{current.conditionIcon}</span>
+        <span className="text-[160px] block leading-none">
+          {current.conditionIcon}
+        </span>
       </div>
 
       <CardContent className="p-6 relative z-10">
         {/* Header: Location + Temperature */}
         <div className="flex justify-between items-start mb-1">
           <div>
-            <h3 className="font-bold text-lg text-foreground">{current.location || location}</h3>
+            <h3 className="font-bold text-lg text-foreground">
+              {current.location || location}
+            </h3>
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
               <span className="text-lg">{current.conditionIcon}</span>
               {current.condition}
@@ -138,8 +169,12 @@ export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWi
             className="flex flex-col items-end"
           >
             <div className="flex items-start">
-              <span className="text-5xl font-bold tracking-tighter text-foreground">{current.temperature}</span>
-              <span className="text-xl font-semibold mt-1 text-muted-foreground">°C</span>
+              <span className="text-5xl font-bold tracking-tighter text-foreground">
+                {current.temperature}
+              </span>
+              <span className="text-xl font-semibold mt-1 text-muted-foreground">
+                °C
+              </span>
             </div>
             <span className="text-xs text-muted-foreground mt-0.5">
               H: {current.tempMax}° L: {current.tempMin}°
@@ -178,11 +213,15 @@ export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWi
             <span>{current.sunset}</span>
           </div>
           {current.uvIndex > 0 && (
-            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-              current.uvIndex >= 8 ? 'bg-red-500/15 text-red-600 dark:text-red-400' :
-              current.uvIndex >= 5 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' :
-              'bg-green-500/15 text-green-600 dark:text-green-400'
-            }`}>
+            <div
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                current.uvIndex >= 8
+                  ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                  : current.uvIndex >= 5
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    : "bg-green-500/15 text-green-600 dark:text-green-400"
+              }`}
+            >
               UV {current.uvIndex}
             </div>
           )}
@@ -191,7 +230,9 @@ export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWi
         {/* 5-Day Forecast */}
         {forecast.length > 0 && (
           <div className="mt-6 pt-4 border-t border-border/50">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">5-Day Forecast</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              5-Day Forecast
+            </h4>
             <div className="grid grid-cols-5 gap-2">
               {forecast.map((day, i) => (
                 <motion.div
@@ -228,7 +269,7 @@ export function WeatherWidget({ lat, lng, location, compact = false }: WeatherWi
           {showAlerts && alerts.length > 0 && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="mt-4 space-y-2 overflow-hidden"
             >

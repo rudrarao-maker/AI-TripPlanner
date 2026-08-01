@@ -7,8 +7,8 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  role: 'user' | 'admin';
-  provider: 'email' | 'google';
+  role: "user" | "admin";
+  provider: "email" | "google";
   verified: boolean;
   phone?: string;
   createdAt: string;
@@ -40,48 +40,39 @@ export interface RegisterData {
 // ============================================================
 
 export type TravelStyle =
-  | 'solo'
-  | 'family'
-  | 'couple'
-  | 'honeymoon'
-  | 'friends'
-  | 'luxury'
-  | 'budget'
-  | 'adventure'
-  | 'business'
-  | 'religious'
-  | 'wildlife'
-  | 'beach'
-  | 'hill-station';
+  | "solo"
+  | "family"
+  | "couple"
+  | "honeymoon"
+  | "friends"
+  | "luxury"
+  | "budget"
+  | "adventure"
+  | "business"
+  | "religious"
+  | "wildlife"
+  | "beach"
+  | "hill-station";
 
 export type TransportPreference =
-  | 'flight'
-  | 'train'
-  | 'bus'
-  | 'car'
-  | 'bike'
-  | 'any';
+  "flight" | "train" | "bus" | "car" | "bike" | "any";
 
 export type HotelCategory =
-  | '1-star'
-  | '2-star'
-  | '3-star'
-  | '4-star'
-  | '5-star'
-  | 'hostel'
-  | 'resort'
-  | 'homestay'
-  | 'any';
+  | "1-star"
+  | "2-star"
+  | "3-star"
+  | "4-star"
+  | "5-star"
+  | "hostel"
+  | "resort"
+  | "homestay"
+  | "any";
 
 export type FoodPreference =
-  | 'vegetarian'
-  | 'non-vegetarian'
-  | 'vegan'
-  | 'jain'
-  | 'halal'
-  | 'any';
+  "vegetarian" | "non-vegetarian" | "vegan" | "jain" | "halal" | "any";
 
-export type TripStatus = 'draft' | 'planned' | 'ongoing' | 'completed' | 'cancelled';
+export type TripStatus =
+  "draft" | "planned" | "ongoing" | "completed" | "cancelled";
 
 export interface TripInput {
   origin: string;
@@ -210,7 +201,7 @@ export interface Restaurant {
   coordinates: Coordinates;
   rating: number;
   reviewCount: number;
-  priceRange: '$' | '$$' | '$$$' | '$$$$';
+  priceRange: "$" | "$$" | "$$$" | "$$$$";
   dietaryOptions: string[];
   openingHours: string;
   images: string[];
@@ -256,7 +247,8 @@ export interface Attraction {
 // Transportation Types
 // ============================================================
 
-export type TransportType = 'flight' | 'train' | 'bus' | 'car' | 'bike' | 'taxi' | 'metro' | 'walking';
+export type TransportType =
+  "flight" | "train" | "bus" | "car" | "bike" | "taxi" | "metro" | "walking";
 
 export interface TransportOption {
   type: TransportType;
@@ -266,7 +258,7 @@ export interface TransportOption {
   currency: string;
   duration: string;
   distance: string;
-  comfort: 'basic' | 'standard' | 'premium';
+  comfort: "basic" | "standard" | "premium";
   operator?: string;
   departure?: string;
   arrival?: string;
@@ -303,12 +295,7 @@ export interface BudgetBreakdown {
 }
 
 export type ExpenseCategory =
-  | 'hotel'
-  | 'food'
-  | 'transport'
-  | 'shopping'
-  | 'entertainment'
-  | 'others';
+  "hotel" | "food" | "transport" | "shopping" | "entertainment" | "others";
 
 export interface Expense {
   id: string;
@@ -326,10 +313,11 @@ export interface Expense {
 // Booking Types
 // ============================================================
 
-export type BookingType = 'hotel' | 'flight' | 'bus' | 'train' | 'car' | 'tour' | 'insurance';
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
-export type PaymentMethod = 'razorpay' | 'upi' | 'card' | 'mock';
-export type PaymentStatus = 'pending' | 'success' | 'failed' | 'refunded';
+export type BookingType =
+  "hotel" | "flight" | "bus" | "train" | "car" | "tour" | "insurance";
+export type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
+export type PaymentMethod = "razorpay" | "upi" | "card" | "mock";
+export type PaymentStatus = "pending" | "success" | "failed" | "refunded";
 
 export interface Booking {
   id: string;
@@ -363,7 +351,7 @@ export interface Review {
   userId: string;
   userName: string;
   userAvatar?: string;
-  targetType: 'hotel' | 'restaurant' | 'attraction';
+  targetType: "hotel" | "restaurant" | "attraction";
   targetId: string;
   rating: number;
   comment: string;
@@ -376,11 +364,11 @@ export interface Review {
 // ============================================================
 
 export type NotificationType =
-  | 'booking_confirmation'
-  | 'trip_reminder'
-  | 'weather_alert'
-  | 'payment_success'
-  | 'price_drop';
+  | "booking_confirmation"
+  | "trip_reminder"
+  | "weather_alert"
+  | "payment_success"
+  | "price_drop";
 
 export interface Notification {
   id: string;
@@ -423,7 +411,7 @@ export interface JournalEntry {
 export interface ChatMessage {
   id: string;
   userId: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   tripId?: string;
   createdAt: string;

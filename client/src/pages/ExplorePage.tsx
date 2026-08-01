@@ -1,22 +1,72 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { MapPin, Search, TrendingUp, Star, Award, ChevronRight, Clock, Map } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { MOCK_ITINERARIES } from '@/lib/mockItineraries';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  MapPin,
+  Search,
+  TrendingUp,
+  Star,
+  Award,
+  ChevronRight,
+  Clock,
+  Map,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MOCK_ITINERARIES } from "@/lib/mockItineraries";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const TRENDING_DESTINATIONS = [
-  { id: '1', name: 'Kyoto, Japan', image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800', type: 'Cultural', rating: 4.9, reviews: '12k' },
-  { id: '2', name: 'Amalfi Coast, Italy', image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800', type: 'Scenic', rating: 4.8, reviews: '9.5k' },
-  { id: '3', name: 'Banff, Canada', image: 'https://images.unsplash.com/photo-1542640244-7e672d6cb461?w=800', type: 'Nature', rating: 4.9, reviews: '8k' },
+  {
+    id: "1",
+    name: "Kyoto, Japan",
+    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800",
+    type: "Cultural",
+    rating: 4.9,
+    reviews: "12k",
+  },
+  {
+    id: "2",
+    name: "Amalfi Coast, Italy",
+    image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800",
+    type: "Scenic",
+    rating: 4.8,
+    reviews: "9.5k",
+  },
+  {
+    id: "3",
+    name: "Banff, Canada",
+    image: "https://images.unsplash.com/photo-1542640244-7e672d6cb461?w=800",
+    type: "Nature",
+    rating: 4.9,
+    reviews: "8k",
+  },
 ];
 
 const CURATED_LISTS = [
-  { id: 'c1', title: 'Top 10 Culinary Capitals', icon: '🍷', color: 'bg-red-500/10 text-red-500' },
-  { id: 'c2', title: 'Travelers Choice 2026', icon: '🏆', color: 'bg-yellow-500/10 text-yellow-500' },
-  { id: 'c3', title: 'Hidden Gems of Asia', icon: '🏮', color: 'bg-emerald-500/10 text-emerald-500' },
-  { id: 'c4', title: 'Best Digital Nomad Hubs', icon: '💻', color: 'bg-blue-500/10 text-blue-500' },
+  {
+    id: "c1",
+    title: "Top 10 Culinary Capitals",
+    icon: "🍷",
+    color: "bg-red-500/10 text-red-500",
+  },
+  {
+    id: "c2",
+    title: "Travelers Choice 2026",
+    icon: "🏆",
+    color: "bg-yellow-500/10 text-yellow-500",
+  },
+  {
+    id: "c3",
+    title: "Hidden Gems of Asia",
+    icon: "🏮",
+    color: "bg-emerald-500/10 text-emerald-500",
+  },
+  {
+    id: "c4",
+    title: "Best Digital Nomad Hubs",
+    icon: "💻",
+    color: "bg-blue-500/10 text-blue-500",
+  },
 ];
 
 export function ExplorePage() {
@@ -31,16 +81,20 @@ export function ExplorePage() {
             Discover Your Next Adventure
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Explore millions of reviews, tips, and AI-curated itineraries for destinations across the globe.
+            Explore millions of reviews, tips, and AI-curated itineraries for
+            destinations across the globe.
           </p>
-          
+
           <div className="relative max-w-2xl mx-auto flex items-center shadow-2xl shadow-primary/10 rounded-2xl">
             <Search className="absolute left-4 text-muted-foreground h-6 w-6" />
-            <Input 
+            <Input
               className="pl-12 py-8 text-lg rounded-2xl glass border-primary/20 bg-card text-foreground"
               placeholder="Search for places, hotels, or restaurants..."
             />
-            <Button variant="gradient" className="absolute right-2 top-2 bottom-2 rounded-xl px-6">
+            <Button
+              variant="gradient"
+              className="absolute right-2 top-2 bottom-2 rounded-xl px-6"
+            >
               Search
             </Button>
           </div>
@@ -48,7 +102,6 @@ export function ExplorePage() {
       </div>
 
       <div className="container mx-auto px-4 mt-8 space-y-16">
-        
         {/* Curated Categories */}
         <section>
           <div className="flex items-center justify-between mb-6">
@@ -58,9 +111,14 @@ export function ExplorePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {CURATED_LISTS.map((list) => (
-              <Card key={list.id} className="glass-card hover:bg-muted/50 cursor-pointer border-border/50">
+              <Card
+                key={list.id}
+                className="glass-card hover:bg-muted/50 cursor-pointer border-border/50"
+              >
                 <CardContent className="p-6 flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl ${list.color}`}>
+                  <div
+                    className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl ${list.color}`}
+                  >
                     {list.icon}
                   </div>
                   <div className="flex-1">
@@ -80,11 +138,11 @@ export function ExplorePage() {
               <Map className="h-6 w-6 text-primary" /> Ready-Made Itineraries
             </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {MOCK_ITINERARIES.map((itinerary, index) => (
-              <motion.div 
-                key={itinerary.id} 
+              <motion.div
+                key={itinerary.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -96,9 +154,9 @@ export function ExplorePage() {
                     <div className="absolute top-3 left-3 z-20 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-md">
                       {itinerary.durationDays} Days
                     </div>
-                    <img 
-                      src={itinerary.coverImage} 
-                      alt={itinerary.title} 
+                    <img
+                      src={itinerary.coverImage}
+                      alt={itinerary.title}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
@@ -106,14 +164,22 @@ export function ExplorePage() {
                     <div className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
                       <MapPin className="h-3 w-3" /> {itinerary.destination}
                     </div>
-                    <h3 className="text-xl font-bold mb-2 leading-tight group-hover:text-primary transition-colors">{itinerary.title}</h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2 mb-4">{itinerary.description}</p>
-                    
+                    <h3 className="text-xl font-bold mb-2 leading-tight group-hover:text-primary transition-colors">
+                      {itinerary.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                      {itinerary.description}
+                    </p>
+
                     <div className="mt-auto pt-4 border-t flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-muted px-2 py-1 rounded-md font-medium">{itinerary.tags[0]}</span>
+                        <span className="text-xs bg-muted px-2 py-1 rounded-md font-medium">
+                          {itinerary.tags[0]}
+                        </span>
                       </div>
-                      <span className="text-sm font-bold">{itinerary.estimatedCost}</span>
+                      <span className="text-sm font-bold">
+                        {itinerary.estimatedCost}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -126,11 +192,12 @@ export function ExplorePage() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-primary" /> Trending Destinations
+              <TrendingUp className="h-6 w-6 text-primary" /> Trending
+              Destinations
             </h2>
             <Button variant="ghost">See all</Button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {TRENDING_DESTINATIONS.map((dest, index) => (
               <motion.div
@@ -146,12 +213,12 @@ export function ExplorePage() {
                       {dest.type}
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-                    <img 
-                      src={dest.image} 
-                      alt={dest.name} 
+                    <img
+                      src={dest.image}
+                      alt={dest.name}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    
+
                     <div className="absolute bottom-0 left-0 right-0 p-5 z-20 text-white">
                       <h3 className="text-2xl font-bold mb-2">{dest.name}</h3>
                       <div className="flex items-center gap-4 text-sm text-white/90">

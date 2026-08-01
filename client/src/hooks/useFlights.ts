@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import { useQuery } from "@tanstack/react-query";
+import api from "../lib/api";
 
 export interface FlightSearchQuery {
   origin: string;
@@ -7,12 +7,15 @@ export interface FlightSearchQuery {
   departureDate: string;
   returnDate?: string;
   adults?: number;
-  travelClass?: 'ECONOMY' | 'BUSINESS' | 'FIRST';
+  travelClass?: "ECONOMY" | "BUSINESS" | "FIRST";
 }
 
-export const useSearchFlights = (query: FlightSearchQuery, enabled: boolean = true) => {
+export const useSearchFlights = (
+  query: FlightSearchQuery,
+  enabled: boolean = true,
+) => {
   return useQuery({
-    queryKey: ['flights', query],
+    queryKey: ["flights", query],
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(query).forEach(([key, value]) => {
@@ -21,7 +24,8 @@ export const useSearchFlights = (query: FlightSearchQuery, enabled: boolean = tr
       const response = await api.get(`/flights/search?${params.toString()}`);
       return response.data.data;
     },
-    enabled: enabled && !!query.origin && !!query.destination && !!query.departureDate,
+    enabled:
+      enabled && !!query.origin && !!query.destination && !!query.departureDate,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

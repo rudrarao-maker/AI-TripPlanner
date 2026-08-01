@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
-import * as aiService from './ai.service';
-import { AppError } from '../middlewares/errorHandler';
+import { PrismaClient } from "@prisma/client";
+import * as aiService from "./ai.service";
+import { AppError } from "../middlewares/errorHandler";
 
 const prisma = new PrismaClient();
 
@@ -32,7 +32,7 @@ export const generateTrip = async (userId: string, tripData: any) => {
     },
   });
 
-  // 3. Save Trip Days
+  // 3. Save Trip Days and Activities
   const tripDays = await Promise.all(
     generatedItinerary.days.map((day: any) =>
       prisma.tripDay.create({
@@ -40,13 +40,27 @@ export const generateTrip = async (userId: string, tripData: any) => {
           tripId: trip.id,
           dayNumber: day.dayNumber,
           date: new Date(day.date),
-          morning: JSON.stringify(day.morningActivity),
-          afternoon: JSON.stringify(day.afternoonActivity),
-          evening: JSON.stringify(day.eveningActivity),
-          hotel: JSON.stringify(day.hotel),
+          activities: {
+            create:
+              day.activities?.map((activity: any, index: number) => ({
+                time: activity.time,
+                name: activity.name,
+                description: activity.description,
+                location: activity.location,
+                estimatedCost: activity.estimatedCost,
+                duration: activity.duration,
+                category: activity.category,
+                orderIndex: index,
+              })) || [],
+          },
         },
-      })
-    )
+        include: {
+          activities: {
+            orderBy: { orderIndex: "asc" },
+          },
+        },
+      }),
+    ),
   );
 
   return {
@@ -58,32 +72,47 @@ export const generateTrip = async (userId: string, tripData: any) => {
 export const getUserTrips = async (userId: string) => {
   return await prisma.trip.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
   });
 };
 
 export const getTripById = async (tripId: string, userId: string) => {
   const trip = await prisma.trip.findFirst({
     where: { id: tripId, userId },
-    include: { days: { orderBy: { dayNumber: 'asc' } } },
+    include: {
+      days: {
+        orderBy: { dayNumber: "asc" },
+        include: {
+          activities: {
+            orderBy: { orderIndex: "asc" },
+          },
+        },
+      },
+    },
   });
 
   if (!trip) {
-    throw new AppError('Trip not found', 404);
+    throw new AppError("Trip not found", 404);
   }
 
-  // Parse JSON fields
-  const formattedTrip = {
-    ...trip,
-    days: trip.days.map(day => ({
-      ...day,
-      morning: day.morning ? JSON.parse(day.morning) : null,
-      afternoon: day.afternoon ? JSON.parse(day.afternoon) : null,
-      evening: day.evening ? JSON.parse(day.evening) : null,
-      hotel: day.hotel ? JSON.parse(day.hotel) : null,
-    }))
-  };
-
-  return formattedTrip;
+  return trip;
 };
 
+export const regenerateTripDay = async (
+  tripId: string,
+  dayId: string,
+  preferences: any,
+  userId: string,
+) => {
+  // Logic to call AI service and regenerate day
+  return { status: "not_implemented_yet", dayId };
+};
+
+export const getAlternativeActivity = async (
+  activityId: string,
+  preferences: any,
+  userId: string,
+) => {
+  // Logic to call AI service and find alternatives
+  return { status: "not_implemented_yet", activityId };
+};

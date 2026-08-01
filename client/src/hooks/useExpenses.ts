@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
 
 export interface ExpenseSplit {
   id?: string;
@@ -44,7 +44,7 @@ export interface AddExpensePayload {
 
 export const useGetExpenses = (tripId: string) => {
   return useQuery<Expense[]>({
-    queryKey: ['expenses', tripId],
+    queryKey: ["expenses", tripId],
     queryFn: async () => {
       if (!tripId) return [];
       const { data } = await api.get(`/expenses/${tripId}`);
@@ -59,11 +59,13 @@ export const useAddExpense = () => {
 
   return useMutation({
     mutationFn: async (payload: AddExpensePayload) => {
-      const { data } = await api.post('/expenses', payload);
+      const { data } = await api.post("/expenses", payload);
       return data.data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', variables.tripId] });
+      queryClient.invalidateQueries({
+        queryKey: ["expenses", variables.tripId],
+      });
     },
   });
 };

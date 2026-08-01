@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import { useQuery } from "@tanstack/react-query";
+import api from "../lib/api";
 
 interface CurrentWeather {
   location: string;
@@ -36,7 +36,7 @@ interface ForecastDay {
 }
 
 interface WeatherAlert {
-  severity: 'info' | 'warning' | 'danger';
+  severity: "info" | "warning" | "danger";
   title: string;
   description: string;
 }
@@ -49,14 +49,14 @@ export interface WeatherData {
 
 export const useWeather = (lat?: number, lng?: number, location?: string) => {
   return useQuery<WeatherData>({
-    queryKey: ['weather', lat, lng],
+    queryKey: ["weather", lat, lng],
     queryFn: async () => {
       const params: Record<string, string> = {};
       if (lat !== undefined) params.lat = lat.toString();
       if (lng !== undefined) params.lng = lng.toString();
       if (location) params.location = location;
 
-      const response = await api.get('/weather', { params });
+      const response = await api.get("/weather", { params });
       return response.data.data as WeatherData;
     },
     enabled: lat !== undefined && lng !== undefined,

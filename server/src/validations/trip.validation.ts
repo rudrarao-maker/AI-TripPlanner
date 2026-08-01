@@ -1,18 +1,18 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const createTripSchema = z.object({
   body: z.object({
-    origin: z.string().min(2, 'Origin is required'),
-    destination: z.string().min(2, 'Destination is required'),
-    startDate: z.string().datetime({ message: 'Invalid start date' }),
-    endDate: z.string().datetime({ message: 'Invalid end date' }),
+    origin: z.string().min(2, "Origin is required"),
+    destination: z.string().min(2, "Destination is required"),
+    startDate: z.string().datetime({ message: "Invalid start date" }),
+    endDate: z.string().datetime({ message: "Invalid end date" }),
     travelers: z.number().min(1).default(1),
-    budget: z.number().min(1, 'Budget must be greater than 0'),
-    currency: z.string().default('INR'),
-    travelStyle: z.string().default('adventure'),
-    transportPreference: z.string().default('flight'),
-    hotelCategory: z.string().default('4-star'),
-    foodPreference: z.string().default('any'),
+    budget: z.number().min(1, "Budget must be greater than 0"),
+    currency: z.string().default("INR"),
+    travelStyle: z.string().default("adventure"),
+    transportPreference: z.string().default("flight"),
+    hotelCategory: z.string().default("4-star"),
+    foodPreference: z.string().default("any"),
     interests: z.array(z.string()).optional(),
   }),
 });
@@ -24,4 +24,3 @@ export const updateTripSchema = z.object({
     coverImage: z.string().optional(),
   }),
 });
-

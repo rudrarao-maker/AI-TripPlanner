@@ -12,9 +12,12 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format currency
  */
-export function formatCurrency(amount: number, currency: string = 'INR'): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
+export function formatCurrency(
+  amount: number,
+  currency: string = "INR",
+): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
     currency: currency,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -24,12 +27,12 @@ export function formatCurrency(amount: number, currency: string = 'INR'): string
  * Format date to readable string
  */
 export function formatDate(dateString: string): string {
-  if (!dateString) return '';
+  if (!dateString) return "";
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 

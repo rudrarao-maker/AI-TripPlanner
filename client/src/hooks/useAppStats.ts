@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import api from '../lib/api';
+import { useQuery } from "@tanstack/react-query";
+import api from "../lib/api";
 
 export interface AppStat {
   label: string;
@@ -9,10 +9,10 @@ export interface AppStat {
 
 export const useAppStats = () => {
   return useQuery({
-    queryKey: ['appStats'],
+    queryKey: ["appStats"],
     queryFn: async () => {
-      const response = await api.get('/app/stats');
+      const response = await api.get("/app/stats");
       return response.data.data as AppStat[];
-    }
+    },
   });
 };

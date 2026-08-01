@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plane, Building, Ticket, ExternalLink, RefreshCw } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import { motion } from 'framer-motion';
-import api from '@/lib/api';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plane, Building, Ticket, ExternalLink, RefreshCw } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { motion } from "framer-motion";
+import api from "@/lib/api";
 
 export function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -12,12 +12,12 @@ export function BookingsPage() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/bookings');
+      const res = await api.get("/bookings");
       if (res.data.success) {
         setBookings(res.data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch bookings', error);
+      console.error("Failed to fetch bookings", error);
     } finally {
       setLoading(false);
     }
@@ -29,18 +29,37 @@ export function BookingsPage() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'flight': return <Plane className="h-6 w-6 text-blue-500" />;
-      case 'hotel': return <Building className="h-6 w-6 text-green-500" />;
-      default: return <Ticket className="h-6 w-6 text-orange-500" />;
+      case "flight":
+        return <Plane className="h-6 w-6 text-blue-500" />;
+      case "hotel":
+        return <Building className="h-6 w-6 text-green-500" />;
+      default:
+        return <Ticket className="h-6 w-6 text-orange-500" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'confirmed': return <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded-full text-xs font-bold uppercase">Confirmed</span>;
-      case 'pending': return <span className="bg-orange-500/10 text-orange-500 px-2 py-1 rounded-full text-xs font-bold uppercase">Pending</span>;
-      case 'cancelled': return <span className="bg-red-500/10 text-red-500 px-2 py-1 rounded-full text-xs font-bold uppercase">Cancelled</span>;
-      default: return null;
+      case "confirmed":
+        return (
+          <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded-full text-xs font-bold uppercase">
+            Confirmed
+          </span>
+        );
+      case "pending":
+        return (
+          <span className="bg-orange-500/10 text-orange-500 px-2 py-1 rounded-full text-xs font-bold uppercase">
+            Pending
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="bg-red-500/10 text-red-500 px-2 py-1 rounded-full text-xs font-bold uppercase">
+            Cancelled
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
@@ -49,10 +68,18 @@ export function BookingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Bookings</h1>
-          <p className="text-muted-foreground mt-1">Manage all your synced reservations across flights, hotels, and transport.</p>
+          <p className="text-muted-foreground mt-1">
+            Manage all your synced reservations across flights, hotels, and
+            transport.
+          </p>
         </div>
-        <button onClick={fetchBookings} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl hover:bg-muted/80 transition-colors disabled:opacity-50">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Sync
+        <button
+          onClick={fetchBookings}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-muted rounded-xl hover:bg-muted/80 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />{" "}
+          Sync
         </button>
       </div>
 
@@ -73,36 +100,56 @@ export function BookingsPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold uppercase text-xs text-muted-foreground">{booking.provider}</span>
+                        <span className="font-bold uppercase text-xs text-muted-foreground">
+                          {booking.provider}
+                        </span>
                         {getStatusBadge(booking.status)}
                       </div>
-                      
-                      {booking.type === 'flight' && booking.flightDetails && (
+
+                      {booking.type === "flight" && booking.flightDetails && (
                         <h3 className="text-lg font-bold">
-                          {booking.flightDetails.origin} → {booking.flightDetails.destination}
+                          {booking.flightDetails.origin} →{" "}
+                          {booking.flightDetails.destination}
                         </h3>
                       )}
-                      
-                      {booking.type === 'hotel' && booking.hotelDetails && (
+
+                      {booking.type === "hotel" && booking.hotelDetails && (
                         <h3 className="text-lg font-bold">
                           {booking.hotelDetails.hotelName}
                         </h3>
                       )}
 
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <span>Ref: <strong className="text-foreground">{booking.bookingRef}</strong></span>
+                        <span>
+                          Ref:{" "}
+                          <strong className="text-foreground">
+                            {booking.bookingRef}
+                          </strong>
+                        </span>
                         {booking.flightDetails && (
-                          <span>Date: {new Date(booking.flightDetails.departureTime).toLocaleDateString()}</span>
+                          <span>
+                            Date:{" "}
+                            {new Date(
+                              booking.flightDetails.departureTime,
+                            ).toLocaleDateString()}
+                          </span>
                         )}
                         {booking.hotelDetails && (
-                          <span>Check In: {new Date(booking.hotelDetails.checkIn).toLocaleDateString()}</span>
+                          <span>
+                            Check In:{" "}
+                            {new Date(
+                              booking.hotelDetails.checkIn,
+                            ).toLocaleDateString()}
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{formatCurrency(booking.totalAmount, booking.currency)}</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {formatCurrency(booking.totalAmount, booking.currency)}
+                    </p>
                     <button className="flex items-center justify-end gap-1 mt-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full">
                       View Receipt <ExternalLink className="h-4 w-4" />
                     </button>
@@ -112,7 +159,7 @@ export function BookingsPage() {
             </Card>
           </motion.div>
         ))}
-        
+
         {bookings.length === 0 && !loading && (
           <div className="text-center py-24 text-muted-foreground">
             <Ticket className="h-12 w-12 mx-auto mb-4 opacity-20" />

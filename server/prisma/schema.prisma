@@ -3,12 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id        String   @id @default(uuid())
+  clerkId   String?  @unique
   email     String   @unique
   password  String?
   name      String
@@ -57,6 +58,7 @@ model Trip {
   expenses            Expense[]
   bookings            Booking[]
   members             TripMember[]
+  aiRecommendations   AIRecommendation[]
 }
 
 model TripDay {
@@ -65,13 +67,30 @@ model TripDay {
   dayNumber Int
   date      DateTime
   
-  // Storing activity data as JSON for flexibility in SQLite
-  morning   String?  // JSON string
-  afternoon String?  // JSON string
-  evening   String?  // JSON string
-  hotel     String?  // JSON string
+  activities Activity[]
   
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id            String   @id @default(uuid())
+  tripDayId     String
+  time          String?  // e.g., "09:00 AM"
+  name          String
+  location      String
+  description   String?
+  duration      Int?     // in minutes
+  estimatedCost Float    @default(0)
+  currency      String   @default("INR")
+  category      String   // e.g., "beach", "restaurant", "museum", "transport"
+  imageUrl      String?
+  lat           Float?
+  lng           Float?
+  orderIndex    Int      @default(0) // for drag and drop ordering
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  tripDay       TripDay  @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
 }
 
 model Hotel {
@@ -293,4 +312,27 @@ model ExpenseSplit {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([expenseId, userId])
+}
+
+model AiUsageLog {
+  id          String   @id @default(uuid())
+  prompt      String
+  latencyMs   Int
+  tokens      Int      @default(0)
+  status      String   @default("success") // "success" or "failed"
+  modelUsed   String   @default("gemini-2.5-flash")
+  createdAt   DateTime @default(now())
+}
+
+model AIRecommendation {
+  id            String   @id @default(uuid())
+  tripId        String?
+  targetId      String?  // Could be an Activity ID to replace
+  type          String   // "alternative_activity", "budget_optimization", "hotel", "restaurant"
+  context       String   // JSON string of context used to generate this
+  suggestion    String   // JSON string of the suggestion data
+  status        String   @default("pending") // "pending", "accepted", "rejected"
+  createdAt     DateTime @default(now())
+  
+  trip          Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
 }

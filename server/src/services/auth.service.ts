@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
-import { AppError } from '../middlewares/errorHandler';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
+import { AppError } from "../middlewares/errorHandler";
 
 const prisma = new PrismaClient();
 
@@ -11,7 +11,7 @@ export const registerUser = async (data: any) => {
   // Check if user exists
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    throw new AppError('Email is already registered', 400);
+    throw new AppError("Email is already registered", 400);
   }
 
   // Hash password
@@ -47,13 +47,13 @@ export const loginUser = async (data: any) => {
   // Find user
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.password) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError("Invalid email or password", 401);
   }
 
   // Check password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError("Invalid email or password", 401);
   }
 
   // Generate tokens
@@ -68,4 +68,3 @@ export const loginUser = async (data: any) => {
     refreshToken,
   };
 };
-

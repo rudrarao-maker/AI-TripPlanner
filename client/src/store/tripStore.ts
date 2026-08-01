@@ -1,12 +1,12 @@
-import { create } from 'zustand';
-import type { TripInput, Trip } from '@/types';
+import { create } from "zustand";
+import type { TripInput, Trip } from "@/types";
 
 interface TripStore {
   currentTripInput: Partial<TripInput>;
   activeTrip: Trip | null;
   savedTrips: Trip[];
   isGenerating: boolean;
-  
+
   updateTripInput: (data: Partial<TripInput>) => void;
   resetTripInput: () => void;
   setActiveTrip: (trip: Trip | null) => void;
@@ -14,13 +14,14 @@ interface TripStore {
 }
 
 const initialTripInput: Partial<TripInput> = {
-  travelers: 2,
+  adults: 2,
+  children: 0,
   budget: 20000,
-  currency: 'INR',
-  travelStyle: 'couple',
-  transportPreference: 'any',
-  hotelCategory: '3-star',
-  foodPreference: 'any',
+  currency: "INR",
+  travelStyle: "couple",
+  transportPreference: "any",
+  hotelCategory: "3-star",
+  foodPreference: "any",
 };
 
 export const useTripStore = create<TripStore>((set) => ({
@@ -40,6 +41,6 @@ export const useTripStore = create<TripStore>((set) => ({
     }),
 
   setActiveTrip: (trip) => set({ activeTrip: trip }),
-  
+
   setGenerating: (status) => set({ isGenerating: status }),
 }));

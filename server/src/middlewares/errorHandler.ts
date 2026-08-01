@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
 export class AppError extends Error {
   statusCode: number;
@@ -17,7 +17,7 @@ export const errorHandler = (
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   let error = { ...err };
   error.message = err.message;
@@ -26,30 +26,30 @@ export const errorHandler = (
   console.error(err);
 
   // Prisma unique constraint error
-  if (err.code === 'P2002') {
+  if (err.code === "P2002") {
     const message = `Duplicate field value entered`;
     error = new AppError(message, 400);
   }
 
   // Zod validation error
-  if (err.name === 'ZodError') {
-    const message = err.errors.map((e: any) => e.message).join(', ');
+  if (err.name === "ZodError") {
+    const message = err.errors.map((e: any) => e.message).join(", ");
     error = new AppError(message, 400);
   }
 
   // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token. Please log in again!';
+  if (err.name === "JsonWebTokenError") {
+    const message = "Invalid token. Please log in again!";
     error = new AppError(message, 401);
   }
-  if (err.name === 'TokenExpiredError') {
-    const message = 'Your token has expired! Please log in again.';
+  if (err.name === "TokenExpiredError") {
+    const message = "Your token has expired! Please log in again.";
     error = new AppError(message, 401);
   }
 
   res.status(error.statusCode || 500).json({
     success: false,
-    error: error.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    error: error.message || "Server Error",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 };

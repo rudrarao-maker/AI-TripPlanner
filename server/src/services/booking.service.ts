@@ -1,15 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { PrismaClient } from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
 
 const prisma = new PrismaClient();
 
 export interface CreateBookingData {
   userId: string;
   tripId?: string;
-  type: 'flight' | 'hotel' | 'activity';
+  type: "flight" | "hotel" | "activity";
   totalAmount: number;
   currency?: string;
-  provider: 'amadeus' | 'mock';
+  provider: "amadeus" | "mock";
   flightDetails?: any;
   hotelDetails?: any;
 }
@@ -19,19 +19,18 @@ export class BookingService {
     try {
       // Begin transaction to create booking, payment, and specific details
       const booking = await prisma.$transaction(async (tx) => {
-        
         // 1. Create Booking Record
         const newBooking = await tx.booking.create({
           data: {
             userId: data.userId,
             tripId: data.tripId,
             type: data.type,
-            status: 'confirmed', // Assuming direct confirmation for mock/demo
+            status: "confirmed", // Assuming direct confirmation for mock/demo
             totalAmount: data.totalAmount,
-            currency: data.currency || 'INR',
+            currency: data.currency || "INR",
             bookingRef: `REF-${Math.floor(Math.random() * 1000000)}`,
             provider: data.provider,
-          }
+          },
         });
 
         // 2. Create Payment Record (Simulated)
@@ -39,15 +38,15 @@ export class BookingService {
           data: {
             bookingId: newBooking.id,
             amount: data.totalAmount,
-            currency: data.currency || 'INR',
-            status: 'completed',
-            paymentMethod: 'mock_card',
-            transactionId: `TXN-${uuidv4().split('-')[0].toUpperCase()}`,
-          }
+            currency: data.currency || "INR",
+            status: "completed",
+            paymentMethod: "mock_card",
+            transactionId: `TXN-${uuidv4().split("-")[0].toUpperCase()}`,
+          },
         });
 
         // 3. Create Specific Details
-        if (data.type === 'flight' && data.flightDetails) {
+        if (data.type === "flight" && data.flightDetails) {
           await tx.flightBooking.create({
             data: {
               bookingId: newBooking.id,
@@ -57,12 +56,14 @@ export class BookingService {
               arrivalTime: new Date(data.flightDetails.arrivalTime),
               airline: data.flightDetails.airline,
               flightNumber: data.flightDetails.flightNumber,
-              pnr: data.flightDetails.pnr || `PNR-${Math.floor(Math.random() * 90000) + 10000}`,
+              pnr:
+                data.flightDetails.pnr ||
+                `PNR-${Math.floor(Math.random() * 90000) + 10000}`,
               class: data.flightDetails.class,
               passengers: data.flightDetails.passengers || 1,
-            }
+            },
           });
-        } else if (data.type === 'hotel' && data.hotelDetails) {
+        } else if (data.type === "hotel" && data.hotelDetails) {
           await tx.hotelBooking.create({
             data: {
               bookingId: newBooking.id,
@@ -70,9 +71,9 @@ export class BookingService {
               location: data.hotelDetails.location,
               checkIn: new Date(data.hotelDetails.checkIn),
               checkOut: new Date(data.hotelDetails.checkOut),
-              roomType: data.hotelDetails.roomType || 'Standard',
+              roomType: data.hotelDetails.roomType || "Standard",
               guests: data.hotelDetails.guests || 2,
-            }
+            },
           });
         }
 
@@ -81,7 +82,7 @@ export class BookingService {
 
       return await this.getBookingById(booking.id);
     } catch (error) {
-      console.error('[BookingService] Failed to create booking:', error);
+      console.error("[BookingService] Failed to create booking:", error);
       throw error;
     }
   }
@@ -94,9 +95,9 @@ export class BookingService {
         flightDetails: true,
         hotelDetails: true,
         trip: {
-          select: { title: true, destination: true }
-        }
-      }
+          select: { title: true, destination: true },
+        },
+      },
     });
   }
 
@@ -108,10 +109,10 @@ export class BookingService {
         flightDetails: true,
         hotelDetails: true,
         trip: {
-          select: { title: true, destination: true }
-        }
+          select: { title: true, destination: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -123,10 +124,10 @@ export class BookingService {
         flightDetails: true,
         hotelDetails: true,
         trip: {
-          select: { title: true, destination: true }
-        }
+          select: { title: true, destination: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -134,16 +135,16 @@ export class BookingService {
     return prisma.booking.findMany({
       include: {
         user: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         payment: true,
         flightDetails: true,
         hotelDetails: true,
         trip: {
-          select: { title: true, destination: true }
-        }
+          select: { title: true, destination: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 }

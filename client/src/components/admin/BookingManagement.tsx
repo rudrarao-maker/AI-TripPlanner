@@ -1,7 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plane, Building, Calendar, DollarSign, CheckCircle, Clock } from 'lucide-react';
-import api from '@/lib/api';
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Plane,
+  Building,
+  Calendar,
+  DollarSign,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
+import api from "@/lib/api";
 
 interface Booking {
   id: string;
@@ -34,10 +41,10 @@ export function BookingManagement() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/bookings/admin/all');
+      const res = await api.get("/bookings/admin/all");
       setBookings(res.data.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch bookings');
+      setError(err.response?.data?.message || "Failed to fetch bookings");
     } finally {
       setLoading(false);
     }
@@ -45,21 +52,34 @@ export function BookingManagement() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'flight': return <Plane className="w-4 h-4 text-blue-500" />;
-      case 'hotel': return <Building className="w-4 h-4 text-emerald-500" />;
-      default: return <Calendar className="w-4 h-4 text-orange-500" />;
+      case "flight":
+        return <Plane className="w-4 h-4 text-blue-500" />;
+      case "hotel":
+        return <Building className="w-4 h-4 text-emerald-500" />;
+      default:
+        return <Calendar className="w-4 h-4 text-orange-500" />;
     }
   };
 
-  if (loading) return <div className="text-center p-8 text-muted-foreground">Loading bookings...</div>;
-  if (error) return <div className="text-center p-8 text-destructive">{error}</div>;
+  if (loading)
+    return (
+      <div className="text-center p-8 text-muted-foreground">
+        Loading bookings...
+      </div>
+    );
+  if (error)
+    return <div className="text-center p-8 text-destructive">{error}</div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Booking Management</h2>
-          <p className="text-muted-foreground text-sm">View all platform bookings and transactions.</p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Booking Management
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            View all platform bookings and transactions.
+          </p>
         </div>
       </div>
 
@@ -79,13 +99,20 @@ export function BookingManagement() {
               </thead>
               <tbody className="divide-y divide-border/50">
                 {bookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={booking.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-6 py-4 font-medium tracking-wider text-xs">
                       {booking.bookingRef}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-foreground">{booking.user.name}</div>
-                      <div className="text-xs text-muted-foreground">{booking.user.email}</div>
+                      <div className="font-medium text-foreground">
+                        {booking.user.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {booking.user.email}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -100,12 +127,18 @@ export function BookingManagement() {
                       {new Date(booking.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${
-                        booking.status === 'confirmed' 
-                          ? 'bg-emerald-500/20 text-emerald-500 flex items-center w-fit gap-1.5' 
-                          : 'bg-orange-500/20 text-orange-500 flex items-center w-fit gap-1.5'
-                      }`}>
-                        {booking.status === 'confirmed' ? <CheckCircle className="w-3 h-3"/> : <Clock className="w-3 h-3"/>}
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${
+                          booking.status === "confirmed"
+                            ? "bg-emerald-500/20 text-emerald-500 flex items-center w-fit gap-1.5"
+                            : "bg-orange-500/20 text-orange-500 flex items-center w-fit gap-1.5"
+                        }`}
+                      >
+                        {booking.status === "confirmed" ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          <Clock className="w-3 h-3" />
+                        )}
                         {booking.status}
                       </span>
                     </td>
@@ -114,7 +147,9 @@ export function BookingManagement() {
               </tbody>
             </table>
             {bookings.length === 0 && (
-              <div className="text-center p-8 text-muted-foreground">No bookings found on the platform.</div>
+              <div className="text-center p-8 text-muted-foreground">
+                No bookings found on the platform.
+              </div>
             )}
           </div>
         </CardContent>

@@ -1,15 +1,17 @@
-import { Card, CardContent } from '../ui/card';
-import { Button } from '../ui/button';
-import { Star, MapPin, Clock, Ticket } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import type { Activity } from '@/types';
+import { Card, CardContent } from "../ui/card";
+import { Button } from "../ui/button";
+import { Star, MapPin, Clock, Ticket } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import type { Activity } from "@/types";
 
 interface AttractionCardProps {
   activity: Activity;
 }
 
 export function AttractionCard({ activity }: AttractionCardProps) {
-  const imageUrl = activity.image || `https://source.unsplash.com/600x400/?${encodeURIComponent(activity.title)},attraction`;
+  const imageUrl =
+    activity.image ||
+    `https://source.unsplash.com/600x400/?${encodeURIComponent(activity.title)},attraction`;
 
   return (
     <Card className="glass-card overflow-hidden group border-border/50 h-full flex flex-col">
@@ -21,18 +23,24 @@ export function AttractionCard({ activity }: AttractionCardProps) {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900 dark:to-cyan-900" />
-        <img 
-          src={imageUrl} 
-          alt={activity.title} 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        <img
+          src={imageUrl}
+          alt={activity.title}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
         />
       </div>
-      
+
       <CardContent className="p-5 flex-1 flex flex-col">
         <div className="mb-3">
-          <h3 className="text-xl font-bold line-clamp-1 text-foreground mb-1">{activity.title}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-2">{activity.description}</p>
+          <h3 className="text-xl font-bold line-clamp-1 text-foreground mb-1">
+            {activity.title}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {activity.description}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-6 text-sm mt-auto">
@@ -47,12 +55,17 @@ export function AttractionCard({ activity }: AttractionCardProps) {
           <div className="flex items-center text-muted-foreground col-span-2">
             <Ticket className="h-4 w-4 mr-2 text-emerald-500" />
             <span className="font-medium text-foreground">
-              {activity.cost === 0 ? 'Free Entry' : formatCurrency(activity.cost)}
+              {activity.cost === 0
+                ? "Free Entry"
+                : formatCurrency(activity.cost)}
             </span>
           </div>
         </div>
 
-        <Button variant="secondary" className="w-full mt-auto group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+        <Button
+          variant="secondary"
+          className="w-full mt-auto group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+        >
           Add to Itinerary
         </Button>
       </CardContent>

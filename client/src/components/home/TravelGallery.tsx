@@ -1,17 +1,29 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import { GALLERY_IMAGES } from '@/lib/constants';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { GALLERY_IMAGES } from "@/lib/constants";
 
 export function TravelGallery() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
-  const nextImage = () => setLightboxIndex(prev => prev !== null ? (prev + 1) % GALLERY_IMAGES.length : 0);
-  const prevImage = () => setLightboxIndex(prev => prev !== null ? (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length : 0);
+  const nextImage = () =>
+    setLightboxIndex((prev) =>
+      prev !== null ? (prev + 1) % GALLERY_IMAGES.length : 0,
+    );
+  const prevImage = () =>
+    setLightboxIndex((prev) =>
+      prev !== null
+        ? (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length
+        : 0,
+    );
 
-  const heightMap = { tall: 'row-span-2', medium: 'row-span-1', short: 'row-span-1' };
+  const heightMap = {
+    tall: "row-span-2",
+    medium: "row-span-1",
+    short: "row-span-1",
+  };
 
   return (
     <section className="py-20 bg-background">
@@ -23,8 +35,12 @@ export function TravelGallery() {
           transition={{ duration: 0.6 }}
           className="text-center max-w-2xl mx-auto mb-14"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Travel Gallery</h2>
-          <p className="text-muted-foreground text-lg">Beautiful moments from destinations around the world</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Travel Gallery
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            Beautiful moments from destinations around the world
+          </p>
         </motion.div>
 
         {/* Masonry Grid */}
@@ -75,14 +91,20 @@ export function TravelGallery() {
             </button>
 
             <button
-              onClick={(e) => { e.stopPropagation(); prevImage(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
               className="absolute left-4 md:left-8 z-10 text-white/80 hover:text-white p-3 rounded-full bg-white/10 backdrop-blur-sm transition-colors"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
 
             <button
-              onClick={(e) => { e.stopPropagation(); nextImage(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
               className="absolute right-4 md:right-8 z-10 text-white/80 hover:text-white p-3 rounded-full bg-white/10 backdrop-blur-sm transition-colors"
             >
               <ChevronRight className="h-6 w-6" />
@@ -103,7 +125,9 @@ export function TravelGallery() {
                 className="max-h-[80vh] w-auto mx-auto rounded-2xl object-contain shadow-2xl"
               />
               <div className="text-center mt-4">
-                <p className="text-white font-semibold text-lg">{GALLERY_IMAGES[lightboxIndex].alt}</p>
+                <p className="text-white font-semibold text-lg">
+                  {GALLERY_IMAGES[lightboxIndex].alt}
+                </p>
                 <p className="text-white/60 text-sm flex items-center justify-center gap-1.5 mt-1">
                   <MapPin className="h-3.5 w-3.5" />
                   {GALLERY_IMAGES[lightboxIndex].location}

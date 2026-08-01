@@ -1,7 +1,14 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { EXPENSE_CATEGORIES } from '@/lib/constants';
-import { formatCurrency } from '@/lib/utils';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils";
 
 interface BreakdownData {
   name: string;
@@ -15,11 +22,13 @@ interface BudgetBreakdownProps {
 
 export function BudgetBreakdown({ data }: BudgetBreakdownProps) {
   // Add colors from constants
-  const chartData = data.map(item => {
-    const categoryInfo = EXPENSE_CATEGORIES.find(c => c.label.toLowerCase() === item.name.toLowerCase());
+  const chartData = data.map((item) => {
+    const categoryInfo = EXPENSE_CATEGORIES.find(
+      (c) => c.label.toLowerCase() === item.name.toLowerCase(),
+    );
     return {
       ...item,
-      color: categoryInfo?.color || '#cbd5e1'
+      color: categoryInfo?.color || "#cbd5e1",
     };
   });
 
@@ -28,7 +37,9 @@ export function BudgetBreakdown({ data }: BudgetBreakdownProps) {
       return (
         <div className="glass p-3 rounded-lg border shadow-lg text-sm">
           <p className="font-semibold mb-1">{payload[0].name}</p>
-          <p className="text-primary font-bold">{formatCurrency(payload[0].value)}</p>
+          <p className="text-primary font-bold">
+            {formatCurrency(payload[0].value)}
+          </p>
         </div>
       );
     }
@@ -61,7 +72,11 @@ export function BudgetBreakdown({ data }: BudgetBreakdownProps) {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+                <Legend
+                  layout="horizontal"
+                  verticalAlign="bottom"
+                  align="center"
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>

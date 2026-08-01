@@ -1,6 +1,6 @@
-import { Moon, Sun } from 'lucide-react';
-import { useThemeStore } from '@/store/themeStore';
-import { cn } from '@/lib/utils';
+import { Moon, Sun } from "lucide-react";
+import { useThemeStore } from "@/store/themeStore";
+import { cn } from "@/lib/utils";
 
 interface ThemeToggleProps {
   className?: string;
@@ -10,10 +10,10 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, setTheme } = useThemeStore();
 
   const toggleTheme = () => {
-    if (theme === 'light') {
-      setTheme('dark');
+    if (theme === "light") {
+      setTheme("dark");
     } else {
-      setTheme('light');
+      setTheme("light");
     }
   };
 
@@ -22,7 +22,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       onClick={toggleTheme}
       className={cn(
         "relative inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className
+        className,
       )}
       aria-label="Toggle theme"
     >

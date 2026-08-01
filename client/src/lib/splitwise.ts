@@ -18,34 +18,37 @@ export interface ExpenseRecord {
   splits: { userId: string; amount: number }[];
 }
 
-export function calculateBalances(expenses: ExpenseRecord[], users: SplitUser[]) {
+export function calculateBalances(
+  expenses: ExpenseRecord[],
+  users: SplitUser[],
+) {
   // Map of userId -> net balance (+ means they are owed money, - means they owe money)
   const balances: Record<string, number> = {};
-  
+
   // Initialize balances to 0
-  users.forEach(u => balances[u.id] = 0);
-  
+  users.forEach((u) => (balances[u.id] = 0));
+
   // Also initialize for users that might exist in expenses but not explicitly passed
-  expenses.forEach(exp => {
+  expenses.forEach((exp) => {
     if (balances[exp.payerId] === undefined) balances[exp.payerId] = 0;
-    exp.splits.forEach(s => {
+    exp.splits.forEach((s) => {
       if (balances[s.userId] === undefined) balances[s.userId] = 0;
     });
   });
 
   // Calculate net balances
-  expenses.forEach(expense => {
+  expenses.forEach((expense) => {
     // Payer's balance goes UP by the total amount they paid
     balances[expense.payerId] += expense.amount;
-    
+
     // Each person involved in the split's balance goes DOWN by their share
-    expense.splits.forEach(split => {
+    expense.splits.forEach((split) => {
       balances[split.userId] -= split.amount;
     });
   });
 
   // To fix floating point precision issues (e.g., 0.00000000000002)
-  Object.keys(balances).forEach(id => {
+  Object.keys(balances).forEach((id) => {
     balances[id] = Math.round(balances[id] * 100) / 100;
   });
 
@@ -54,10 +57,10 @@ export function calculateBalances(expenses: ExpenseRecord[], users: SplitUser[])
 
 export function simplifyDebts(balances: Record<string, number>): Transaction[] {
   const transactions: Transaction[] = [];
-  
+
   // Create arrays for people who OWE money (debtors) and people who are OWED money (creditors)
-  const debtors: { id: string, amount: number }[] = [];
-  const creditors: { id: string, amount: number }[] = [];
+  const debtors: { id: string; amount: number }[] = [];
+  const creditors: { id: string; amount: number }[] = [];
 
   for (const [id, balance] of Object.entries(balances)) {
     if (balance < -0.01) {
@@ -77,15 +80,15 @@ export function simplifyDebts(balances: Record<string, number>): Transaction[] {
   while (i < debtors.length && j < creditors.length) {
     const debtor = debtors[i];
     const creditor = creditors[j];
-    
+
     // The amount to settle is the minimum of what the debtor owes and the creditor is owed
     const amountToSettle = Math.min(debtor.amount, creditor.amount);
-    
+
     if (amountToSettle > 0.01) {
       transactions.push({
         from: debtor.id,
         to: creditor.id,
-        amount: Math.round(amountToSettle * 100) / 100
+        amount: Math.round(amountToSettle * 100) / 100,
       });
     }
 

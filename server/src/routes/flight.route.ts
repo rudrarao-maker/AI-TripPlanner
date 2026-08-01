@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { searchFlights } from '../controllers/flight.controller';
-import { protect } from '../middlewares/authMiddleware';
+import { Router } from "express";
+import { searchFlights } from "../controllers/flight.controller";
+import { protect } from "../middlewares/authMiddleware";
 
 const router = Router();
 
@@ -8,6 +8,6 @@ const router = Router();
 // We'll restrict to logged in users for now
 router.use(protect);
 
-router.get('/search', searchFlights);
+router.get("/search", searchFlights);
 
 export default router;

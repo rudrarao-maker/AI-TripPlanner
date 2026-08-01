@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -9,22 +9,34 @@ import {
   DragOverlay,
   type DragStartEvent,
   type DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { GripVertical, Plus, Trash2, Clock, MapPin, IndianRupee, ChevronDown, ChevronRight, Edit3, Check, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LiveCursors } from './LiveCursors';
-import { useRef } from 'react';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  GripVertical,
+  Plus,
+  Trash2,
+  Clock,
+  MapPin,
+  IndianRupee,
+  ChevronDown,
+  ChevronRight,
+  Edit3,
+  Check,
+  X,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { LiveCursors } from "./LiveCursors";
+import { useRef } from "react";
 
 interface Activity {
   id: string;
@@ -46,7 +58,14 @@ interface DayData {
 }
 
 // ===== Time slot colors =====
-const SLOT_COLORS = ['bg-primary', 'bg-accent', 'bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
+const SLOT_COLORS = [
+  "bg-primary",
+  "bg-accent",
+  "bg-indigo-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+];
 
 // ===== Sortable Activity Item =====
 function SortableActivity({
@@ -96,13 +115,15 @@ function SortableActivity({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex gap-3 relative group ${isDragging ? 'opacity-40 scale-[0.98]' : ''}`}
+      className={`flex gap-3 relative group ${isDragging ? "opacity-40 scale-[0.98]" : ""}`}
       onMouseEnter={() => onHover?.(activity.id)}
-      onMouseLeave={() => onHover?.('')}
+      onMouseLeave={() => onHover?.("")}
     >
       {/* Timeline dot + line */}
       <div className="flex flex-col items-center pt-4">
-        <div className={`h-3 w-3 rounded-full ${activity.color} ring-4 ring-background shadow-sm z-10 shrink-0`} />
+        <div
+          className={`h-3 w-3 rounded-full ${activity.color} ring-4 ring-background shadow-sm z-10 shrink-0`}
+        />
         {!isLast && <div className="w-px flex-1 bg-border/60 mt-1" />}
       </div>
 
@@ -111,7 +132,9 @@ function SortableActivity({
         <motion.div
           layout
           className={`flex items-start gap-2 bg-card p-3.5 rounded-xl border transition-all duration-200 ${
-            isDragging ? 'border-primary shadow-xl' : 'border-border/50 hover:border-primary/30 hover:shadow-md'
+            isDragging
+              ? "border-primary shadow-xl"
+              : "border-border/50 hover:border-primary/30 hover:shadow-md"
           }`}
         >
           <div className="flex-1 min-w-0">
@@ -124,29 +147,43 @@ function SortableActivity({
               <div className="mt-2 space-y-2">
                 <Input
                   value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
+                  onChange={(e) => setEditTitle(e.target.value)}
                   className="h-8 text-sm font-semibold"
                   autoFocus
                 />
                 <Input
                   value={editDescription}
-                  onChange={e => setEditDescription(e.target.value)}
+                  onChange={(e) => setEditDescription(e.target.value)}
                   className="h-8 text-sm"
                   placeholder="Description"
                 />
                 <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleSave}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={handleSave}
+                  >
                     <Check className="h-3 w-3 mr-1" /> Save
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={handleCancel}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-muted-foreground"
+                    onClick={handleCancel}
+                  >
                     <X className="h-3 w-3 mr-1" /> Cancel
                   </Button>
                 </div>
               </div>
             ) : (
               <>
-                <h4 className="font-semibold text-base mt-1.5 text-foreground leading-tight">{activity.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{activity.description}</p>
+                <h4 className="font-semibold text-base mt-1.5 text-foreground leading-tight">
+                  {activity.title}
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                  {activity.description}
+                </p>
 
                 {/* Meta info */}
                 <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -162,7 +199,8 @@ function SortableActivity({
                   )}
                   {activity.cost !== undefined && activity.cost > 0 && (
                     <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <IndianRupee className="h-3 w-3" /> {activity.cost.toLocaleString()}
+                      <IndianRupee className="h-3 w-3" />{" "}
+                      {activity.cost.toLocaleString()}
                     </span>
                   )}
                 </div>
@@ -208,8 +246,12 @@ function DragOverlayItem({ activity }: { activity: Activity }) {
       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary tracking-wider uppercase">
         <Clock className="h-2.5 w-2.5" /> {activity.time}
       </span>
-      <h4 className="font-semibold text-base mt-1 text-foreground">{activity.title}</h4>
-      <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{activity.description}</p>
+      <h4 className="font-semibold text-base mt-1 text-foreground">
+        {activity.title}
+      </h4>
+      <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
+        {activity.description}
+      </p>
     </div>
   );
 }
@@ -226,7 +268,11 @@ function DayCard({
   day: DayData;
   onReorder: (dayId: string, oldIndex: number, newIndex: number) => void;
   onDeleteActivity: (dayId: string, activityId: string) => void;
-  onEditActivity: (dayId: string, activityId: string, updates: Partial<Activity>) => void;
+  onEditActivity: (
+    dayId: string,
+    activityId: string,
+    updates: Partial<Activity>,
+  ) => void;
   onAddActivity: (dayId: string) => void;
   onHoverItem?: (id: string) => void;
 }) {
@@ -235,7 +281,9 @@ function DayCard({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -247,12 +295,14 @@ function DayCard({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = day.activities.findIndex(a => a.id === active.id);
-    const newIndex = day.activities.findIndex(a => a.id === over.id);
+    const oldIndex = day.activities.findIndex((a) => a.id === active.id);
+    const newIndex = day.activities.findIndex((a) => a.id === over.id);
     onReorder(day.id, oldIndex, newIndex);
   };
 
-  const activeActivity = activeId ? day.activities.find(a => a.id === activeId) : null;
+  const activeActivity = activeId
+    ? day.activities.find((a) => a.id === activeId)
+    : null;
 
   // Calculate total cost for the day
   const totalCost = day.activities.reduce((sum, a) => sum + (a.cost || 0), 0);
@@ -271,7 +321,11 @@ function DayCard({
             <CardTitle className="text-base">{day.title}</CardTitle>
             {day.date && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                {new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {new Date(day.date).toLocaleDateString("en-IN", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
               </p>
             )}
           </div>
@@ -287,7 +341,11 @@ function DayCard({
               </span>
             )}
           </div>
-          {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
         </div>
       </CardHeader>
 
@@ -295,7 +353,7 @@ function DayCard({
         {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
@@ -306,21 +364,28 @@ function DayCard({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
-                <SortableContext items={day.activities} strategy={verticalListSortingStrategy}>
+                <SortableContext
+                  items={day.activities}
+                  strategy={verticalListSortingStrategy}
+                >
                   {day.activities.map((activity, index) => (
                     <SortableActivity
                       key={activity.id}
                       activity={activity}
                       isLast={index === day.activities.length - 1}
                       onDelete={(id) => onDeleteActivity(day.id, id)}
-                      onEdit={(id, updates) => onEditActivity(day.id, id, updates)}
+                      onEdit={(id, updates) =>
+                        onEditActivity(day.id, id, updates)
+                      }
                       onHover={onHoverItem}
                     />
                   ))}
                 </SortableContext>
 
                 <DragOverlay>
-                  {activeActivity ? <DragOverlayItem activity={activeActivity} /> : null}
+                  {activeActivity ? (
+                    <DragOverlayItem activity={activeActivity} />
+                  ) : null}
                 </DragOverlay>
               </DndContext>
 
@@ -345,12 +410,22 @@ interface DraggableItineraryProps {
   onHoverItem?: (id: string) => void;
   itineraryDays?: any[];
   emitSocket?: (event: string, data: any) => void;
-  subscribeSocket?: (event: string, callback: (data: any) => void) => () => void;
+  subscribeSocket?: (
+    event: string,
+    callback: (data: any) => void,
+  ) => () => void;
   socketId?: string;
+  tripId?: string;
 }
 
-export function DraggableItinerary({ onHoverItem, itineraryDays, emitSocket, subscribeSocket, socketId }: DraggableItineraryProps) {
-  
+export function DraggableItinerary({
+  onHoverItem,
+  itineraryDays,
+  emitSocket,
+  subscribeSocket,
+  socketId,
+  tripId,
+}: DraggableItineraryProps) {
   const buildDays = useCallback((): DayData[] => {
     if (itineraryDays && itineraryDays.length > 0) {
       return itineraryDays.map((day: any, idx: number) => ({
@@ -358,60 +433,133 @@ export function DraggableItinerary({ onHoverItem, itineraryDays, emitSocket, sub
         dayNumber: day.dayNumber || idx + 1,
         title: day.title || `Day ${idx + 1}`,
         date: day.date,
-        activities: (day.activities || [
-          day.morningActivity && {
-            id: `d${idx + 1}-morning`,
-            title: day.morningActivity.title || 'Morning Activity',
-            description: day.morningActivity.description || '',
-            time: 'Morning (10:00 AM)',
-            location: day.morningActivity.location,
-            cost: day.morningActivity.cost,
-            duration: day.morningActivity.duration || '3 hours',
-            color: SLOT_COLORS[0],
-          },
-          day.afternoonActivity && {
-            id: `d${idx + 1}-afternoon`,
-            title: day.afternoonActivity.title || 'Afternoon Activity',
-            description: day.afternoonActivity.description || '',
-            time: 'Afternoon (2:00 PM)',
-            location: day.afternoonActivity.location,
-            cost: day.afternoonActivity.cost,
-            duration: day.afternoonActivity.duration || '2 hours',
-            color: SLOT_COLORS[1],
-          },
-          day.eveningActivity && {
-            id: `d${idx + 1}-evening`,
-            title: day.eveningActivity.title || 'Evening Activity',
-            description: day.eveningActivity.description || '',
-            time: 'Evening (6:00 PM)',
-            location: day.eveningActivity.location,
-            cost: day.eveningActivity.cost,
-            duration: day.eveningActivity.duration || '2.5 hours',
-            color: SLOT_COLORS[2],
-          },
-        ].filter(Boolean) as Activity[]),
+        activities:
+          day.activities && Array.isArray(day.activities)
+            ? day.activities.map((act: any, aIdx: number) => ({
+                id: act.id || `d${idx + 1}-a${aIdx}`,
+                title: act.name || act.title || "Activity",
+                description: act.description || "",
+                time: act.time || "TBD",
+                location: act.location,
+                cost: act.estimatedCost || act.cost || 0,
+                duration: act.duration
+                  ? `${Math.round(act.duration / 60)} hours`
+                  : "2 hours",
+                color: SLOT_COLORS[aIdx % SLOT_COLORS.length],
+              }))
+            : ([
+                day.morningActivity && {
+                  id: `d${idx + 1}-morning`,
+                  title: day.morningActivity.title || "Morning Activity",
+                  description: day.morningActivity.description || "",
+                  time: "Morning (10:00 AM)",
+                  location: day.morningActivity.location,
+                  cost: day.morningActivity.cost,
+                  duration: day.morningActivity.duration || "3 hours",
+                  color: SLOT_COLORS[0],
+                },
+                day.afternoonActivity && {
+                  id: `d${idx + 1}-afternoon`,
+                  title: day.afternoonActivity.title || "Afternoon Activity",
+                  description: day.afternoonActivity.description || "",
+                  time: "Afternoon (2:00 PM)",
+                  location: day.afternoonActivity.location,
+                  cost: day.afternoonActivity.cost,
+                  duration: day.afternoonActivity.duration || "2 hours",
+                  color: SLOT_COLORS[1],
+                },
+                day.eveningActivity && {
+                  id: `d${idx + 1}-evening`,
+                  title: day.eveningActivity.title || "Evening Activity",
+                  description: day.eveningActivity.description || "",
+                  time: "Evening (6:00 PM)",
+                  location: day.eveningActivity.location,
+                  cost: day.eveningActivity.cost,
+                  duration: day.eveningActivity.duration || "2.5 hours",
+                  color: SLOT_COLORS[2],
+                },
+              ].filter(Boolean) as Activity[]),
       }));
     }
 
     return [
       {
-        id: 'day-1',
+        id: "day-1",
         dayNumber: 1,
-        title: 'Arrival & Exploration',
+        title: "Arrival & Exploration",
         activities: [
-          { id: 'a1', title: 'Cultural City Tour', description: 'Visit the historic landmarks and immerse yourself in local culture.', time: 'Morning (10:00 AM)', location: 'City Center', cost: 800, duration: '3 hours', color: SLOT_COLORS[0] },
-          { id: 'a2', title: 'Local Cuisine Lunch', description: 'Enjoy famous local dishes at a top-rated restaurant.', time: 'Afternoon (2:00 PM)', location: 'Food Street', cost: 1200, duration: '1.5 hours', color: SLOT_COLORS[1] },
-          { id: 'a3', title: 'Sunset Views', description: 'Relax at a scenic viewpoint and watch the golden sunset.', time: 'Evening (6:00 PM)', location: 'Scenic Viewpoint', cost: 0, duration: '2 hours', color: SLOT_COLORS[2] },
+          {
+            id: "a1",
+            title: "Cultural City Tour",
+            description:
+              "Visit the historic landmarks and immerse yourself in local culture.",
+            time: "Morning (10:00 AM)",
+            location: "City Center",
+            cost: 800,
+            duration: "3 hours",
+            color: SLOT_COLORS[0],
+          },
+          {
+            id: "a2",
+            title: "Local Cuisine Lunch",
+            description: "Enjoy famous local dishes at a top-rated restaurant.",
+            time: "Afternoon (2:00 PM)",
+            location: "Food Street",
+            cost: 1200,
+            duration: "1.5 hours",
+            color: SLOT_COLORS[1],
+          },
+          {
+            id: "a3",
+            title: "Sunset Views",
+            description:
+              "Relax at a scenic viewpoint and watch the golden sunset.",
+            time: "Evening (6:00 PM)",
+            location: "Scenic Viewpoint",
+            cost: 0,
+            duration: "2 hours",
+            color: SLOT_COLORS[2],
+          },
         ],
       },
       {
-        id: 'day-2',
+        id: "day-2",
         dayNumber: 2,
-        title: 'Adventure & Discovery',
+        title: "Adventure & Discovery",
         activities: [
-          { id: 'b1', title: 'Morning Hike', description: 'Trek through nature trails with stunning panoramic views.', time: 'Morning (7:00 AM)', location: 'Nature Reserve', cost: 500, duration: '4 hours', color: SLOT_COLORS[3] },
-          { id: 'b2', title: 'Museum & Art Gallery', description: 'Explore local art and history at the national museum.', time: 'Afternoon (1:30 PM)', location: 'National Museum', cost: 300, duration: '2 hours', color: SLOT_COLORS[4] },
-          { id: 'b3', title: 'Night Market Tour', description: 'Browse local crafts, street food, and live performances.', time: 'Evening (7:00 PM)', location: 'Night Market', cost: 1500, duration: '3 hours', color: SLOT_COLORS[5] },
+          {
+            id: "b1",
+            title: "Morning Hike",
+            description:
+              "Trek through nature trails with stunning panoramic views.",
+            time: "Morning (7:00 AM)",
+            location: "Nature Reserve",
+            cost: 500,
+            duration: "4 hours",
+            color: SLOT_COLORS[3],
+          },
+          {
+            id: "b2",
+            title: "Museum & Art Gallery",
+            description:
+              "Explore local art and history at the national museum.",
+            time: "Afternoon (1:30 PM)",
+            location: "National Museum",
+            cost: 300,
+            duration: "2 hours",
+            color: SLOT_COLORS[4],
+          },
+          {
+            id: "b3",
+            title: "Night Market Tour",
+            description:
+              "Browse local crafts, street food, and live performances.",
+            time: "Evening (7:00 PM)",
+            location: "Night Market",
+            cost: 1500,
+            duration: "3 hours",
+            color: SLOT_COLORS[5],
+          },
         ],
       },
     ];
@@ -426,72 +574,97 @@ export function DraggableItinerary({ onHoverItem, itineraryDays, emitSocket, sub
 
   useEffect(() => {
     if (subscribeSocket) {
-      const unsubSync = subscribeSocket('itinerary_sync', (updatedDays) => {
+      const unsubSync = subscribeSocket("itinerary_sync", (updatedDays) => {
         setDays(updatedDays);
       });
-      return () => { unsubSync(); };
+      return () => {
+        unsubSync();
+      };
     }
   }, [subscribeSocket]);
 
-  const handleReorder = useCallback((dayId: string, oldIndex: number, newIndex: number) => {
-    setDays(prev => {
-      const next = prev.map(day =>
-        day.id === dayId
-          ? { ...day, activities: arrayMove(day.activities, oldIndex, newIndex) }
-          : day
-      );
-      if (emitSocket) emitSocket('itinerary_sync', next);
-      return next;
-    });
-  }, [emitSocket]);
+  const handleReorder = useCallback(
+    (dayId: string, oldIndex: number, newIndex: number) => {
+      setDays((prev) => {
+        const next = prev.map((day) =>
+          day.id === dayId
+            ? {
+                ...day,
+                activities: arrayMove(day.activities, oldIndex, newIndex),
+              }
+            : day,
+        );
+        if (emitSocket) emitSocket("itinerary_sync", next);
+        return next;
+      });
+    },
+    [emitSocket],
+  );
 
-  const handleDeleteActivity = useCallback((dayId: string, activityId: string) => {
-    setDays(prev => {
-      const next = prev.map(day =>
-        day.id === dayId
-          ? { ...day, activities: day.activities.filter(a => a.id !== activityId) }
-          : day
-      );
-      if (emitSocket) emitSocket('itinerary_sync', next);
-      return next;
-    });
-  }, [emitSocket]);
+  const handleDeleteActivity = useCallback(
+    (dayId: string, activityId: string) => {
+      setDays((prev) => {
+        const next = prev.map((day) =>
+          day.id === dayId
+            ? {
+                ...day,
+                activities: day.activities.filter((a) => a.id !== activityId),
+              }
+            : day,
+        );
+        if (emitSocket) emitSocket("itinerary_sync", next);
+        return next;
+      });
+    },
+    [emitSocket],
+  );
 
-  const handleEditActivity = useCallback((dayId: string, activityId: string, updates: Partial<Activity>) => {
-    setDays(prev => {
-      const next = prev.map(day =>
-        day.id === dayId
-          ? { ...day, activities: day.activities.map(a => a.id === activityId ? { ...a, ...updates } : a) }
-          : day
-      );
-      if (emitSocket) emitSocket('itinerary_sync', next);
-      return next;
-    });
-  }, [emitSocket]);
+  const handleEditActivity = useCallback(
+    (dayId: string, activityId: string, updates: Partial<Activity>) => {
+      setDays((prev) => {
+        const next = prev.map((day) =>
+          day.id === dayId
+            ? {
+                ...day,
+                activities: day.activities.map((a) =>
+                  a.id === activityId ? { ...a, ...updates } : a,
+                ),
+              }
+            : day,
+        );
+        if (emitSocket) emitSocket("itinerary_sync", next);
+        return next;
+      });
+    },
+    [emitSocket],
+  );
 
-  const handleAddActivity = useCallback((dayId: string) => {
-    const newActivity: Activity = {
-      id: `new-${Date.now()}`,
-      title: 'New Activity',
-      description: 'Click the edit button to customize this activity.',
-      time: 'Flexible',
-      color: SLOT_COLORS[Math.floor(Math.random() * SLOT_COLORS.length)],
-    };
-    setDays(prev => {
-      const next = prev.map(day =>
-        day.id === dayId
-          ? { ...day, activities: [...day.activities, newActivity] }
-          : day
-      );
-      if (emitSocket) emitSocket('itinerary_sync', next);
-      return next;
-    });
-  }, [emitSocket]);
+  const handleAddActivity = useCallback(
+    (dayId: string) => {
+      const newActivity: Activity = {
+        id: `new-${Date.now()}`,
+        title: "New Activity",
+        description: "Click the edit button to customize this activity.",
+        time: "Flexible",
+        color: SLOT_COLORS[Math.floor(Math.random() * SLOT_COLORS.length)],
+      };
+      setDays((prev) => {
+        const next = prev.map((day) =>
+          day.id === dayId
+            ? { ...day, activities: [...day.activities, newActivity] }
+            : day,
+        );
+        if (emitSocket) emitSocket("itinerary_sync", next);
+        return next;
+      });
+    },
+    [emitSocket],
+  );
 
   return (
     <div className="space-y-4 relative" ref={containerRef}>
       {tripId && <LiveCursors tripId={tripId} containerRef={containerRef} />}
-      {days.map(day => (
+      {days.map((day) => (
         <DayCard
           key={day.id}
           day={day}

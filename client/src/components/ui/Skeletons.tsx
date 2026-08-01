@@ -1,9 +1,11 @@
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 // ===== Generic Shimmer Effect =====
-function Shimmer({ className = '' }: { className?: string }) {
+function Shimmer({ className = "" }: { className?: string }) {
   return (
-    <div className={`bg-muted rounded animate-shimmer bg-gradient-to-r from-muted via-muted-foreground/5 to-muted bg-[length:200%_100%] ${className}`} />
+    <div
+      className={`bg-muted rounded animate-shimmer bg-gradient-to-r from-muted via-muted-foreground/5 to-muted bg-[length:200%_100%] ${className}`}
+    />
   );
 }
 
@@ -68,7 +70,7 @@ export function ItinerarySkeleton({ days = 2 }: { days?: number }) {
             </div>
           </div>
           <div className="p-5 space-y-4">
-            {[1, 2, 3].map(j => (
+            {[1, 2, 3].map((j) => (
               <div key={j} className="flex gap-3">
                 <div className="flex flex-col items-center">
                   <Shimmer className="h-3 w-3 rounded-full" />
@@ -118,8 +120,11 @@ export function WeatherSkeleton() {
       <div className="pt-4 border-t">
         <Shimmer className="h-3 w-24 mb-3" />
         <div className="grid grid-cols-5 gap-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="p-2.5 rounded-xl bg-background/50 space-y-2 flex flex-col items-center">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="p-2.5 rounded-xl bg-background/50 space-y-2 flex flex-col items-center"
+            >
               <Shimmer className="h-3 w-8" />
               <Shimmer className="h-6 w-6 rounded-full" />
               <Shimmer className="h-4 w-8" />
@@ -145,7 +150,7 @@ export function PageSkeleton() {
         <Shimmer className="h-5 w-96" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map(i => (
+        {[1, 2, 3].map((i) => (
           <CardSkeleton key={i} />
         ))}
       </div>
