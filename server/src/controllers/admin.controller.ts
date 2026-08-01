@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { sendSuccess, sendError } from "../utils/response";
 import { PrismaClient } from "@prisma/client";
+import { clerkClient } from "@clerk/express";
 
 const prisma = new PrismaClient();
 
@@ -91,8 +92,12 @@ export const changeUserPassword = async (req: Request, res: Response) => {
       return sendError(res, 404, "User not found");
     }
 
-    // In a full Clerk implementation, we would call clerkClient.users.updateUser(user.clerkId, { password: newPassword })
-    // For local database fallback, we update the local password record.
+    // Update password in Clerk
+    if (user.clerkId) {
+      await clerkClient.users.updateUser(user.clerkId, { password: newPassword });
+    }
+
+    // Still update local DB for consistency if needed
     const bcrypt = require("bcryptjs");
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);

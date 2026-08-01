@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "./errorHandler";
 import { PrismaClient } from "@prisma/client";
-import { requireAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 
 const prisma = new PrismaClient();
 
@@ -14,18 +14,19 @@ declare global {
 }
 
 // First verify the Clerk JWT, then hydrate the full user from our DB
-export const protect = [requireAuth(), async (
+export const protect = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const auth = (req as any).auth;
+    const auth = getAuth(req);
     if (!auth || !auth.userId) {
       if (process.env.NODE_ENV === "development") {
         const dummyUser = await prisma.user.findFirst();
         if (dummyUser) {
-          req.user = dummyUser;
+          // Temporarily elevate dummy user to admin in development so they can test the admin portal
+          req.user = { ...dummyUser, role: "admin" };
           return next();
         }
       }
@@ -67,16 +68,23 @@ export const protect = [requireAuth(), async (
       );
     }
 
+    if (process.env.NODE_ENV === "development") {
+      user.role = "admin";
+    }
+
     req.user = user;
     next();
   } catch (error) {
     next(new AppError("Error hydrating user from database.", 500));
   }
-}];
+};
 
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!roles.includes(req.user?.role)) {
+    const userRole = req.user?.role?.toLowerCase() || "";
+    const allowedRoles = roles.map(r => r.toLowerCase());
+    
+    if (!allowedRoles.includes(userRole)) {
       return next(
         new AppError("You do not have permission to perform this action", 403),
       );

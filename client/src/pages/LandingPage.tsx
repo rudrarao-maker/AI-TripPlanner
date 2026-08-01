@@ -118,8 +118,15 @@ export function LandingPage() {
             </motion.p>
 
             {/* Smart Search Bar */}
-            <div className="w-full flex justify-center lg:justify-start">
+            <div className="w-full flex flex-col items-center lg:items-start gap-4">
               <HeroSearchBar />
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                <span>Or prefer a structured step-by-step approach?</span>
+                <Link to="/plan" className="text-primary font-medium hover:underline flex items-center gap-1">
+                  Try the Guided Wizard <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
             </div>
           </div>
 

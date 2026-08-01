@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -86,6 +86,10 @@ model Activity {
   imageUrl      String?
   lat           Float?
   lng           Float?
+  rating        Float?   // 1.0 - 5.0 star rating
+  isHiddenGem   Boolean  @default(false)
+  localTip      String?  // insider travel tip
+  bestTimeToVisit String? // e.g., "Early morning", "Sunset"
   orderIndex    Int      @default(0) // for drag and drop ordering
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

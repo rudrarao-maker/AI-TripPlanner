@@ -32,7 +32,7 @@ export const generateTrip = async (userId: string, tripData: any) => {
     },
   });
 
-  // 3. Save Trip Days and Activities
+  // 3. Save Trip Days and Activities with enriched data
   const tripDays = await Promise.all(
     generatedItinerary.days.map((day: any) =>
       prisma.tripDay.create({
@@ -51,6 +51,14 @@ export const generateTrip = async (userId: string, tripData: any) => {
                 duration: activity.duration,
                 category: activity.category,
                 orderIndex: index,
+                // New enriched fields
+                lat: activity.lat || activity.geoCoordinates?.lat || null,
+                lng: activity.lng || activity.geoCoordinates?.lng || null,
+                rating: activity.rating || null,
+                isHiddenGem: activity.isHiddenGem || false,
+                localTip: activity.localTip || null,
+                bestTimeToVisit: activity.bestTimeToVisit || null,
+                imageUrl: activity.imageUrl || activity.photoUrl || null,
               })) || [],
           },
         },
@@ -73,6 +81,17 @@ export const getUserTrips = async (userId: string) => {
   return await prisma.trip.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
+    include: {
+      days: {
+        orderBy: { dayNumber: "asc" },
+        include: {
+          activities: {
+            orderBy: { orderIndex: "asc" },
+            take: 3, // Just first 3 activities for preview
+          },
+        },
+      },
+    },
   });
 };
 
@@ -104,8 +123,69 @@ export const regenerateTripDay = async (
   preferences: any,
   userId: string,
 ) => {
-  // Logic to call AI service and regenerate day
-  return { status: "not_implemented_yet", dayId };
+  // Verify trip ownership
+  const trip = await prisma.trip.findFirst({
+    where: { id: tripId, userId },
+    include: {
+      days: {
+        where: { id: dayId },
+        include: { activities: true },
+      },
+    },
+  });
+
+  if (!trip) {
+    throw new AppError("Trip not found", 404);
+  }
+
+  const day = trip.days[0];
+  if (!day) {
+    throw new AppError("Day not found", 404);
+  }
+
+  // Generate new activities for this day
+  const regenerated = await aiService.regenerateDay(tripId, day.dayNumber, {
+    destination: trip.destination,
+    budget: trip.budget,
+    travelStyle: trip.travelStyle,
+    ...preferences,
+  });
+
+  // Delete old activities
+  await prisma.activity.deleteMany({
+    where: { tripDayId: dayId },
+  });
+
+  // Create new activities
+  const newActivities = await Promise.all(
+    regenerated.activities.map((activity: any, index: number) =>
+      prisma.activity.create({
+        data: {
+          tripDayId: dayId,
+          time: activity.time,
+          name: activity.name,
+          description: activity.description,
+          location: activity.location,
+          estimatedCost: activity.estimatedCost,
+          duration: activity.duration,
+          category: activity.category,
+          orderIndex: index,
+          lat: activity.lat || null,
+          lng: activity.lng || null,
+          rating: activity.rating || null,
+          isHiddenGem: activity.isHiddenGem || false,
+          localTip: activity.localTip || null,
+          bestTimeToVisit: activity.bestTimeToVisit || null,
+        },
+      }),
+    ),
+  );
+
+  return {
+    ...day,
+    activities: newActivities,
+    theme: regenerated.theme,
+  };
 };
 
 export const getAlternativeActivity = async (
@@ -113,6 +193,33 @@ export const getAlternativeActivity = async (
   preferences: any,
   userId: string,
 ) => {
-  // Logic to call AI service and find alternatives
-  return { status: "not_implemented_yet", activityId };
+  // Find the activity and its trip
+  const activity = await prisma.activity.findUnique({
+    where: { id: activityId },
+    include: {
+      tripDay: {
+        include: {
+          trip: true,
+        },
+      },
+    },
+  });
+
+  if (!activity) {
+    throw new AppError("Activity not found", 404);
+  }
+
+  if (activity.tripDay.trip.userId !== userId) {
+    throw new AppError("Not authorized", 403);
+  }
+
+  const alternatives = await aiService.getAlternativeActivities(
+    activity.name,
+    activity.tripDay.trip.destination,
+  );
+
+  return {
+    currentActivity: activity.name,
+    alternatives,
+  };
 };

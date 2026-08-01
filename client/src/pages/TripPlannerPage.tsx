@@ -27,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InteractiveMap } from "@/components/map/InteractiveMap";
+import { GlobeMap } from "@/components/trip/GlobeMap";
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { RestaurantCard } from "@/components/recommendations/RestaurantCard";
 import { AttractionCard } from "@/components/recommendations/AttractionCard";
@@ -185,6 +186,14 @@ export function TripPlannerPage() {
               newFormData.hotel = "budget";
             else newFormData.hotel = "4-star";
           }
+          
+          const daysCount = parsed.daysCount || 7;
+          const startD = new Date();
+          const endD = new Date(new Date().setDate(new Date().getDate() + daysCount - 1));
+          const yyyyStart = startD.toISOString().split("T")[0];
+          const yyyyEnd = endD.toISOString().split("T")[0];
+          newFormData.dates = `${yyyyStart} to ${yyyyEnd}`;
+
           setFormData(newFormData);
 
           // Auto-advance to generation using the extracted data
@@ -201,13 +210,21 @@ export function TripPlannerPage() {
 
   const generateWithData = async (dataToUse: typeof formData) => {
     const baseBudget = parseInt(dataToUse.budget) || 120000;
+    
+    // Parse dates from formData (format: "YYYY-MM-DD to YYYY-MM-DD")
+    let startD = new Date();
+    let endD = new Date(new Date().setDate(new Date().getDate() + 7));
+    if (dataToUse.dates && dataToUse.dates.includes("to")) {
+      const parts = dataToUse.dates.split("to");
+      if (parts[0].trim()) startD = new Date(parts[0].trim());
+      if (parts[1]?.trim()) endD = new Date(parts[1].trim());
+    }
+
     const baseTripData = {
       origin: "Mumbai",
       destination: dataToUse.destinations[0] || "Bali",
-      startDate: new Date().toISOString(),
-      endDate: new Date(
-        new Date().setDate(new Date().getDate() + 7),
-      ).toISOString(),
+      startDate: startD.toISOString(),
+      endDate: endD.toISOString(),
       travelers: dataToUse.adults + dataToUse.children,
       currency: "INR",
       travelStyle: dataToUse.style || "adventure",
@@ -1174,78 +1191,11 @@ export function TripPlannerPage() {
               <div className="sticky top-24 space-y-8">
                 <div>
                   <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-                    <MapLucide className="h-5 w-5 text-primary" /> Interactive
-                    Map
+                    <MapLucide className="h-5 w-5 text-primary" /> Interactive 3D Globe
                   </h2>
-                  <InteractiveMap
-                    center={destCoords}
-                    zoom={12}
-                    className="h-[300px] rounded-2xl"
-                    activeMarkerId={activeItemHover}
-                    markers={(
-                      activeItinerary?.days?.flatMap(
-                        (d: any, dIdx: number) =>
-                          d.activities?.map((act: any, aIdx: number) => ({
-                            id: act.id || `act-${dIdx}-${aIdx}`,
-                            position: {
-                              // Deterministic scatter around destCoords
-                              lat:
-                                destCoords.lat +
-                                Math.sin(dIdx * 10 + aIdx) * 0.01,
-                              lng:
-                                destCoords.lng +
-                                Math.cos(dIdx * 10 + aIdx) * 0.01,
-                            },
-                            title: act.name,
-                            type:
-                              act.category === "hotel"
-                                ? "hotel"
-                                : act.category === "restaurant"
-                                  ? "restaurant"
-                                  : "attraction",
-                            description:
-                              activeItemHover ===
-                              (act.id || `d${dIdx + 1}-a${aIdx}`)
-                                ? "Currently viewing..."
-                                : undefined,
-                          })) || [],
-                      ) || [
-                        {
-                          id: "a1",
-                          position: {
-                            lat: destCoords.lat + 0.005,
-                            lng: destCoords.lng + 0.005,
-                          },
-                          title: "Morning Activity",
-                          type: "attraction",
-                        },
-                        {
-                          id: "a2",
-                          position: {
-                            lat: destCoords.lat - 0.003,
-                            lng: destCoords.lng + 0.01,
-                          },
-                          title: "Afternoon Activity",
-                          type: "restaurant",
-                        },
-                        {
-                          id: "a3",
-                          position: {
-                            lat: destCoords.lat + 0.008,
-                            lng: destCoords.lng - 0.005,
-                          },
-                          title: "Evening Activity",
-                          type: "attraction",
-                        },
-                      ]
-                    ).map((m: any) => ({
-                      ...m,
-                      description:
-                        activeItemHover === m.id
-                          ? "Currently viewing..."
-                          : m.description,
-                    }))}
-                  />
+                  <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative">
+                    <GlobeMap destination={{ ...destCoords, name: itinerary?.destination || searchParams.get("dest") || "Destination" }} />
+                  </div>
                 </div>
 
                 {/* Budget Optimizer & Travel Tools */}
@@ -1408,7 +1358,14 @@ export function TripPlannerPage() {
               Back
             </Button>
             {step < 3 ? (
-              <Button variant="gradient" onClick={() => setStep(step + 1)}>
+              <Button
+                variant="gradient"
+                onClick={() => setStep(step + 1)}
+                disabled={
+                  (step === 1 && formData.destinations[0].trim().length < 2) ||
+                  (step === 2 && (!formData.dates.includes("to") || formData.dates.split("to")[1]?.trim().length === 0))
+                }
+              >
                 Continue
               </Button>
             ) : (
@@ -1416,6 +1373,7 @@ export function TripPlannerPage() {
                 variant="gradient"
                 onClick={handleGenerate}
                 className="gap-2"
+                disabled={!formData.budget || !formData.style || isGenerating}
               >
                 <Sparkles className="h-4 w-4" /> Generate Itinerary
               </Button>

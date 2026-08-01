@@ -30,10 +30,11 @@ export const getTrip = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const regenerateDay = catchAsync(async (req: Request, res: Response) => {
-  const { dayId, preferences } = req.body;
+  const { dayId, id: tripId } = req.params;
+  const { preferences } = req.body;
   const newDay = await tripService.regenerateTripDay(
-    req.params.id as string,
-    dayId,
+    tripId as string,
+    dayId as string,
     preferences,
     req.user.id,
   );
@@ -41,9 +42,10 @@ export const regenerateDay = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAlternativeActivity = catchAsync(async (req: Request, res: Response) => {
-  const { preferences } = req.body;
+  const { activityId } = req.params;
+  const { preferences } = req.query;
   const alternative = await tripService.getAlternativeActivity(
-    req.params.id as string,
+    activityId as string,
     preferences,
     req.user.id,
   );

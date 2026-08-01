@@ -23,6 +23,8 @@ import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { PageTransition } from "./components/layout/PageTransition";
 
+import { MyTripsPage } from "./pages/MyTripsPage";
+
 // New Pages
 import { DestinationsPage } from "./pages/DestinationsPage";
 import { RestaurantsPage } from "./pages/RestaurantsPage";
@@ -80,6 +82,7 @@ export function AnimatedRoutes() {
               </PageTransition>
             }
           />
+
           <Route
             path="/flights"
             element={
@@ -137,7 +140,7 @@ export function AnimatedRoutes() {
             }
           />
           <Route
-            path="/login"
+            path="/login/*"
             element={
               <PageTransition>
                 <LoginPage />
@@ -145,7 +148,7 @@ export function AnimatedRoutes() {
             }
           />
           <Route
-            path="/register"
+            path="/register/*"
             element={
               <PageTransition>
                 <RegisterPage />
@@ -250,6 +253,14 @@ export function AnimatedRoutes() {
               element={
                 <PageTransition>
                   <WishlistPage />
+                </PageTransition>
+              }
+            />
+            <Route
+              path="/my-trips"
+              element={
+                <PageTransition>
+                  <MyTripsPage />
                 </PageTransition>
               }
             />

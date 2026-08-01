@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const recommendations_controller_1 = require("../controllers/recommendations.controller");
+const router = (0, express_1.Router)();
+router.get("/hotels", recommendations_controller_1.getHotels);
+router.get("/restaurants", recommendations_controller_1.getRestaurants);
+router.get("/attractions", recommendations_controller_1.getAttractions);
+router.get("/transport", recommendations_controller_1.getTransport);
+exports.default = router;
