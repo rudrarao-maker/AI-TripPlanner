@@ -97,14 +97,18 @@ export const parseUserPrompt = async (prompt: string) => {
       : "4-star",
   };
 
-  await prisma.aiUsageLog.create({
-    data: {
-      prompt: `[MOCK] Parse Prompt: ${prompt.substring(0, 50)}...`,
-      latencyMs: Math.floor(Math.random() * 300) + 100, // mock latency
-      tokens: 0,
-      status: "success",
-    },
-  });
+  try {
+    await prisma.aiUsageLog.create({
+      data: {
+        prompt: `[MOCK] Parse Prompt: ${prompt.substring(0, 50)}...`,
+        latencyMs: Math.floor(Math.random() * 300) + 100, // mock latency
+        tokens: 0,
+        status: "success",
+      },
+    });
+  } catch (err) {
+    console.error("Prisma log failed in mock:", err);
+  }
 
   return result;
 };

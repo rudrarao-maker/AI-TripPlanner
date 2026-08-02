@@ -27,6 +27,7 @@ import { MyTripsPage } from "./pages/MyTripsPage";
 
 // New Pages
 import { DestinationsPage } from "./pages/DestinationsPage";
+import { DestinationDetailsPage } from "./pages/DestinationDetailsPage";
 import { RestaurantsPage } from "./pages/RestaurantsPage";
 import { ThingsToDoPage } from "./pages/ThingsToDoPage";
 import { TravelGuidesPage } from "./pages/TravelGuidesPage";
@@ -170,6 +171,14 @@ export function AnimatedRoutes() {
             element={
               <PageTransition>
                 <DestinationsPage />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="/destinations/:id"
+            element={
+              <PageTransition>
+                <DestinationDetailsPage />
               </PageTransition>
             }
           />

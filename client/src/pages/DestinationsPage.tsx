@@ -115,7 +115,7 @@ export function DestinationsPage() {
               <Card
                 className="glass-card group cursor-pointer overflow-hidden border-border/30 h-full flex flex-col"
                 onClick={() =>
-                  navigate(`/plan?dest=${encodeURIComponent(dest.name)}`)
+                  navigate(`/destinations/${dest.id}`)
                 }
               >
                 {/* Image */}

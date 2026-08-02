@@ -233,3 +233,20 @@
     display: none;
   }
 }
+
+/* Fix for Clerk Development Mode badge breaking glassmorphism styling */
+.cl-footer {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+}
+.cl-footer > div:last-child {
+  display: none !important;
+}
+.cl-rootBox a[href^="https://clerk.com"] {
+  display: none !important;
+}
+/* Ensure the outer wrapper respects the border radius */
+.cl-card {
+  overflow: hidden !important;
+}

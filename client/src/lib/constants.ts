@@ -786,21 +786,153 @@ export const BLOG_POSTS = [
 
 export const NAV_LINKS = [
   { label: "Home", path: "/" },
-  { label: "Explore", path: "/explore" },
-  { label: "AI Trip Planner", path: "/plan" },
   { label: "Destinations", path: "/destinations" },
+  { label: "AI Trip Planner", path: "/plan" },
   { label: "Hotels", path: "/hotels" },
   { label: "Restaurants", path: "/restaurants" },
-  { label: "Things To Do", path: "/things-to-do" },
-  { label: "Travel Guides", path: "/travel-guides" },
 ];
 
 export const USER_NAV_LINKS = [
   { label: "My Trips", path: "/dashboard", icon: "🗺️" },
   { label: "Wishlist", path: "/wishlist", icon: "❤️" },
-  { label: "Dashboard", path: "/dashboard", icon: "📊" },
-  { label: "Expenses", path: "/expenses", icon: "💳" },
-  { label: "Journal", path: "/journal", icon: "📔" },
+  { label: "Settings", path: "/security", icon: "⚙️" },
+];
+
+// ============================================================
+// Pre-Made Itineraries for Destinations
+// ============================================================
+
+export const PREMADE_ITINERARIES: Record<string, any[]> = {
+  "1": [ // Goa
+    {
+      id: "goa-budget",
+      title: "Backpacker's Goa",
+      amount: 8000,
+      duration: "3 Days",
+      travelStyle: "Budget",
+      image: "https://images.unsplash.com/photo-1590082871864-a98293910c5b?w=600",
+      description: "Hostels, street food, and beach hopping on a tight budget.",
+      tags: ["Budget", "Beaches", "Solo"],
+    },
+    {
+      id: "goa-standard",
+      title: "Classic Goa Experience",
+      amount: 15000,
+      duration: "4 Days",
+      travelStyle: "Standard",
+      image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=600",
+      description: "Comfortable resorts, seafood, and famous sightseeing.",
+      tags: ["Standard", "Culture", "Relaxation"],
+    },
+    {
+      id: "goa-luxury",
+      title: "Luxury Beach Retreat",
+      amount: 45000,
+      duration: "5 Days",
+      travelStyle: "Luxury",
+      image: "https://images.unsplash.com/photo-1544256718-3bcf237f3974?w=600",
+      description: "5-Star villas, private beach access, and fine dining.",
+      tags: ["Luxury", "Romantic", "Premium"],
+    },
+    {
+      id: "goa-party",
+      title: "Goa Party Weekend",
+      amount: 22000,
+      duration: "3 Days",
+      travelStyle: "Standard",
+      image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600",
+      description: "Hit the best clubs, beach parties, and sundowners.",
+      tags: ["Nightlife", "Friends", "Fun"],
+    }
+  ],
+  "2": [ // Manali
+    {
+      id: "manali-adventure",
+      title: "Himalayan Adventure",
+      amount: 12000,
+      duration: "4 Days",
+      travelStyle: "Adventure",
+      image: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=600",
+      description: "Trekking, paragliding, and camping under the stars.",
+      tags: ["Adventure", "Nature", "Friends"],
+    },
+    {
+      id: "manali-family",
+      title: "Family Hill Retreat",
+      amount: 25000,
+      duration: "5 Days",
+      travelStyle: "Family",
+      image: "https://images.unsplash.com/photo-1518182170546-076616fdfaaf?w=600",
+      description: "Comfortable stays, sightseeing, and snow activities.",
+      tags: ["Family", "Relaxation", "Scenic"],
+    },
+    {
+      id: "manali-luxury",
+      title: "Luxury Snow Resort",
+      amount: 50000,
+      duration: "4 Days",
+      travelStyle: "Luxury",
+      image: "https://images.unsplash.com/photo-1548680197-f0d5718df2c4?w=600",
+      description: "Premium chalets, spa treatments, and gourmet dining.",
+      tags: ["Luxury", "Romantic", "Winter"],
+    }
+  ],
+  "8": [ // Paris
+    {
+      id: "paris-budget",
+      title: "Paris on a Budget",
+      amount: 35000,
+      duration: "4 Days",
+      travelStyle: "Budget",
+      image: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600",
+      description: "Affordable stays, walking tours, and street crepes.",
+      tags: ["Budget", "Culture", "Walking"],
+    },
+    {
+      id: "paris-romantic",
+      title: "Romantic Getaway",
+      amount: 80000,
+      duration: "5 Days",
+      travelStyle: "Luxury",
+      image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600",
+      description: "Seine cruises, Eiffel Tower dining, and boutique hotels.",
+      tags: ["Romantic", "Luxury", "Couples"],
+    }
+  ]
+};
+
+// Fallback for destinations not explicitly mapped
+export const DEFAULT_PREMADE_ITINERARIES = [
+  {
+    id: "default-budget",
+    title: "Budget Explorer",
+    amount: 10000,
+    duration: "3 Days",
+    travelStyle: "Budget",
+    image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600",
+    description: "Experience the essentials without breaking the bank.",
+    tags: ["Budget", "Essential"],
+  },
+  {
+    id: "default-standard",
+    title: "Standard Vacation",
+    amount: 25000,
+    duration: "4 Days",
+    travelStyle: "Standard",
+    image: "https://images.unsplash.com/photo-1436491865332-7a61a109db05?w=600",
+    description: "The perfect balance of comfort and adventure.",
+    tags: ["Standard", "Comfort"],
+  },
+  {
+    id: "default-luxury",
+    title: "Luxury Escape",
+    amount: 60000,
+    duration: "5 Days",
+    travelStyle: "Luxury",
+    image: "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=600",
+    description: "Premium experiences, top-tier stays, and relaxation.",
+    tags: ["Luxury", "Premium"],
+  }
 ];
 
 export const DASHBOARD_NAV = [
