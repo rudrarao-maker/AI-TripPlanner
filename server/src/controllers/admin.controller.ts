@@ -1,9 +1,55 @@
 import { Request, Response } from "express";
 import { sendSuccess, sendError } from "../utils/response";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma";
 import { clerkClient } from "@clerk/express";
 
-const prisma = new PrismaClient();
+export const getDashboardOverview = async (req: Request, res: Response) => {
+  try {
+    const totalUsers = await prisma.user.count();
+    const totalTrips = await prisma.trip.count();
+    
+    // Total Revenue is sum of confirmed bookings
+    const bookings = await prisma.booking.aggregate({
+      _sum: {
+        totalAmount: true
+      },
+      where: {
+        status: "confirmed"
+      }
+    });
+
+    const totalRevenue = bookings._sum.totalAmount ? Number(bookings._sum.totalAmount) : 0;
+    
+    // Server load is just mock for now
+    const serverLoad = Math.floor(Math.random() * 20) + 30; // 30-50%
+
+    // Recent signups
+    const recentSignups = await prisma.user.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        avatar: true
+      }
+    });
+
+    sendSuccess(res, 200, {
+      stats: {
+        totalUsers,
+        totalTrips,
+        totalRevenue,
+        serverLoad
+      },
+      recentSignups
+    });
+  } catch (error) {
+    console.error("Failed to get dashboard overview:", error);
+    sendError(res, 500, "Failed to retrieve overview stats");
+  }
+};
 
 export const getAiUsageStats = async (req: Request, res: Response) => {
   try {
@@ -41,21 +87,31 @@ export const getAiUsageStats = async (req: Request, res: Response) => {
       },
     });
 
-    // Mock chart data for now, ideally group by hour/day
-    const chartData = [
-      40,
-      70,
-      45,
-      90,
-      65,
-      80,
-      100,
-      85,
-      60,
-      75,
-      50,
-      Math.min(totalCalls, 100),
-    ];
+    // Real chart data (last 12 days)
+    const twelveDaysAgo = new Date();
+    twelveDaysAgo.setDate(twelveDaysAgo.getDate() - 11);
+    twelveDaysAgo.setHours(0, 0, 0, 0);
+
+    const recentLogsForChart = await prisma.aiUsageLog.findMany({
+      where: { createdAt: { gte: twelveDaysAgo } },
+      select: { createdAt: true },
+    });
+
+    const dailyCounts: Record<string, number> = {};
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(twelveDaysAgo);
+      d.setDate(d.getDate() + i);
+      dailyCounts[d.toISOString().split("T")[0]] = 0;
+    }
+
+    recentLogsForChart.forEach(log => {
+      const dateStr = log.createdAt.toISOString().split("T")[0];
+      if (dailyCounts[dateStr] !== undefined) {
+        dailyCounts[dateStr]++;
+      }
+    });
+
+    const chartData = Object.values(dailyCounts);
 
     sendSuccess(res, 200, {
       stats: {
@@ -95,19 +151,10 @@ export const changeUserPassword = async (req: Request, res: Response) => {
     // Update password in Clerk
     if (user.clerkId) {
       await clerkClient.users.updateUser(user.clerkId, { password: newPassword });
+      sendSuccess(res, 200, null, "User password updated successfully in Clerk");
+    } else {
+      sendError(res, 400, "User is not linked to Clerk");
     }
-
-    // Still update local DB for consistency if needed
-    const bcrypt = require("bcryptjs");
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
-
-    sendSuccess(res, 200, null, "User password updated successfully");
   } catch (error) {
     console.error("Failed to update user password:", error);
     sendError(res, 500, "Failed to update user password");

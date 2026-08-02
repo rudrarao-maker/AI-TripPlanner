@@ -1,9 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma";
 import { DESTINATION_DATA } from "../data/destinations";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "mock" });
-const prisma = new PrismaClient();
 
 // ============================================================
 // Prompt Parsing
@@ -280,42 +279,82 @@ CRITICAL RULES:
 Return ONLY valid JSON matching this exact structure: ${JSON.stringify(schema)}`;
 
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "mock_key") {
-    const startTime = Date.now();
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
+    let retries = 1;
+    let lastError = null;
 
-      let text = response.text || "";
-      // Strip markdown code blocks if present
-      if (text.startsWith("```json"))
-        text = text.replace(/```json\n|\n```/g, "");
-      if (text.startsWith("```")) text = text.replace(/```\n|\n```/g, "");
+    while (retries >= 0) {
+      const startTime = Date.now();
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
 
-      const result = JSON.parse(text);
+        let text = response.text || "";
+        // Strip markdown code blocks if present
+        if (text.startsWith("```json"))
+          text = text.replace(/```json\n|\n```/g, "");
+        if (text.startsWith("```")) text = text.replace(/```\n|\n```/g, "");
 
-      await prisma.aiUsageLog.create({
-        data: {
-          prompt: `Generate Trip: ${tripDetails.destination} for ${tripDetails.travelers} people`,
-          latencyMs: Date.now() - startTime,
-          tokens: text.length / 4,
-          status: "success",
-        },
-      });
+        const result = JSON.parse(text);
 
-      return result;
-    } catch (e) {
-      console.error("AI generation failed, using fallback:", e);
-      await prisma.aiUsageLog.create({
-        data: {
-          prompt: `Generate Trip: ${tripDetails.destination} for ${tripDetails.travelers} people`,
-          latencyMs: Date.now() - startTime,
-          tokens: 0,
-          status: "failed",
-        },
-      });
+        // Zod validation (basic check to ensure structure matches)
+        const { z } = require("zod");
+        const aiResponseSchema = z.object({
+          title: z.string(),
+          coverImage: z.string().optional(),
+          days: z.array(z.object({
+            dayNumber: z.number(),
+            date: z.string(),
+            theme: z.string(),
+            activities: z.array(z.object({
+              time: z.string().optional(),
+              name: z.string(),
+              location: z.string(),
+              geoCoordinates: z.object({ lat: z.number(), lng: z.number() }).optional(),
+              description: z.string().optional(),
+              duration: z.number().optional(),
+              estimatedCost: z.number().optional(),
+              category: z.string().optional(),
+              rating: z.number().optional(),
+              isHiddenGem: z.boolean().optional(),
+              localTip: z.string().optional(),
+              bestTimeToVisit: z.string().optional(),
+            }))
+          }))
+        });
+
+        aiResponseSchema.parse(result);
+
+        await prisma.aiUsageLog.create({
+          data: {
+            prompt: `Generate Trip: ${tripDetails.destination} for ${tripDetails.travelers} people`,
+            latencyMs: Date.now() - startTime,
+            tokens: text.length / 4,
+            status: "success",
+            isDemo: false,
+          },
+        });
+
+        return result;
+      } catch (e) {
+        lastError = e;
+        console.error(`AI generation failed (retries left: ${retries}):`, e);
+        
+        await prisma.aiUsageLog.create({
+          data: {
+            prompt: `Generate Trip: ${tripDetails.destination} for ${tripDetails.travelers} people`,
+            latencyMs: Date.now() - startTime,
+            tokens: 0,
+            status: "failed",
+            isDemo: false,
+          },
+        });
+
+        retries--;
+      }
     }
+    console.error("All AI retries failed, falling back to mock.");
   }
 
   // ============================================================
@@ -597,11 +636,14 @@ function generateMockItinerary(tripDetails: any) {
       });
     }
 
+    // Apply basic route optimization (nearest neighbor)
+    const optimizedActivities = optimizeRoute(activities);
+
     days.push({
       dayNumber: i,
       date: new Date(currentDate).toISOString(),
       theme: dayTheme,
-      activities,
+      activities: optimizedActivities,
     });
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -947,7 +989,7 @@ export const regenerateDay = async (
   if (morningPlace) {
     activities.push({
       time: "09:00 AM",
-      name: morningPlace.name,
+      name: `[DEMO] ${morningPlace.name}`,
       description: `Explore ${morningPlace.name} — ${morningPlace.tip.split(".")[0]}.`,
       location: morningPlace.name,
       estimatedCost: Math.round(dailyBudget * 0.1),
@@ -965,7 +1007,7 @@ export const regenerateDay = async (
   if (lunch) {
     activities.push({
       time: "12:30 PM",
-      name: `🍽️ Lunch: ${lunch.name}`,
+      name: `🍽️ Lunch: [DEMO] ${lunch.name}`,
       description: `Enjoy lunch at ${lunch.name}, rated ${lunch.rating}/5.`,
       location: lunch.name,
       estimatedCost: Math.round(dailyBudget * 0.08),
@@ -983,7 +1025,7 @@ export const regenerateDay = async (
   if (afternoonPlace) {
     activities.push({
       time: "02:30 PM",
-      name: afternoonPlace.name,
+      name: `[DEMO] ${afternoonPlace.name}`,
       description: `Spend the afternoon at ${afternoonPlace.name}. ${afternoonPlace.tip.split(".")[0]}.`,
       location: afternoonPlace.name,
       estimatedCost: Math.round(dailyBudget * 0.12),
@@ -1001,7 +1043,7 @@ export const regenerateDay = async (
   if (dinner) {
     activities.push({
       time: "07:30 PM",
-      name: `🍽️ Dinner: ${dinner.name}`,
+      name: `🍽️ Dinner: [DEMO] ${dinner.name}`,
       description: `End the day at ${dinner.name}. ${dinner.tip.split(".")[0]}.`,
       location: dinner.name,
       estimatedCost: Math.round(dailyBudget * 0.1),
@@ -1018,8 +1060,8 @@ export const regenerateDay = async (
 
   return {
     dayNumber,
-    theme: "Regenerated: Fresh Discoveries",
-    activities,
+    theme: "[DEMO] Regenerated: Fresh Discoveries",
+    activities: optimizeRoute(activities),
   };
 };
 
@@ -1050,11 +1092,77 @@ export const getAlternativeActivities = async (
       isHiddenGem: p.rating < 4.3,
     }));
 
-  return alternatives.length > 0
-    ? alternatives
-    : [
-        { name: `${destination} City Walk`, category: "sightseeing", rating: 4.2, lat: 0, lng: 0, localTip: "Explore at your own pace.", bestTimeToVisit: "Morning", isHiddenGem: false },
-        { name: `Local Market Tour`, category: "shopping", rating: 4.0, lat: 0, lng: 0, localTip: "Bargain for the best deals.", bestTimeToVisit: "Afternoon", isHiddenGem: true },
-        { name: `Sunset Photography Walk`, category: "sightseeing", rating: 4.5, lat: 0, lng: 0, localTip: "Golden hour starts 1 hour before sunset.", bestTimeToVisit: "Sunset", isHiddenGem: true },
-      ];
+    return alternatives.length > 0
+      ? alternatives
+      : [
+          { name: `[DEMO] ${destination} City Walk`, category: "sightseeing", rating: 4.2, lat: 0, lng: 0, localTip: "Explore at your own pace.", bestTimeToVisit: "Morning", isHiddenGem: false },
+          { name: `[DEMO] Local Market Tour`, category: "shopping", rating: 4.0, lat: 0, lng: 0, localTip: "Bargain for the best deals.", bestTimeToVisit: "Afternoon", isHiddenGem: true },
+          { name: `[DEMO] Sunset Photography Walk`, category: "sightseeing", rating: 4.5, lat: 0, lng: 0, localTip: "Golden hour starts 1 hour before sunset.", bestTimeToVisit: "Sunset", isHiddenGem: true },
+        ];
+  };
+  
+// ============================================================
+// Route Optimization (Haversine Distance)
+// ============================================================
+
+const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
+
+const optimizeRoute = (activities: any[]) => {
+  if (activities.length <= 1) return activities;
+
+  // Basic nearest-neighbor approach
+  // We keep the first activity (e.g. hotel) and last activity fixed based on time if they have one
+  
+  const optimized = [activities[0]]; // Start with the first one
+  const unvisited = activities.slice(1);
+
+  let current = optimized[0];
+
+  while (unvisited.length > 0) {
+    let nearestIdx = 0;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < unvisited.length; i++) {
+      const candidate = unvisited[i];
+      if (current.lat && current.lng && candidate.lat && candidate.lng) {
+        const dist = getDistanceFromLatLonInKm(current.lat, current.lng, candidate.lat, candidate.lng);
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestIdx = i;
+        }
+      } else {
+        // If no coords, just keep order
+        minDistance = 0;
+        nearestIdx = 0;
+        break;
+      }
+    }
+
+    const nextActivity = unvisited.splice(nearestIdx, 1)[0];
+    optimized.push(nextActivity);
+    current = nextActivity;
+  }
+
+  // Preserve time order roughly by sorting first by AM/PM if string time exists
+  return optimized.sort((a, b) => {
+      if(a.time && b.time) {
+          const isA_PM = a.time.includes('PM');
+          const isB_PM = b.time.includes('PM');
+          if(!isA_PM && isB_PM) return -1;
+          if(isA_PM && !isB_PM) return 1;
+      }
+      return 0;
+  });
 };

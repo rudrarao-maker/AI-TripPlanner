@@ -960,9 +960,9 @@ export const APP_CONFIG = {
 };
 
 export const STATS = [
-  { label: "Trips Planned", value: 50000, suffix: "+" },
-  { label: "Happy Travelers", value: 120000, suffix: "+" },
-  { label: "Destinations", value: 500, suffix: "+" },
+  { label: "Trips Planned (Demo)", value: 50000, suffix: "+" },
+  { label: "Happy Travelers (Demo)", value: 120000, suffix: "+" },
+  { label: "Destinations (Demo)", value: 500, suffix: "+" },
   { label: "AI Recommendations", value: 1000000, suffix: "+" },
 ];
 

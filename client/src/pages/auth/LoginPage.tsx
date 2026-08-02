@@ -44,7 +44,7 @@ export function LoginPage() {
                 dividerText: `${isDark ? 'text-gray-400' : 'text-gray-500'}`,
                 formFieldLabel: `font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`,
                 formFieldInput: `bg-background/50 border ${isDark ? 'border-white/10 text-white focus:border-primary focus:ring-primary/20' : 'border-gray-200 text-gray-900 focus:border-primary focus:ring-primary/20'} rounded-xl`,
-                formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg",
+                formButtonPrimary: "bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-full shadow-lg",
                 footerActionText: `${isDark ? 'text-gray-400' : 'text-gray-500'}`,
                 footerActionLink: "text-primary hover:text-primary/80 font-semibold",
                 identityPreviewText: `${isDark ? 'text-white' : 'text-gray-900'}`,

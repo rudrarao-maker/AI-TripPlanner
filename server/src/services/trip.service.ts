@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma";
 import * as aiService from "./ai.service";
 import { AppError } from "../middlewares/errorHandler";
-
-const prisma = new PrismaClient();
 
 export const parseUserPrompt = async (prompt: string) => {
   return await aiService.parseUserPrompt(prompt);

@@ -1,19 +1,32 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "./errorHandler";
-import { PrismaClient } from "@prisma/client";
 import { getAuth } from "@clerk/express";
+import prisma from "../utils/prisma";
 
-const prisma = new PrismaClient();
-
+// Extend Express Request to include typed user
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: string;
+        clerkId: string | null;
+        email: string;
+        name: string;
+        avatar: string | null;
+        role: string;
+        status: string;
+        verified: boolean;
+        provider: string;
+      };
     }
   }
 }
 
-// First verify the Clerk JWT, then hydrate the full user from our DB
+/**
+ * Clerk-based authentication middleware.
+ * Verifies the Clerk JWT, then hydrates the full user from our DB.
+ * No development bypasses — all environments require real authentication.
+ */
 export const protect = async (
   req: Request,
   res: Response,
@@ -22,14 +35,6 @@ export const protect = async (
   try {
     const auth = getAuth(req);
     if (!auth || !auth.userId) {
-      if (process.env.NODE_ENV === "development") {
-        const dummyUser = await prisma.user.findFirst();
-        if (dummyUser) {
-          // Temporarily elevate dummy user to admin in development so they can test the admin portal
-          req.user = { ...dummyUser, role: "admin" };
-          return next();
-        }
-      }
       return next(new AppError("Authentication invalid or missing", 401));
     }
 
@@ -68,10 +73,6 @@ export const protect = async (
       );
     }
 
-    if (process.env.NODE_ENV === "development") {
-      user.role = "admin";
-    }
-
     req.user = user;
     next();
   } catch (error) {
@@ -79,11 +80,15 @@ export const protect = async (
   }
 };
 
+/**
+ * Role-based access control middleware.
+ * Must be used AFTER `protect`.
+ */
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const userRole = req.user?.role?.toLowerCase() || "";
-    const allowedRoles = roles.map(r => r.toLowerCase());
-    
+    const allowedRoles = roles.map((r) => r.toLowerCase());
+
     if (!allowedRoles.includes(userRole)) {
       return next(
         new AppError("You do not have permission to perform this action", 403),
@@ -91,4 +96,79 @@ export const restrictTo = (...roles: string[]) => {
     }
     next();
   };
+};
+
+// ============================================================
+// Trip Access Authorization Helpers
+// ============================================================
+
+/**
+ * Verifies the user has ANY access to the trip (owner or member).
+ * Returns the trip membership role or throws 403/404.
+ */
+export const assertTripAccess = async (
+  userId: string,
+  tripId: string,
+): Promise<{ role: string; isOwner: boolean }> => {
+  // Check if user is the trip owner
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { userId: true },
+  });
+
+  if (!trip) {
+    throw new AppError("Trip not found", 404);
+  }
+
+  if (trip.userId === userId) {
+    return { role: "owner", isOwner: true };
+  }
+
+  // Check if user is a trip member
+  const membership = await prisma.tripMember.findUnique({
+    where: {
+      tripId_userId: { tripId, userId },
+    },
+    select: { role: true },
+  });
+
+  if (!membership) {
+    throw new AppError("You do not have access to this trip", 403);
+  }
+
+  return { role: membership.role, isOwner: false };
+};
+
+/**
+ * Asserts the user is the trip OWNER.
+ */
+export const assertTripOwner = async (
+  userId: string,
+  tripId: string,
+): Promise<void> => {
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { userId: true },
+  });
+
+  if (!trip) {
+    throw new AppError("Trip not found", 404);
+  }
+
+  if (trip.userId !== userId) {
+    throw new AppError("Only the trip owner can perform this action", 403);
+  }
+};
+
+/**
+ * Asserts the user can EDIT the trip (owner or editor).
+ */
+export const assertTripEditor = async (
+  userId: string,
+  tripId: string,
+): Promise<void> => {
+  const { role } = await assertTripAccess(userId, tripId);
+  if (role === "viewer") {
+    throw new AppError("You do not have edit access to this trip", 403);
+  }
 };

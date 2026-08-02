@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { sendSuccess } from "../utils/response";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../utils/prisma";
 
 import { hotelService } from "../services/hotel.service";
 

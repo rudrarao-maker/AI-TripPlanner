@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import * as tripController from "../controllers/trip.controller";
 import { validate } from "../middlewares/validate";
 import { protect } from "../middlewares/authMiddleware";
-import { createTripSchema } from "../validations/trip.validation";
+import { tripSchema, regenerateDaySchema, alternativeActivitySchema } from "../validations/trip.validation";
 
 const router = Router();
 
@@ -20,10 +20,10 @@ const generateLimiter = rateLimit({
 });
 
 router.post("/parse-prompt", tripController.parsePrompt);
-router.post("/generate", validate(createTripSchema), generateLimiter, tripController.generate);
+router.post("/generate", validate(tripSchema), generateLimiter, tripController.generate);
 router.get("/", tripController.getMyTrips);
 router.get("/:id", tripController.getTrip);
-router.post("/:id/days/:dayId/regenerate", tripController.regenerateDay);
-router.get("/:id/activities/:activityId/alternatives", tripController.getAlternativeActivity);
+router.post("/:id/days/:dayId/regenerate", validate(regenerateDaySchema), tripController.regenerateDay);
+router.get("/:id/activities/:activityId/alternatives", validate(alternativeActivitySchema), tripController.getAlternativeActivity);
 
 export default router;

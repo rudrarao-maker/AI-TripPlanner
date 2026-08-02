@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { sendSuccess } from "../utils/response";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../utils/prisma";
 import bcrypt from "bcryptjs";
 import { AppError } from "../middlewares/errorHandler";
-
-const prisma = new PrismaClient();
 
 export const getProfile = async (req: Request, res: Response) => {
   const user = req.user;

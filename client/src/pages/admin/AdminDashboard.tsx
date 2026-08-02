@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 import {
   Users,
   Building2,
@@ -17,7 +18,11 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
-  Bell
+  Bell,
+  RefreshCw,
+  AlertTriangle,
+  Menu,
+  X
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { UserManagement } from "@/components/admin/UserManagement";
@@ -78,6 +83,7 @@ function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNod
               <input
                 placeholder={`Search ${title.toLowerCase()}...`}
                 className="px-4 py-2.5 rounded-full bg-background/50 border border-border/50 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
+                aria-label={`Search ${title.toLowerCase()}`}
               />
               <Button variant="outline" className="rounded-full h-10">
                 Filter
@@ -89,7 +95,7 @@ function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNod
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" role="grid">
               <thead className="bg-muted/20">
                 <tr>
                   <th className="text-left p-4 font-semibold text-muted-foreground">Name</th>
@@ -105,7 +111,7 @@ function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNod
                     className="border-b border-border/5 last:border-0 hover:bg-white/5 transition-colors"
                   >
                     <td className="p-4 font-medium flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary" aria-hidden="true">
                         {icon}
                       </div>
                       {title} Item {i}
@@ -120,10 +126,10 @@ function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNod
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button variant="ghost" size="sm" className="rounded-full h-8 px-3">
+                        <Button variant="ghost" size="sm" className="rounded-full h-8 px-3" aria-label="Edit item">
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm" className="rounded-full h-8 px-3 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                        <Button variant="ghost" size="sm" className="rounded-full h-8 px-3 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Delete item">
                           Delete
                         </Button>
                       </div>
@@ -141,27 +147,80 @@ function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNod
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  
+  const [overviewData, setOverviewData] = useState<{
+    stats: {
+      totalUsers: number;
+      totalTrips: number;
+      totalRevenue: number;
+      serverLoad: number;
+    };
+    recentSignups: any[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOverview = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await api.get("/admin/overview");
+      setOverviewData(res.data.data);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to load overview data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "overview") {
+      fetchOverview();
+    }
+    // Close sidebar on mobile when tab changes
+    setIsMobileSidebarOpen(false);
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
-      <aside className="w-72 fixed inset-y-0 left-0 z-50 flex flex-col glass border-r border-white/5 backdrop-blur-2xl bg-background/60 pt-20">
-        <div className="p-6 pt-4">
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-              <Bot className="h-5 w-5 text-white" />
+      <aside className={`w-72 fixed inset-y-0 left-0 z-50 flex flex-col glass border-r border-white/5 backdrop-blur-2xl bg-background/95 pt-20 transition-transform duration-300 lg:translate-x-0 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6 pt-4 flex-1 overflow-y-auto">
+          <div className="flex items-center justify-between mb-8 px-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <Bot className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-lg leading-tight">Admin Portal</h2>
+                <p className="text-xs text-muted-foreground">v2.0.1 Dashboard</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-lg leading-tight">Admin Portal</h2>
-              <p className="text-xs text-muted-foreground">v2.0.1 Dashboard</p>
-            </div>
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileSidebarOpen(false)}>
+              <X className="h-5 w-5" />
+            </Button>
           </div>
 
-          <nav className="space-y-1">
+          <nav className="space-y-1" role="navigation" aria-label="Admin Navigation">
             {ADMIN_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                aria-current={activeTab === tab.id ? "page" : undefined}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? "bg-primary/10 text-primary shadow-sm"
@@ -175,29 +234,34 @@ export function AdminDashboard() {
           </nav>
         </div>
         
-        <div className="mt-auto p-6">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl">
+        <div className="mt-auto p-6 border-t border-white/5">
+          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl" aria-label="Sign out of admin dashboard">
             <LogOut className="h-5 w-5" /> Sign Out
           </Button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-72 pt-20 min-h-screen">
+      <main className="flex-1 lg:ml-72 pt-20 min-h-screen w-full">
         {/* Top Header */}
-        <header className="h-16 border-b border-white/5 bg-background/40 backdrop-blur-md flex items-center justify-between px-8 sticky top-20 z-40">
-          <div className="text-sm font-medium text-muted-foreground">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <header className="h-16 border-b border-white/5 bg-background/40 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 sticky top-20 z-30">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileSidebarOpen(true)} aria-label="Open mobile menu">
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="text-sm font-medium text-muted-foreground hidden sm:block">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button variant="ghost" size="icon" className="rounded-full" aria-label="Notifications">
               <Bell className="h-5 w-5 text-muted-foreground" />
             </Button>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-purple-500 border-2 border-background shadow-md"></div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-purple-500 border-2 border-background shadow-md" aria-hidden="true"></div>
           </div>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto overflow-x-hidden">
           <AnimatePresence mode="wait">
             {activeTab === "overview" && (
               <motion.div 
@@ -212,22 +276,34 @@ export function AdminDashboard() {
                   <p className="text-muted-foreground">Real-time metrics and system health monitoring.</p>
                 </div>
                 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="glass border-white/5 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <CardContent className="p-6 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-6 opacity-10">
-                        <Users className="w-24 h-24" />
-                      </div>
-                      <div className="flex flex-col h-full relative z-10">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-4">Total Users</h3>
-                        <div className="text-4xl font-bold mb-2">12,450</div>
-                        <div className="text-sm font-medium text-emerald-500 flex items-center gap-1 mt-auto">
-                          <ArrowUpRight className="h-4 w-4" /> +12% this month
+                {loading && !overviewData ? (
+                  <div className="flex justify-center p-12">
+                    <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : error ? (
+                  <div className="p-4 bg-destructive/10 text-destructive rounded-xl flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5" />
+                    <p>{error}</p>
+                    <Button size="sm" variant="outline" className="ml-auto" onClick={fetchOverview}>Retry</Button>
+                  </div>
+                ) : overviewData && (
+                  <>
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="glass border-white/5 shadow-xl hover:shadow-2xl transition-all duration-300">
+                      <CardContent className="p-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-6 opacity-10">
+                          <Users className="w-24 h-24" />
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        <div className="flex flex-col h-full relative z-10">
+                          <h3 className="text-sm font-medium text-muted-foreground mb-4">Total Users</h3>
+                          <div className="text-4xl font-bold mb-2">{overviewData.stats.totalUsers}</div>
+                          <div className="text-sm font-medium text-emerald-500 flex items-center gap-1 mt-auto">
+                            <ArrowUpRight className="h-4 w-4" /> Live
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                   <Card className="glass border-white/5 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <CardContent className="p-6 relative overflow-hidden">
@@ -236,9 +312,9 @@ export function AdminDashboard() {
                       </div>
                       <div className="flex flex-col h-full relative z-10">
                         <h3 className="text-sm font-medium text-muted-foreground mb-4">Trips Planned</h3>
-                        <div className="text-4xl font-bold mb-2">45,120</div>
+                        <div className="text-4xl font-bold mb-2">{overviewData.stats.totalTrips}</div>
                         <div className="text-sm font-medium text-emerald-500 flex items-center gap-1 mt-auto">
-                          <ArrowUpRight className="h-4 w-4" /> +8% this month
+                          <ArrowUpRight className="h-4 w-4" /> Live
                         </div>
                       </div>
                     </CardContent>
@@ -251,9 +327,9 @@ export function AdminDashboard() {
                       </div>
                       <div className="flex flex-col h-full relative z-10">
                         <h3 className="text-sm font-medium text-muted-foreground mb-4">Total Revenue</h3>
-                        <div className="text-4xl font-bold mb-2">{formatCurrency(2450000)}</div>
+                        <div className="text-4xl font-bold mb-2">{formatCurrency(overviewData.stats.totalRevenue)}</div>
                         <div className="text-sm font-medium text-emerald-500 flex items-center gap-1 mt-auto">
-                          <ArrowUpRight className="h-4 w-4" /> +24% this month
+                          <ArrowUpRight className="h-4 w-4" /> Live
                         </div>
                       </div>
                     </CardContent>
@@ -266,7 +342,7 @@ export function AdminDashboard() {
                       </div>
                       <div className="flex flex-col h-full relative z-10">
                         <h3 className="text-sm font-medium text-muted-foreground mb-4">Server Load</h3>
-                        <div className="text-4xl font-bold mb-2 text-primary">42%</div>
+                        <div className="text-4xl font-bold mb-2 text-primary">{overviewData.stats.serverLoad}%</div>
                         <div className="text-sm font-medium text-primary flex items-center gap-1 mt-auto">
                           <Activity className="h-4 w-4" /> Optimal Operation
                         </div>
@@ -284,22 +360,24 @@ export function AdminDashboard() {
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/5">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <div key={i} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+                        {overviewData.recentSignups.length > 0 ? overviewData.recentSignups.map((user) => (
+                          <div key={user.id} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                             <div className="flex items-center gap-4">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center font-bold shadow-inner">
-                                U{i}
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center font-bold shadow-inner overflow-hidden">
+                                {user.avatar ? <img src={user.avatar} alt="avatar" /> : user.name.charAt(0)}
                               </div>
                               <div>
-                                <p className="font-semibold text-sm">User_{i}482</p>
-                                <p className="text-xs text-muted-foreground">user{i}@example.com</p>
+                                <p className="font-semibold text-sm">{user.name}</p>
+                                <p className="text-xs text-muted-foreground">{user.email}</p>
                               </div>
                             </div>
                             <span className="text-xs font-medium text-muted-foreground bg-muted/30 px-2 py-1 rounded-md">
-                              {i * 2} mins ago
+                              {new Date(user.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                        ))}
+                        )) : (
+                          <div className="p-4 text-center text-sm text-muted-foreground">No recent signups</div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -337,6 +415,8 @@ export function AdminDashboard() {
                     </CardContent>
                   </Card>
                 </div>
+                </>
+                )}
               </motion.div>
             )}
 

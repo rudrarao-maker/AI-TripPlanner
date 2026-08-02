@@ -217,8 +217,9 @@ export function MyTripsPage() {
                         size="sm"
                         className="flex-1 rounded-full"
                         onClick={() => navigate(`/itinerary/${trip.id}`)}
+                        aria-label={`View itinerary for ${trip.title}`}
                       >
-                        <Eye className="mr-1.5 h-3.5 w-3.5" /> View
+                        <Eye className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> View
                       </Button>
                       <Button
                         variant="outline"
@@ -226,8 +227,9 @@ export function MyTripsPage() {
                         className="rounded-full text-destructive hover:bg-destructive/10"
                         onClick={() => handleDelete(trip.id)}
                         disabled={deletingId === trip.id}
+                        aria-label={`Delete trip ${trip.title}`}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </div>
                   </CardContent>

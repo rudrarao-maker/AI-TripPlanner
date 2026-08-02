@@ -27,9 +27,9 @@ app.use("/api", limiter);
 
 import { clerkMiddleware } from "@clerk/express";
 
-// Body parsing Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing Middleware — limit request size
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Clerk Auth Middleware
 app.use(clerkMiddleware());
@@ -44,7 +44,6 @@ app.get("/api/v1", (req: Request, res: Response) => {
   res.status(200).json({ message: "Welcome to TripCraft API v1" });
 });
 
-import authRoutes from "./routes/auth.route";
 import tripRoutes from "./routes/trip.route";
 import recRoutes from "./routes/recommendations.route";
 import expenseRoutes from "./routes/expense.route";
@@ -59,8 +58,16 @@ import adminRoutes from "./routes/admin.route";
 
 import appRoutes from "./routes/app.route";
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/trips", tripRoutes);
+// Stricter rate limiting for AI-heavy endpoints
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // Only 20 AI requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many AI requests. Please try again later." },
+});
+
+app.use("/api/v1/trips", aiLimiter, tripRoutes);
 app.use("/api/v1/recommendations", recRoutes);
 app.use("/api/v1/expenses", expenseRoutes);
 app.use("/api/v1/bookings", bookingRoutes);

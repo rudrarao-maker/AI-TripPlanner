@@ -100,6 +100,8 @@ export function Navbar() {
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 hover:bg-muted/50 p-1.5 rounded-full transition-colors"
+                aria-label="Toggle user menu"
+                aria-expanded={isUserMenuOpen}
               >
                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background shadow-sm flex items-center justify-center">
                   {user?.imageUrl ? (
@@ -109,7 +111,7 @@ export function Navbar() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <UserIcon className="h-5 w-5 text-white" />
+                    <UserIcon className="h-5 w-5 text-white" aria-hidden="true" />
                   )}
                 </div>
               </button>
@@ -135,30 +137,35 @@ export function Navbar() {
                       <Link
                         to="/dashboard"
                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
                       >
                         <LayoutDashboard className="h-4 w-4" /> Dashboard
                       </Link>
                       <Link
                         to="/my-trips"
                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
                       >
                         <Map className="h-4 w-4" /> My Trips
                       </Link>
                       <Link
                         to="/wishlist"
                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
                       >
                         <Heart className="h-4 w-4" /> Wishlist
                       </Link>
                       <Link
                         to="/expenses"
                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
                       >
                         <Receipt className="h-4 w-4" /> Expenses
                       </Link>
                       <Link
                         to="/admin"
                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
                       >
                         <Shield className="h-4 w-4" /> Admin Panel
                       </Link>
@@ -200,11 +207,13 @@ export function Navbar() {
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="text-foreground focus:outline-none p-2 rounded-xl hover:bg-muted/60 transition-colors"
+            aria-label="Toggle mobile menu"
+            aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
+              <X className="h-6 w-6" aria-hidden="true" />
             ) : (
-              <Menu className="h-6 w-6" />
+              <Menu className="h-6 w-6" aria-hidden="true" />
             )}
           </button>
         </div>

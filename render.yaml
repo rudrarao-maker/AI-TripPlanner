@@ -3,21 +3,27 @@ services:
   - type: web
     name: trip-planner-backend
     env: node
-    buildCommand: "cd server && npm install && npm run build"
-    startCommand: "cd server && npm start"
+    buildCommand: "cd server && npm install && npx prisma generate && npm run build"
+    startCommand: "cd server && npx prisma db push --accept-data-loss && npm start"
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: "5000"
       - key: DATABASE_URL
-        value: "file:./dev.db" # Can be updated to PostgreSQL in Render
-      - key: JWT_SECRET
-        value: "super_secret_jwt_key_update_me"
+        sync: false # Set this manually in Render dashboard — NEVER commit DB URL
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
       - key: GEMINI_API_KEY
-        value: "your_gemini_api_key_here"
-      - key: RAPIDAPI_KEY
-        value: "your_rapidapi_key_here"
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
     
   # Frontend Static Site
   - type: web
@@ -27,6 +33,6 @@ services:
     staticPublishPath: "./client/dist"
     envVars:
       - key: VITE_API_URL
-        value: "https://trip-planner-backend.onrender.com/api/v1"
-      - key: VITE_GOOGLE_MAPS_API_KEY
-        value: "your_google_maps_key"
+        sync: false # Set this to your backend URL (without /api/v1)
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false

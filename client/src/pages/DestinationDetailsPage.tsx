@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, Star, Calendar, Wallet, ChevronLeft, ArrowRight, Activity, Clock } from "lucide-react";
+import { MapPin, Star, Calendar, Wallet, ChevronLeft, ChevronRight, ArrowRight, Activity, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FEATURED_DESTINATIONS, PREMADE_ITINERARIES, DEFAULT_PREMADE_ITINERARIES } from "@/lib/constants";
@@ -85,13 +85,29 @@ export function DestinationDetailsPage() {
             <h2 className="text-3xl font-bold font-heading mb-2">Curated Itineraries</h2>
             <p className="text-muted-foreground">Select a pre-made trip tailored to your budget and style.</p>
           </div>
-          <Button variant="outline" className="rounded-full" onClick={() => navigate(`/plan?dest=${encodeURIComponent(destination.name)}`)}>
-            Create Custom Plan <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex gap-4 items-center">
+            <div className="hidden md:flex gap-2 mr-4">
+              <Button variant="outline" size="icon" className="rounded-full" onClick={() => {
+                const container = document.getElementById("itinerary-carousel");
+                if (container) container.scrollBy({ left: -300, behavior: "smooth" });
+              }}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full" onClick={() => {
+                const container = document.getElementById("itinerary-carousel");
+                if (container) container.scrollBy({ left: 300, behavior: "smooth" });
+              }}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button variant="outline" className="rounded-full" onClick={() => navigate(`/plan?dest=${encodeURIComponent(destination.name)}`)}>
+              Create Custom Plan <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* CSS Scroll Snap Carousel Slider */}
-        <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-6 pb-8 -mx-4 px-4 md:mx-0 md:px-0">
+        <div id="itinerary-carousel" className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-6 pb-8 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
           {itineraries.map((itinerary, index) => (
             <motion.div
               key={itinerary.id}

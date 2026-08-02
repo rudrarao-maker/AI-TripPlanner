@@ -3,23 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id        String   @id @default(uuid())
   clerkId   String?  @unique
   email     String   @unique
-  password  String?
   name      String
   avatar    String?
   role             String   @default("user") // "user" or "admin"
-  provider         String   @default("email") // "email" or "google"
-  verified         Boolean  @default(false)
+  provider         String   @default("clerk") // "clerk" or "email"
+  verified         Boolean  @default(true)
   status           String   @default("active") // "active" or "restricted"
-  twoFactorEnabled Boolean  @default(false)
-  twoFactorSecret  String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -31,6 +28,9 @@ model User {
   notifications Notification[]
   tripMembers   TripMember[]
   expenseSplits ExpenseSplit[]
+
+  @@index([clerkId])
+  @@index([email])
 }
 
 model Trip {
@@ -42,7 +42,7 @@ model Trip {
   startDate           DateTime
   endDate             DateTime
   travelers           Int      @default(1)
-  budget              Float
+  budget              Decimal  @db.Decimal(12, 2)
   currency            String   @default("INR")
   travelStyle         String
   transportPreference String
@@ -59,6 +59,9 @@ model Trip {
   bookings            Booking[]
   members             TripMember[]
   aiRecommendations   AIRecommendation[]
+
+  @@index([userId])
+  @@index([status])
 }
 
 model TripDay {
@@ -70,6 +73,8 @@ model TripDay {
   activities Activity[]
   
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
 }
 
 model Activity {
@@ -80,7 +85,7 @@ model Activity {
   location      String
   description   String?
   duration      Int?     // in minutes
-  estimatedCost Float    @default(0)
+  estimatedCost Decimal  @default(0) @db.Decimal(10, 2)
   currency      String   @default("INR")
   category      String   // e.g., "beach", "restaurant", "museum", "transport"
   imageUrl      String?
@@ -95,6 +100,8 @@ model Activity {
   updatedAt     DateTime @updatedAt
   
   tripDay       TripDay  @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+
+  @@index([tripDayId])
 }
 
 model Hotel {
@@ -107,18 +114,18 @@ model Hotel {
   lng           Float
   rating        Float
   reviewCount   Int      @default(0)
-  pricePerNight Float
+  pricePerNight Decimal  @db.Decimal(10, 2)
   currency      String   @default("INR")
   starRating    Int
-  amenities     String   // Stored as JSON string array
-  images        String   // Stored as JSON string array
+  amenities     Json     @default("[]") // Array of strings
+  images        Json     @default("[]") // Array of URLs
   createdAt     DateTime @default(now())
 }
 
 model Restaurant {
   id            String   @id @default(uuid())
   name          String
-  cuisine       String   // Stored as JSON string array
+  cuisine       Json     @default("[]") // Array of cuisine types
   description   String
   location      String
   address       String
@@ -128,7 +135,7 @@ model Restaurant {
   reviewCount   Int      @default(0)
   priceRange    String   // $, $$, $$$, $$$$
   openingHours  String
-  images        String   // Stored as JSON string array
+  images        Json     @default("[]") // Array of URLs
   createdAt     DateTime @default(now())
 }
 
@@ -143,11 +150,11 @@ model Attraction {
   lng           Float
   rating        Float
   reviewCount   Int      @default(0)
-  entryFee      Float
+  entryFee      Decimal  @db.Decimal(10, 2)
   currency      String   @default("INR")
   timings       String
   duration      String
-  images        String   // Stored as JSON string array
+  images        Json     @default("[]") // Array of URLs
   createdAt     DateTime @default(now())
 }
 
@@ -156,7 +163,7 @@ model Expense {
   tripId      String
   userId      String
   category    String
-  amount      Float
+  amount      Decimal  @db.Decimal(10, 2)
   currency    String   @default("INR")
   description String
   date        DateTime
@@ -166,6 +173,10 @@ model Expense {
   trip        Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
   user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   splits      ExpenseSplit[]
+
+  @@index([tripId])
+  @@index([userId])
+  @@index([tripId, userId])
 }
 
 model Transport {
@@ -177,10 +188,10 @@ model Transport {
   duration      String   // e.g. "5h 30m"
   origin        String
   destination   String
-  price         Float
+  price         Decimal  @db.Decimal(10, 2)
   currency      String   @default("INR")
   comfortLevel  String   // "economy", "business", "first", "luxury"
-  images        String   // JSON string array
+  images        Json     @default("[]") // Array of URLs
   createdAt     DateTime @default(now())
 }
 
@@ -190,10 +201,11 @@ model Booking {
   tripId        String?
   type          String   // "flight", "hotel", "activity"
   status        String   @default("pending") // "pending", "confirmed", "cancelled"
-  totalAmount   Float
+  totalAmount   Decimal  @db.Decimal(12, 2)
   currency      String   @default("INR")
-  bookingRef    String?  // Reference from provider (e.g., Amadeus PNR)
-  provider      String   // "amadeus", "mock"
+  bookingRef    String?  // Reference from provider
+  provider      String   // "amadeus", "demo"
+  isDemo        Boolean  @default(true) // Flag to clearly indicate demo bookings
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -202,16 +214,20 @@ model Booking {
   payment       Payment?
   flightDetails FlightBooking?
   hotelDetails  HotelBooking?
+
+  @@index([userId])
+  @@index([tripId])
 }
 
 model Payment {
   id            String   @id @default(uuid())
   bookingId     String   @unique
-  amount        Float
+  amount        Decimal  @db.Decimal(12, 2)
   currency      String   @default("INR")
   status        String   @default("pending") // "pending", "completed", "failed", "refunded"
-  paymentMethod String?  // "card", "upi", "mock"
+  paymentMethod String?  // "card", "upi", "demo"
   transactionId String?
+  isDemo        Boolean  @default(true) // Flag to clearly indicate demo payments
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -255,8 +271,12 @@ model Review {
   rating        Int
   comment       String?
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetId, targetType]) // Prevent duplicate reviews
+  @@index([targetId, targetType])
 }
 
 model Wishlist {
@@ -267,6 +287,8 @@ model Wishlist {
   
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   favorites     Favorite[]
+
+  @@index([userId])
 }
 
 model Favorite {
@@ -274,21 +296,29 @@ model Favorite {
   wishlistId    String
   targetId      String   // ID of the hotel, restaurant, attraction, etc.
   targetType    String   // "hotel", "restaurant", "attraction", "destination"
+  name          String?  // Cached name for display
+  image         String?  // Cached image URL
   createdAt     DateTime @default(now())
 
   wishlist      Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, targetId, targetType]) // Prevent duplicate favorites
 }
 
 model Notification {
   id            String   @id @default(uuid())
   userId        String
-  type          String   // "flight_alert", "booking_confirmed", "system"
+  type          String   // "trip_invite", "booking_confirmed", "expense_update", "weather_alert", "system"
   title         String
   message       String
   read          Boolean  @default(false)
+  metadata      Json?    // Optional extra data (tripId, bookingId, etc.)
   createdAt     DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
 }
 
 model TripMember {
@@ -302,13 +332,15 @@ model TripMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tripId, userId])
+  @@index([userId])
+  @@index([tripId])
 }
 
 model ExpenseSplit {
   id          String   @id @default(uuid())
   expenseId   String
   userId      String
-  amount      Float
+  amount      Decimal  @db.Decimal(10, 2)
   status      String   @default("pending") // "pending", "settled"
   createdAt   DateTime @default(now())
 
@@ -316,16 +348,24 @@ model ExpenseSplit {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([expenseId, userId])
+  @@index([userId])
 }
 
 model AiUsageLog {
   id          String   @id @default(uuid())
+  userId      String?  // Track which user made the request
+  requestType String?  // "parse_prompt", "generate_itinerary", "regenerate_day", "alternative", "chat"
   prompt      String
   latencyMs   Int
   tokens      Int      @default(0)
   status      String   @default("success") // "success" or "failed"
   modelUsed   String   @default("gemini-2.5-flash")
+  isDemo      Boolean  @default(false) // Flag for mock/demo responses
   createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([status])
 }
 
 model AIRecommendation {
@@ -333,10 +373,12 @@ model AIRecommendation {
   tripId        String?
   targetId      String?  // Could be an Activity ID to replace
   type          String   // "alternative_activity", "budget_optimization", "hotel", "restaurant"
-  context       String   // JSON string of context used to generate this
-  suggestion    String   // JSON string of the suggestion data
+  context       Json     @default("{}") // Context used to generate this
+  suggestion    Json     @default("{}") // The suggestion data
   status        String   @default("pending") // "pending", "accepted", "rejected"
   createdAt     DateTime @default(now())
   
   trip          Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
 }
