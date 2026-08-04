@@ -21,6 +21,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Collaborator } from "@/hooks/useSocket";
+import posthog from "@/lib/posthog";
 
 export function ExpenseTracker({
   tripId,
@@ -100,6 +101,12 @@ export function ExpenseTracker({
         description: newExpense.description,
         splitType: newExpense.splitType,
         splits: splits,
+      });
+      posthog.capture("expense_added", {
+        category: newExpense.category,
+        currency: "INR",
+        split_type: newExpense.splitType,
+        participant_count: allUsers.length,
       });
       toast.success("Expense added!", { id: "add-exp" });
       setIsAdding(false);

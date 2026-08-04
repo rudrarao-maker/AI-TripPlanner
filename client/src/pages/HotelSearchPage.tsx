@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useHotels } from "@/hooks/useRecommendations";
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { HotelCardSkeleton } from "@/components/ui/Skeletons";
+import posthog from "@/lib/posthog";
 
 export function HotelSearchPage() {
   const [searchParams, setSearchParams] = useState({
@@ -29,6 +30,9 @@ export function HotelSearchPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    posthog.capture("hotel_search_submitted", {
+      guests: Number(searchParams.guests),
+    });
     setHasSearched(true);
     refetch();
   };

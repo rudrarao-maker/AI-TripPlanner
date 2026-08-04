@@ -4,6 +4,7 @@ import { Sparkles, Mic, Navigation, ArrowRight } from "lucide-react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
+import posthog from "@/lib/posthog";
 
 const SUGGESTED_PROMPTS = [
   "A 5-day luxury honeymoon in Bali for two, $3000 budget.",
@@ -45,6 +46,10 @@ export function HeroSearchBar() {
     if (e) e.preventDefault();
     const finalPrompt = preset || prompt;
     if (!finalPrompt.trim()) return;
+
+    posthog.capture("trip_planning_started", {
+      input_method: preset ? "suggested_prompt" : "freeform_prompt",
+    });
 
     // Pass the raw prompt to the planner page to parse and generate
     navigate(`/plan?prompt=${encodeURIComponent(finalPrompt)}`);

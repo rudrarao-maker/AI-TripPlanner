@@ -59,6 +59,7 @@ import {
   useTransport,
 } from "@/hooks/useRecommendations";
 import { useSocket } from "@/hooks/useSocket";
+import posthog from "@/lib/posthog";
 
 // Destination coordinate lookup for weather/map integration
 const DESTINATION_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -297,6 +298,13 @@ export function TripPlannerPage() {
   const destCoords = getCoordinates(formData.destinations[0] || "Bali");
 
   const handleGenerate = async () => {
+    posthog.capture("trip_generation_requested", {
+      traveler_count: formData.adults + formData.children,
+      interest_count: formData.interests.length,
+      transport_preference: formData.transport,
+      hotel_category: formData.hotel,
+      has_budget: Boolean(formData.budget),
+    });
     setIsGenerating(true);
     await generateWithData(formData);
   };
@@ -346,6 +354,9 @@ export function TripPlannerPage() {
         travelStyle: formData.style || "Adventure",
         days: itinerary?.days || [],
       });
+      posthog.capture("trip_pdf_exported", {
+        itinerary_day_count: itinerary?.days?.length ?? 0,
+      });
       toast.success("PDF downloaded!", { id: "pdf-export" });
     } catch (error) {
       toast.error("Failed to export PDF", { id: "pdf-export" });
@@ -354,6 +365,9 @@ export function TripPlannerPage() {
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
+    posthog.capture("trip_shared", {
+      share_method: "clipboard",
+    });
     toast.success("Trip link copied to clipboard!");
   };
 

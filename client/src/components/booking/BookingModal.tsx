@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import { useCreateBooking } from "@/hooks/useBookings";
+import posthog from "@/lib/posthog";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -96,6 +97,11 @@ export function BookingModal({
 
     createBookingMutation.mutate(bookingData, {
       onSuccess: () => {
+        posthog.capture("booking_completed", {
+          booking_type: bookingData.type,
+          currency: bookingData.currency,
+          total_amount: total,
+        });
         setStep("success");
       },
       onError: () => {
