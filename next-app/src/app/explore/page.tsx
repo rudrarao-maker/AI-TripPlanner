@@ -70,7 +70,7 @@ const CURATED_LISTS = [
   },
 ];
 
-export function ExplorePage() {
+export default function ExplorePage() {
   const router = useRouter();
 
   return (

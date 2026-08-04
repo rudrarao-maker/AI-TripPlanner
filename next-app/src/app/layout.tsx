@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { SupabaseProvider } from "@/lib/supabase/auth-context";
+import { ClerkProvider } from '@clerk/nextjs'
+import { PostHogProvider } from '@/providers/PostHogProvider'
+import { QueryProvider } from '@/providers/QueryProvider'
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,12 +19,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <SupabaseProvider>
-          <MainLayout>{children}</MainLayout>
-        </SupabaseProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={inter.className}>
+          <PostHogProvider>
+            <QueryProvider>
+              <MainLayout>{children}</MainLayout>
+            </QueryProvider>
+          </PostHogProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

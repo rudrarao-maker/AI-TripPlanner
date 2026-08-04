@@ -787,15 +787,15 @@ export const BLOG_POSTS = [
 export const NAV_LINKS = [
   { label: "Home", path: "/" },
   { label: "Destinations", path: "/destinations" },
-  { label: "AI Trip Planner", path: "/plan" },
-  { label: "Hotels", path: "/hotels" },
+  { label: "AI Trip Planner", path: "/trip-planner" },
+  { label: "Hotels", path: "/hotel-search" },
   { label: "Restaurants", path: "/restaurants" },
 ];
 
 export const USER_NAV_LINKS = [
   { label: "My Trips", path: "/dashboard", icon: "🗺️" },
   { label: "Wishlist", path: "/wishlist", icon: "❤️" },
-  { label: "Settings", path: "/security", icon: "⚙️" },
+  { label: "Settings", path: "/dashboard/security-settings", icon: "⚙️" },
 ];
 
 // ============================================================

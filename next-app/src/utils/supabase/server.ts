@@ -1,8 +1,16 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { auth } from '@clerk/nextjs/server'
 
-export function createClient() {
-  const cookieStore = cookies()
+export async function createClient() {
+  const cookieStore = await cookies()
+  let supabaseAccessToken = null
+  try {
+    const { getToken } = auth()
+    supabaseAccessToken = await getToken({ template: 'supabase' })
+  } catch (error) {
+    // Ignore error if outside of request context or Clerk is not configured
+  }
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,6 +32,15 @@ export function createClient() {
           }
         },
       },
+      ...(supabaseAccessToken
+        ? {
+            global: {
+              headers: {
+                Authorization: `Bearer ${supabaseAccessToken}`,
+              },
+            },
+          }
+        : {}),
     }
   )
 }

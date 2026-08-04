@@ -146,7 +146,7 @@ function AdminPlaceholder({ title, icon }: { title: string; icon: React.ReactNod
   );
 }
 
-export function AdminDashboard() {
+export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   

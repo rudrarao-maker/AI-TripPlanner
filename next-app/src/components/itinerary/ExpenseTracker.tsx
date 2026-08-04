@@ -17,7 +17,7 @@ import {
 import { useGetExpenses, useAddExpense } from "@/hooks/useExpenses";
 import { calculateBalances, simplifyDebts } from "@/lib/splitwise";
 import type { ExpenseRecord, SplitUser } from "@/lib/splitwise";
-import { useUser } from "@clerk/clerk-react";
+import { useUser } from "@clerk/nextjs";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";

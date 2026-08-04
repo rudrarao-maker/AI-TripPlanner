@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import {
   Map,
   MapPin,
@@ -22,7 +22,7 @@ import { useGetTrips } from "@/hooks/useTrips";
 import { MonthlySpendingChart } from "@/components/dashboard/MonthlySpendingChart";
 import { TrendingDestinations } from "@/components/dashboard/TrendingDestinations";
 
-export function DashboardHome() {
+export default function DashboardHome() {
   const { user } = useUser();
   const { signOut } = useClerk();
   const { data: trips, isLoading } = useGetTrips();

@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: Request) {
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { userId } = await auth();
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data: trips, error } = await supabase
       .from("Trip")
       .select("*")
-      .eq("userId", user.id)
+      .eq("userId", userId)
       .order("createdAt", { ascending: false });
 
     if (error) throw error;

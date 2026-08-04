@@ -28,7 +28,7 @@ const ACTIVITY_CATEGORIES = [
   "Food Tours",
 ];
 
-export function ThingsToDoPage() {
+export default function ThingsToDoPage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 

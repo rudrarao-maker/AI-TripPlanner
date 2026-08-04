@@ -13,7 +13,7 @@ import { Shield, Smartphone, Mail, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 
-export function SecuritySettings() {
+export default function SecuritySettings() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);

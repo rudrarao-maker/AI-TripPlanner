@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useGetTrips } from "@/hooks/useTrips";
 import api from "@/lib/api";
 
-export function MyTripsPage() {
+export default function MyTripsPage() {
   const router = useRouter();
   const { data: trips = [], isLoading, refetch } = useGetTrips();
   const [deletingId, setDeletingId] = useState<string | null>(null);

@@ -7,7 +7,7 @@ export default async function SharedTripPage({
 }: {
   params: { shareId: string };
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { shareId } = params;
 
   // Ideally, Trip table has a `shareId` column. 

@@ -8,7 +8,7 @@ import { useHotels } from "@/hooks/useRecommendations";
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { HotelCardSkeleton } from "@/components/ui/Skeletons";
 
-export function HotelSearchPage() {
+export default function HotelSearchPage() {
   const [searchParams, setSearchParams] = useState({
     location: "",
     checkIn: "",

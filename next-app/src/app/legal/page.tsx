@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 
-export function LegalPage({ type }: { type: "privacy" | "terms" | "cookies" }) {
+export default function LegalPage({ type }: { type: "privacy" | "terms" | "cookies" }) {
   const content = {
     privacy: {
       title: "Privacy Policy",

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, CreditCard, ChevronLeft, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
-export function ItineraryDetailsPage() {
+export default function ItineraryDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
 
@@ -43,7 +43,7 @@ export function ItineraryDetailsPage() {
             variant="outline"
             size="icon"
             className="rounded-full bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 hover:text-white"
-            onClick={() => router.push(-1)}
+            onClick={() => router.back()}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>

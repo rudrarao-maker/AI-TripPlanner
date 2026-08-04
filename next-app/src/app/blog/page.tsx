@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BLOG_CATEGORIES, BLOG_POSTS } from "@/lib/constants";
 
-export function BlogPage() {
+export default function BlogPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
 

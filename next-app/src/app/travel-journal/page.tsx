@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import html2pdf from "html2pdf.js";
 
-export function TravelJournalPage() {
+export default function TravelJournalPage() {
   const [entries, setEntries] = useState([
     {
       id: 1,

@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 // Lazy load the heavy 3D background component
 const Scroll3DBackground = lazy(() => import("@/components/home/Scroll3DBackground").then(module => ({ default: module.Scroll3DBackground })));
 
-export function LandingPage() {
+export default function LandingPage() {
   const router = useRouter();
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden bg-transparent">

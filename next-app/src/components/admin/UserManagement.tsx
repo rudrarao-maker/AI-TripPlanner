@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -212,7 +213,7 @@ export function UserManagement() {
         params.set("sortBy", sortBy);
         params.set("sortOrder", sortOrder);
 
-        const res = await api.get(`/users?${params.toString()}`);
+        const res = await api.get(`/admin/users?${params.toString()}`);
         const data = res.data.data;
 
         // Handle both old and new response format
@@ -300,7 +301,7 @@ export function UserManagement() {
   const handleToggleStatus = async (user: User) => {
     const newStatus = user.status === "active" ? "restricted" : "active";
     try {
-      await api.put(`/users/${user.id}`, { status: newStatus });
+      await api.put(`/admin/users/${user.id}`, { status: newStatus });
       setUsers(users.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)));
       showToast(`User marked as ${newStatus}`);
     } catch (err: any) {
@@ -313,10 +314,10 @@ export function UserManagement() {
     setActionLoading(true);
     try {
       if (modalType === "edit") {
-        await api.put(`/users/${formData.id}`, formData);
+        await api.put(`/admin/users/${formData.id}`, formData);
         showToast("User updated successfully");
       } else {
-        await api.post("/users", formData);
+        await api.post("/admin/users", formData);
         showToast("User created successfully");
       }
       setModalType(null);
@@ -331,7 +332,7 @@ export function UserManagement() {
   const handleDeleteSingle = async (id: string) => {
     setActionLoading(true);
     try {
-      await api.delete(`/users/${id}`);
+      await api.delete(`/admin/users/${id}`);
       showToast("User deleted successfully");
       setSelectedIds((prev) => {
         const n = new Set(prev);
@@ -386,7 +387,7 @@ export function UserManagement() {
     }
     setActionLoading(true);
     try {
-      const res = await api.post("/users/bulk", { users: validRows });
+      const res = await api.post("/admin/users/bulk", { users: validRows });
       const data = res.data.data;
       
       const createdCount = data.created?.length || 0;

@@ -115,7 +115,7 @@ const CUISINE_FILTERS = [
   "Street Food",
 ];
 
-export function RestaurantsPage() {
+export default function RestaurantsPage() {
   const [search, setSearch] = useState("");
   const [activeCuisine, setActiveCuisine] = useState("All");
 

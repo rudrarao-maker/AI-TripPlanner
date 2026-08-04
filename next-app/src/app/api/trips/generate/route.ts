@@ -1,21 +1,37 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ratelimit } from "@/lib/ratelimit";
+import { auth } from "@clerk/nextjs/server";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { userId } = auth();
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_URL !== "https://dummy-upstash.upstash.io") {
+      const { success, limit, reset, remaining } = await ratelimit.limit(userId);
+      if (!success) {
+        return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { 
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString()
+          }
+        });
+      }
+    }
+
+    const supabase = await createClient();
     const preferences = await req.json();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-exp-1206" });
     
     const prompt = `
     You are an expert AI travel agent. Generate a detailed travel itinerary for the following preferences:
@@ -66,7 +82,7 @@ export async function POST(req: Request) {
     const { data: trip, error: tripError } = await supabase
       .from('Trip')
       .insert({
-        userId: user.id,
+        userId: userId,
         title: tripData.title,
         origin: tripData.origin || preferences.origin || "",
         destination: tripData.destination || preferences.destination || "",

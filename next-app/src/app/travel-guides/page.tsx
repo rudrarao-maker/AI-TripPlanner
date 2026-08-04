@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BLOG_CATEGORIES, BLOG_POSTS } from "@/lib/constants";
 
-export function TravelGuidesPage() {
+export default function TravelGuidesPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
 

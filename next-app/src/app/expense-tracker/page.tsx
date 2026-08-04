@@ -52,7 +52,7 @@ const MOCK_EXPENSES = [
   },
 ];
 
-export function ExpenseTrackerPage() {
+export default function ExpenseTrackerPage() {
   const [search, setSearch] = useState("");
   const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
   const [selectedExpenseForSplit, setSelectedExpenseForSplit] =

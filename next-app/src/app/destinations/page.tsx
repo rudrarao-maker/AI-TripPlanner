@@ -27,7 +27,7 @@ const CATEGORIES = [
   "Wildlife",
 ];
 
-export function DestinationsPage() {
+export default function DestinationsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");

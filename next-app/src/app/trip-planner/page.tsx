@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   MapPin,
   Calendar as CalendarIcon,
@@ -28,7 +28,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InteractiveMap } from "@/components/map/InteractiveMap";
-import { GlobeMap } from "@/components/trip/GlobeMap";
+import dynamic from "next/dynamic";
+const GlobeMap = dynamic(() => import("@/components/trip/GlobeMap").then((mod) => mod.GlobeMap), { ssr: false });
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { RestaurantCard } from "@/components/recommendations/RestaurantCard";
 import { AttractionCard } from "@/components/recommendations/AttractionCard";
@@ -101,7 +102,7 @@ function getCoordinates(destination: string): { lat: number; lng: number } {
   return { lat: 20.5937, lng: 78.9629 };
 }
 
-export function TripPlannerPage() {
+export default function TripPlannerPage() {
   const navigate = useRouter();
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -111,7 +112,7 @@ export function TripPlannerPage() {
     null,
   );
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const generateTripMutation = useGenerateTrip();
   const parsePromptMutation = useParsePrompt();
 

@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { GlobeMap } from "@/components/trip/GlobeMap";
+import dynamic from "next/dynamic";
+const GlobeMap = dynamic(() => import("@/components/trip/GlobeMap").then((mod) => mod.GlobeMap), { ssr: false });
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { RestaurantCard } from "@/components/recommendations/RestaurantCard";
 import { AttractionCard } from "@/components/recommendations/AttractionCard";

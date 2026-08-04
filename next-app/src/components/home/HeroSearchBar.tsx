@@ -17,7 +17,12 @@ export function HeroSearchBar() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     transcript,
@@ -88,7 +93,7 @@ export function HeroSearchBar() {
               className="w-full bg-transparent border-none outline-none text-xl sm:text-2xl text-foreground placeholder:text-muted-foreground/50 resize-none px-6 py-5 min-h-[90px] overflow-hidden leading-relaxed"
               rows={1}
             />
-            {browserSupportsSpeechRecognition && (
+            {mounted && browserSupportsSpeechRecognition && (
               <button
                 type="button"
                 onClick={handleMicClick}

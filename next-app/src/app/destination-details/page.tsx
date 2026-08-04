@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FEATURED_DESTINATIONS, PREMADE_ITINERARIES, DEFAULT_PREMADE_ITINERARIES } from "@/lib/constants";
 
-export function DestinationDetailsPage() {
+export default function DestinationDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -38,7 +38,7 @@ export function DestinationDetailsPage() {
             variant="outline" 
             size="icon"
             className="rounded-full bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white mb-6 backdrop-blur-md"
-            onClick={() => router.push(-1)}
+            onClick={() => router.back()}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>

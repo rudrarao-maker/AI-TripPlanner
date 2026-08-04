@@ -8,7 +8,7 @@ import { useSearchFlights } from "@/hooks/useFlights";
 import { TransportCard } from "@/components/recommendations/TransportCard";
 import { TransportCardSkeleton } from "@/components/ui/Skeletons";
 
-export function FlightSearchPage() {
+export default function FlightSearchPage() {
   const [searchParams, setSearchParams] = useState({
     origin: "",
     destination: "",

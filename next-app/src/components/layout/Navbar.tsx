@@ -1,37 +1,22 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useUser } from '@/lib/supabase/auth-context';
 import {
   Menu,
   X,
-  User as UserIcon,
-  ChevronDown,
-  Heart,
-  Map,
-  Receipt,
-  BookOpen,
-  LogOut,
-  Shield,
-  Settings,
-  LayoutDashboard,
 } from "lucide-react";
 import { Logo } from "../common/Logo";
-import { ThemeToggle } from "../common/ThemeToggle";
 import { Button } from "../ui/button";
-import { NAV_LINKS, USER_NAV_LINKS } from "@/lib/constants";
+import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { useAuth, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { user, isSignedIn: isAuthenticated } = useUser();
-  const { signOut: logout } = useClerk();
-  const location = useLocation();
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,22 +29,7 @@ export function Navbar() {
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
-    setIsUserMenuOpen(false);
-  }, [location.pathname]);
-
-  // Close user menu on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsUserMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [pathname]);
 
   return (
     <header
@@ -81,7 +51,7 @@ export function Navbar() {
                 href={link.path}
                 className={cn(
                   "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
-                  location.pathname === link.path
+                  pathname === link.path
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/60",
                 )}
@@ -94,112 +64,33 @@ export function Navbar() {
 
         {/* Right Side Actions */}
         <div className="hidden lg:flex items-center gap-3">
-          <ThemeToggle />
-
-          {isAuthenticated ? (
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 hover:bg-muted/50 p-1.5 rounded-full transition-colors"
-                aria-label="Toggle user menu"
-                aria-expanded={isUserMenuOpen}
-              >
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background shadow-sm flex items-center justify-center">
-                  {user?.imageUrl ? (
-                    <img
-                      src={user.imageUrl}
-                      alt={user.fullName || user.firstName || "User"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <UserIcon className="h-5 w-5 text-white" aria-hidden="true" />
-                  )}
-                </div>
-              </button>
-
-              <AnimatePresence>
-                {isUserMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-full mt-2 w-64 bg-background/95 backdrop-blur-xl border shadow-2xl rounded-2xl overflow-hidden py-2 z-50"
-                  >
-                    <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
-                      <p className="font-semibold text-sm truncate">
-                        {user?.fullName || user?.firstName}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {user?.primaryEmailAddress?.emailAddress}
-                      </p>
-                    </div>
-                    <div className="p-2 flex flex-col gap-1">
-                      <Link href="/dashboard"
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <LayoutDashboard className="h-4 w-4" /> Dashboard
-                      </Link>
-                      <Link href="/my-trips"
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Map className="h-4 w-4" /> My Trips
-                      </Link>
-                      <Link href="/wishlist"
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Heart className="h-4 w-4" /> Wishlist
-                      </Link>
-                      <Link href="/expenses"
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Receipt className="h-4 w-4" /> Expenses
-                      </Link>
-                      <Link href="/admin"
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-primary/10 hover:text-primary transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Shield className="h-4 w-4" /> Admin Panel
-                      </Link>
-                    </div>
-                    <div className="p-2 border-t border-border/50 mt-1">
-                      <button
-                        onClick={() => {
-                          logout();
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="flex w-full items-center gap-3 px-3 py-2 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" /> Logout
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+          {isSignedIn ? (
+            <UserButton 
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "w-9 h-9 border-2 border-background shadow-sm"
+                }
+              }}
+              afterSignOutUrl="/"
+            />
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" className="rounded-full px-5" asChild>
-                <Link href="/login">Log in</Link>
-              </Button>
-              <Button
-                variant="gradient"
-                className="rounded-full shadow-lg px-5"
-                asChild
-              >
-                <Link href="/register">Sign up</Link>
-              </Button>
+              <SignInButton mode="modal">
+                <Button variant="ghost" className="rounded-full px-5">Log in</Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button variant="gradient" className="rounded-full shadow-lg px-5">Sign up</Button>
+              </SignUpButton>
             </div>
           )}
         </div>
 
         {/* Mobile Menu Toggle */}
         <div className="flex items-center gap-3 lg:hidden">
-          <ThemeToggle />
+          {isSignedIn && (
+            <UserButton afterSignOutUrl="/" />
+          )}
+
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="text-foreground focus:outline-none p-2 rounded-xl hover:bg-muted/60 transition-colors"
@@ -224,7 +115,7 @@ export function Navbar() {
                 href={link.path}
                 className={cn(
                   "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
-                  location.pathname === link.path
+                  pathname === link.path
                     ? "bg-primary/10 text-primary font-semibold"
                     : "text-foreground hover:bg-muted/60",
                 )}
@@ -234,82 +125,20 @@ export function Navbar() {
             ))}
 
             <hr className="my-3 border-border/50" />
-
             <div className="flex flex-col gap-1 py-4 border-t mt-2">
-              {isAuthenticated ? (
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-3 py-3 px-4 mb-2">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent overflow-hidden border-2 border-background flex items-center justify-center">
-                      {user?.imageUrl ? (
-                        <img
-                          src={user.imageUrl}
-                          alt={user.fullName || user.firstName || "User"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <UserIcon className="h-5 w-5 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm">{user?.fullName || user?.firstName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {user?.primaryEmailAddress?.emailAddress}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Account
-                  </div>
-                  <Link href="/dashboard"
-                    className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium"
-                  >
-                    <LayoutDashboard className="h-4 w-4 text-primary" />{" "}
-                    Dashboard
-                  </Link>
-                  <Link href="/my-trips"
-                    className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium"
-                  >
-                    <Map className="h-4 w-4 text-primary" /> My Trips
-                  </Link>
-                  <Link href="/wishlist"
-                    className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium"
-                  >
-                    <Heart className="h-4 w-4 text-rose-500" /> Wishlist
-                  </Link>
-                  <Link href="/expenses"
-                    className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium"
-                  >
-                    <Receipt className="h-4 w-4 text-amber-500" /> Expenses
-                  </Link>
-                  <Link href="/admin"
-                    className="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-muted/60 transition-colors text-sm font-medium"
-                  >
-                    <Shield className="h-4 w-4 text-primary" /> Admin Panel
-                  </Link>
-                  <Button
-                    variant="destructive"
-                    className="w-full justify-start mt-2 rounded-xl"
-                    onClick={() => logout()}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" /> Logout
-                  </Button>
-                </div>
-              ) : (
+              {!isSignedIn && (
                 <div className="flex flex-col gap-2 px-2">
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-xl"
-                    asChild
-                  >
-                    <Link href="/login">Log in</Link>
-                  </Button>
-                  <Button
-                    variant="gradient"
-                    className="w-full rounded-xl"
-                    asChild
-                  >
-                    <Link href="/register">Sign up</Link>
-                  </Button>
+                  <SignInButton mode="modal">
+                    <Button variant="outline" className="w-full rounded-xl">Log in</Button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <Button variant="gradient" className="w-full rounded-xl">Sign up</Button>
+                  </SignUpButton>
+                </div>
+              )}
+              {isSignedIn && (
+                <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Account
                 </div>
               )}
             </div>

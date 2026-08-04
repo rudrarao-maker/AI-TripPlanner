@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 
-export function AboutPage() {
+export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-24 min-h-screen">
       <motion.div

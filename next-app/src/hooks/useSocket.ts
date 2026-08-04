@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { useUser } from "@clerk/clerk-react";
+import { createClient } from "@/utils/supabase/client";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
 
 export interface Collaborator {
   id: string;
@@ -35,7 +35,15 @@ const getStringColor = (str: string) => {
 };
 
 export function useSocket(tripId?: string) {
-  const { user } = useUser();
+  const [user, setUser] = useState<any>(null);
+  
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUser(data.user);
+    });
+  }, []);
+
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -55,8 +63,8 @@ export function useSocket(tripId?: string) {
           tripId,
           user: {
             id: user?.id || socket.id,
-            name: user?.firstName || user?.fullName || "Anonymous",
-            avatar: user?.imageUrl,
+            name: user?.user_metadata?.full_name || "Anonymous",
+            avatar: user?.user_metadata?.avatar_url,
             color: getStringColor(user?.id || (socket.id as string)),
           },
         });

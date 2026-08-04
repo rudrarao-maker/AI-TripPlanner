@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { motion } from "framer-motion";
 import api from "@/lib/api";
 
-export function BookingsPage() {
+export default function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

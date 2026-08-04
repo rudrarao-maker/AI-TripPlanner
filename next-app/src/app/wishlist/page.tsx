@@ -87,7 +87,7 @@ const TYPE_COLORS: Record<string, string> = {
   activity: "bg-emerald-500/10 text-emerald-600",
 };
 
-export function WishlistPage() {
+export default function WishlistPage() {
   const router = useRouter();
   const [items, setItems] = useState(INITIAL_WISHLIST);
   const [filter, setFilter] = useState("all");
