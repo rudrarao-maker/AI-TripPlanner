@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/lib/api";
+import Papa from "papaparse";
+import { FileSpreadsheet } from "lucide-react";
 
 interface User {
   id: string;
@@ -99,11 +101,8 @@ export function UserManagement() {
   });
 
   // Bulk Add
-  const [bulkRows, setBulkRows] = useState<BulkUserRow[]>([
-    { name: "", email: "", role: "user" },
-    { name: "", email: "", role: "user" },
-    { name: "", email: "", role: "user" },
-  ]);
+  const [bulkRows, setBulkRows] = useState<BulkUserRow[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Bulk Action Confirmation
   const [pendingBulkAction, setPendingBulkAction] = useState<{
@@ -132,6 +131,69 @@ export function UserManagement() {
     type: "success" | "error" = "success",
   ) => {
     setToast({ message, type });
+  };
+
+  // ─── Drag & Drop Handlers ────────────────────────────────
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const processCSV = (file: File) => {
+    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+      showToast("Please upload a valid CSV file.", "error");
+      return;
+    }
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (h) => h.trim().toLowerCase().replace(/^\uFEFF/, ''),
+      complete: (results) => {
+        const parsedRows: BulkUserRow[] = [];
+        results.data.forEach((row: any) => {
+          if (parsedRows.length >= 50) return; // limit to 50
+          const name = row.name || "";
+          const email = row.email || "";
+          let role = (row.role || "user").toLowerCase();
+          if (role !== "admin" && role !== "user") role = "user";
+          
+          if (name || email) {
+            parsedRows.push({ name, email, role });
+          }
+        });
+        
+        if (parsedRows.length > 0) {
+          setBulkRows(parsedRows);
+          showToast(`Loaded ${parsedRows.length} users from CSV.`);
+        } else {
+          showToast("No valid user data found in CSV.", "error");
+        }
+      },
+      error: (error: any) => {
+        showToast(`Error parsing CSV: ${error.message}`, "error");
+      }
+    });
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processCSV(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processCSV(e.target.files[0]);
+    }
   };
 
   // ─── Data Fetching ──────────────────────────────────────
@@ -234,6 +296,17 @@ export function UserManagement() {
     setModalType("edit");
   };
 
+  const handleToggleStatus = async (user: User) => {
+    const newStatus = user.status === "active" ? "restricted" : "active";
+    try {
+      await api.put(`/users/${user.id}`, { status: newStatus });
+      setUsers(users.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)));
+      showToast(`User marked as ${newStatus}`);
+    } catch (err: any) {
+      showToast(err.response?.data?.error || "Failed to update status", "error");
+    }
+  };
+
   const handleSubmitSingle = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
@@ -275,11 +348,7 @@ export function UserManagement() {
 
   // ─── Bulk Add ─────────────────────────────────────────
   const handleOpenBulkAddModal = () => {
-    setBulkRows([
-      { name: "", email: "", role: "user" },
-      { name: "", email: "", role: "user" },
-      { name: "", email: "", role: "user" },
-    ]);
+    setBulkRows([]);
     setModalType("add-bulk");
   };
 
@@ -309,19 +378,31 @@ export function UserManagement() {
 
   const handleSubmitBulk = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validRows = bulkRows.filter((r) => r.name.trim() && r.email.trim());
+    const validRows = bulkRows.filter((r) => r.email.trim());
     if (validRows.length === 0) {
-      showToast("Please fill in at least one user row", "error");
+      showToast("Please provide at least one valid email", "error");
       return;
     }
     setActionLoading(true);
     try {
       const res = await api.post("/users/bulk", { users: validRows });
       const data = res.data.data;
-      const msg = `${data.created?.length || 0} created, ${data.skipped?.length || 0} skipped`;
-      showToast(msg);
-      setModalType(null);
-      fetchUsers(1);
+      
+      const createdCount = data.created?.length || 0;
+      const skippedCount = data.skipped?.length || 0;
+      
+      if (skippedCount > 0) {
+        const skippedDetails = data.skipped.slice(0, 3).map((s: any) => s.email).join(", ");
+        const more = skippedCount > 3 ? ` and ${skippedCount - 3} more` : "";
+        showToast(`${createdCount} created. ${skippedCount} skipped: ${skippedDetails}${more}`, "error");
+      } else {
+        showToast(`Successfully created ${createdCount} users!`);
+      }
+      
+      if (createdCount > 0 || skippedCount === 0) {
+        setModalType(null);
+        fetchUsers(1);
+      }
     } catch (err: any) {
       showToast(err.response?.data?.error || "Bulk creation failed", "error");
     } finally {
@@ -562,12 +643,6 @@ export function UserManagement() {
             className="gap-2 rounded-xl border-dashed"
           >
             <UserPlus className="h-4 w-4" /> Add Multiple
-          </Button>
-          <Button
-            onClick={handleOpenAddModal}
-            className="gap-2 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
-          >
-            <Plus className="h-4 w-4" /> Add User
           </Button>
         </div>
       </div>
@@ -901,6 +976,15 @@ export function UserManagement() {
                               title="Edit user"
                             >
                               <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); handleToggleStatus(user); }}
+                              className={`h-8 w-8 rounded-lg ${user.status === 'active' ? 'hover:bg-destructive/15 hover:text-destructive' : 'hover:bg-emerald-500/15 hover:text-emerald-500'}`}
+                              title={user.status === 'active' ? "Suspend user" : "Restore user"}
+                            >
+                              {user.status === 'active' ? <ShieldOff className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
                             </Button>
                             <Button
                               variant="ghost"
@@ -1402,76 +1486,69 @@ export function UserManagement() {
                         </code>
                       </p>
 
-                      <div className="space-y-2">
-                        {/* Header row */}
-                        <div className="grid grid-cols-[1fr_1fr_120px_36px] gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-                          <span>Name</span>
-                          <span>Email</span>
-                          <span>Role</span>
-                          <span></span>
-                        </div>
-
-                        {bulkRows.map((row, idx) => (
-                          <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            className="grid grid-cols-[1fr_1fr_120px_36px] gap-2 items-center"
+                      {/* ─── CSV Drag & Drop Zone ────────────── */}
+                      <motion.label 
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.98 }}
+                        animate={{
+                          borderColor: isDragging ? "hsl(var(--primary))" : "hsl(var(--border) / 0.5)",
+                          backgroundColor: isDragging ? "hsl(var(--primary) / 0.05)" : "transparent",
+                        }}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer block hover:border-primary/30 hover:bg-muted/30"
+                      >
+                        <input type="file" accept=".csv" className="hidden" onChange={handleFileInput} />
+                        <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                          <motion.div 
+                            animate={{ scale: isDragging ? 1.1 : 1 }}
+                            className={`p-3 rounded-full ${isDragging ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}
                           >
-                            <Input
-                              placeholder={`User ${idx + 1}`}
-                              value={row.name}
-                              onChange={(e) =>
-                                updateBulkRow(idx, "name", e.target.value)
-                              }
-                              className="bg-muted/40 h-9 text-sm"
-                            />
-                            <Input
-                              type="email"
-                              placeholder={`user${idx + 1}@example.com`}
-                              value={row.email}
-                              onChange={(e) =>
-                                updateBulkRow(idx, "email", e.target.value)
-                              }
-                              className="bg-muted/40 h-9 text-sm"
-                            />
-                            <select
-                              value={row.role}
-                              onChange={(e) =>
-                                updateBulkRow(idx, "role", e.target.value)
-                              }
-                              className="h-9 px-2 rounded-lg border border-input bg-muted/40 text-sm outline-none"
-                            >
-                              <option value="user">User</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-lg shrink-0"
-                              onClick={() => removeBulkRow(idx)}
-                              disabled={bulkRows.length <= 1}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
+                            <FileSpreadsheet className="h-6 w-6" />
                           </motion.div>
-                        ))}
+                          <h4 className="font-semibold text-sm">Drag and drop your CSV file here or click to browse</h4>
+                          <p className="text-xs text-muted-foreground max-w-[250px]">
+                            File must contain <b>Name</b> and <b>Email</b> columns. (Role is optional)
+                          </p>
+                        </div>
+                      </motion.label>
+                      
+                      <div className="text-center mt-2">
+                        <a 
+                          href="data:text/csv;charset=utf-8,Name,Email,Role%0A" 
+                          download="sample_users_template.csv"
+                          className="text-xs text-primary hover:underline font-medium"
+                        >
+                          Download CSV Template
+                        </a>
                       </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full border-dashed rounded-xl gap-2 text-muted-foreground"
-                        onClick={addBulkRow}
-                        disabled={bulkRows.length >= 50}
-                      >
-                        <Plus className="h-4 w-4" /> Add Another Row
-                        {bulkRows.length >= 50 && (
-                          <span className="text-[10px]">(max 50)</span>
-                        )}
-                      </Button>
+                      {bulkRows.length > 0 && (
+                        <div className="mt-4 border rounded-lg overflow-hidden max-h-[250px] overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-muted text-muted-foreground sticky top-0">
+                              <tr>
+                                <th className="py-2 px-3 text-left font-medium">Name</th>
+                                <th className="py-2 px-3 text-left font-medium">Email</th>
+                                <th className="py-2 px-3 text-left font-medium">Role</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bulkRows.map((row, i) => {
+                                const isInvalid = !row.email.trim();
+                                return (
+                                  <tr key={i} className={`border-b last:border-0 ${isInvalid ? "bg-red-50 text-red-600" : ""}`}>
+                                    <td className="py-2 px-3 truncate max-w-[120px]">{row.name}</td>
+                                    <td className="py-2 px-3 truncate max-w-[150px]">{row.email || "Missing Email!"}</td>
+                                    <td className="py-2 px-3"><Badge variant="outline" className="text-[10px] uppercase">{row.role}</Badge></td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
                       <div className="pt-2 flex gap-3">
                         <Button

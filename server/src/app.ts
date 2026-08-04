@@ -16,16 +16,33 @@ app.use(
   }),
 );
 
+import RedisStore from "rate-limit-redis";
+import Redis from "ioredis";
+
 // Rate Limiting
+const redisClient = process.env.UPSTASH_REDIS_URL 
+  ? new Redis(process.env.UPSTASH_REDIS_URL) 
+  : null;
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  max: 100, // Limit each IP to 100 requests per window
   standardHeaders: true,
   legacyHeaders: false,
+  ...(redisClient && {
+    store: new RedisStore({
+      // @ts-expect-error - Known issue with rate-limit-redis and ioredis types
+      sendCommand: (...args: string[]) => redisClient.call(...args),
+    }),
+  }),
 });
 app.use("/api", limiter);
 
 import { clerkMiddleware } from "@clerk/express";
+import paymentRoutes from "./routes/payment.route";
+
+// Mount payment routes BEFORE body parser (Stripe Webhook requires raw body)
+app.use("/api/v1/payments", paymentRoutes);
 
 // Body parsing Middleware — limit request size
 app.use(express.json({ limit: "1mb" }));
@@ -80,6 +97,8 @@ app.use("/api/v1/transport", transportRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/app", appRoutes);
 
+import * as Sentry from "@sentry/node";
+
 // Handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(404).json({
@@ -87,6 +106,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     error: "Route not found",
   });
 });
+
+// The error handler must be before any other error middleware and after all controllers
+Sentry.setupExpressErrorHandler(app);
 
 // Global Error Handler
 app.use(errorHandler);

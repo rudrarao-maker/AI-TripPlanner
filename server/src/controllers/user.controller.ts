@@ -3,7 +3,7 @@ import { sendSuccess } from "../utils/response";
 import prisma from "../utils/prisma";
 import bcrypt from "bcryptjs";
 import { AppError } from "../middlewares/errorHandler";
-
+import { sendInviteEmail } from "../utils/email";
 export const getProfile = async (req: Request, res: Response) => {
   const user = req.user;
   const { password, ...userWithoutPassword } = user;
@@ -143,15 +143,10 @@ export const createUser = async (
       return next(new AppError("User with this email already exists", 400));
     }
 
-    // Generate a default password for admin created users
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash("Password123!", salt);
-
     const newUser = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashedPassword,
         role: role || "user",
         status: status || "active",
         verified: true, // admin created user is automatically verified
@@ -295,10 +290,6 @@ export const bulkCreateUsers = async (
     });
     const existingEmails = new Set(existingUsers.map((u) => u.email));
 
-    // Generate default password hash
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash("Password123!", salt);
-
     const results: {
       created: any[];
       skipped: { email: string; reason: string }[];
@@ -329,7 +320,6 @@ export const bulkCreateUsers = async (
           data: {
             name,
             email,
-            password: hashedPassword,
             role: userData.role || "user",
             status: userData.status || "active",
             verified: true,
@@ -344,6 +334,9 @@ export const bulkCreateUsers = async (
           },
         });
         results.created.push(newUser);
+        
+        // Send invite email asynchronously (fire and forget)
+        sendInviteEmail(email, name).catch(console.error);
       } catch (err) {
         results.skipped.push({ email, reason: "Failed to create user" });
       }

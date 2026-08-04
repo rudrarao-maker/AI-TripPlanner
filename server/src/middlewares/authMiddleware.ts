@@ -53,15 +53,32 @@ export const protect = async (
         ? `${auth.claims.first_name} ${auth.claims.last_name || ""}`.trim()
         : "Traveler";
 
-      user = await prisma.user.create({
-        data: {
-          clerkId: auth.userId,
-          email: email,
-          name: name,
-          provider: "clerk",
-          verified: true,
-        },
+      // PERMANENT SOLUTION: Make the very first user an admin automatically
+      const userCount = await prisma.user.count();
+      const role = userCount === 0 ? "admin" : "user";
+
+      // Link admin-invited user by email, or create new user
+      const existingByEmail = await prisma.user.findUnique({
+        where: { email },
       });
+
+      if (existingByEmail) {
+        user = await prisma.user.update({
+          where: { email },
+          data: { clerkId: auth.userId, provider: "clerk" },
+        });
+      } else {
+        user = await prisma.user.create({
+          data: {
+            clerkId: auth.userId,
+            email: email,
+            name: name,
+            provider: "clerk",
+            verified: true,
+            role: role,
+          },
+        });
+      }
     }
 
     if (user.status === "restricted") {
