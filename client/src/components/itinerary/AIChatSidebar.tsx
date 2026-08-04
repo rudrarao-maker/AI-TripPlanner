@@ -18,6 +18,7 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 import "regenerator-runtime/runtime";
 import api from "@/lib/api";
+import posthog from "@/lib/posthog";
 
 interface Message {
   id: string;
@@ -133,6 +134,10 @@ export function AIChatSidebar({
         text: text.trim(),
         timestamp: new Date(),
       };
+      posthog.capture("ai_chat_message_sent", {
+        input_method: "chat",
+        has_trip_context: Boolean(tripContext?.destination),
+      });
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
       setIsTyping(true);

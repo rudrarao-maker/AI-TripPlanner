@@ -43,6 +43,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LiveCursors } from "./LiveCursors";
 import toast from "react-hot-toast";
 import api from "@/lib/api";
+import posthog from "@/lib/posthog";
 
 interface Activity {
   id: string;
@@ -599,6 +600,7 @@ export function DraggableItinerary({
         if (emitSocket) emitSocket("itinerary_sync", next);
         return next;
       });
+      posthog.capture("itinerary_activity_changed", { action: "reordered" });
     },
     [emitSocket],
   );
@@ -617,6 +619,7 @@ export function DraggableItinerary({
         if (emitSocket) emitSocket("itinerary_sync", next);
         return next;
       });
+      posthog.capture("itinerary_activity_changed", { action: "removed" });
     },
     [emitSocket],
   );
@@ -637,6 +640,7 @@ export function DraggableItinerary({
         if (emitSocket) emitSocket("itinerary_sync", next);
         return next;
       });
+      posthog.capture("itinerary_activity_changed", { action: "edited" });
     },
     [emitSocket],
   );
@@ -659,6 +663,7 @@ export function DraggableItinerary({
         if (emitSocket) emitSocket("itinerary_sync", next);
         return next;
       });
+      posthog.capture("itinerary_activity_changed", { action: "added" });
     },
     [emitSocket],
   );
@@ -705,6 +710,7 @@ export function DraggableItinerary({
         return next;
       });
       
+      posthog.capture("itinerary_activity_changed", { action: "day_regenerated" });
       toast.success("Day regenerated!", { id: `regen-${dayId}` });
     } catch (error) {
       console.error(error);

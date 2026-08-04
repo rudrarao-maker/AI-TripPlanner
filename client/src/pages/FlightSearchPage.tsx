@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useSearchFlights } from "@/hooks/useFlights";
 import { TransportCard } from "@/components/recommendations/TransportCard";
 import { TransportCardSkeleton } from "@/components/ui/Skeletons";
+import posthog from "@/lib/posthog";
 
 export function FlightSearchPage() {
   const [searchParams, setSearchParams] = useState({
@@ -25,6 +26,9 @@ export function FlightSearchPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    posthog.capture("flight_search_submitted", {
+      travel_class: searchParams.travelClass.toLowerCase(),
+    });
     setHasSearched(true);
     refetch();
   };
