@@ -1,47 +1,36 @@
-# AI Trip Planner
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-AI Trip Planner is a complete full-stack web application designed to generate, customize, and manage trips utilizing Google's Gemini AI. 
+## Getting Started
 
-## Features
+First, run the development server:
 
-- **AI Itinerary Generation:** Give the AI a prompt about where you want to go, budget, and travel style, and it builds a detailed day-by-day itinerary.
-- **Route Optimization:** Uses the Haversine formula to sort your daily activities by distance to minimize travel time.
-- **Full Authentication:** Secured by Clerk.
-- **Database:** Fully structured PostgreSQL database managed through Prisma ORM. 
-- **Admin Dashboard:** Access control logic combined with live data queries to manage users and platform metrics.
-- **Interactive UI:** Built using React, TailwindCSS, and Framer Motion for buttery-smooth animations and premium aesthetics.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Tech Stack
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- **Frontend:** React, Vite, TailwindCSS, framer-motion, lucide-react
-- **Backend:** Node.js, Express, Socket.IO
-- **Database:** PostgreSQL (via Prisma ORM)
-- **AI Integration:** Google Gemini 2.5 Flash
-- **Testing:** Vitest & Supertest
-- **CI/CD:** GitHub Actions
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Setup Instructions
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-1. **Clone the repository**
-2. **Setup environment variables**
-   - Copy `.env.example` to `server/.env` and `client/.env` and populate keys (Clerk, Gemini, Postgres).
-3. **Install Dependencies**
-   - `npm install` inside both `client` and `server`.
-4. **Database Setup**
-   - Navigate to `server` and run `npx prisma db push` and `npx prisma generate`.
-5. **Run the App**
-   - In `server`: `npm run dev`
-   - In `client`: `npm run dev`
+## Learn More
 
-## Recent Upgrades
+To learn more about Next.js, take a look at the following resources:
 
-This project was recently upgraded in a massive 6-phase sprint including:
-1. Singleton Prisma Client & Full Postgres Migration
-2. Backend Security (Zod, Helmet, Rate Limiting)
-3. Advanced AI structured outputs & Haversine formula optimization
-4. Real-time WebSockets setup via Socket.IO
-5. Full frontend UI/UX refactoring for premium glassmorphism and responsiveness
-6. DevOps integration with automated Vitest pipelines
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## License
-MIT
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
