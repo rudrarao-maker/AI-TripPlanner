@@ -139,7 +139,11 @@ export const bookings = pgTable("Booking", {
   referenceId: text("referenceId"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("booking_userId_idx").on(table.userId),
+  tripIdIdx: index("booking_tripId_idx").on(table.tripId),
+  statusIdx: index("booking_status_idx").on(table.status),
+}));
 
 export const destinations = pgTable("Destination", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -154,7 +158,10 @@ export const destinations = pgTable("Destination", {
   status: text("status").default("active"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  countryIdx: index("dest_country_idx").on(table.country),
+  statusIdx: index("dest_status_idx").on(table.status),
+}));
 
 export const hotels = pgTable("Hotel", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -169,7 +176,9 @@ export const hotels = pgTable("Hotel", {
   bookingLink: text("bookingLink"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  destIdIdx: index("hotel_destId_idx").on(table.destinationId),
+}));
 
 export const auditLogs = pgTable("AuditLog", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -179,7 +188,10 @@ export const auditLogs = pgTable("AuditLog", {
   targetId: text("targetId"),
   details: text("details"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  adminIdIdx: index("audit_adminId_idx").on(table.adminId),
+  createdAtIdx: index("audit_createdAt_idx").on(table.createdAt),
+}));
 
 export const payments = pgTable("Payment", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -190,7 +202,11 @@ export const payments = pgTable("Payment", {
   status: text("status").default("succeeded"),
   receiptUrl: text("receiptUrl"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("payment_userId_idx").on(table.userId),
+  bookingIdIdx: index("payment_bookingId_idx").on(table.bookingId),
+  statusIdx: index("payment_status_idx").on(table.status),
+}));
 
 export const reviews = pgTable("Review", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -200,7 +216,11 @@ export const reviews = pgTable("Review", {
   content: text("content"),
   status: text("status").default("pending"), // pending, approved, rejected
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("review_userId_idx").on(table.userId),
+  tripIdIdx: index("review_tripId_idx").on(table.tripId),
+  statusIdx: index("review_status_idx").on(table.status),
+}));
 
 export const aiSettings = pgTable("AISetting", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -217,7 +237,10 @@ export const notifications = pgTable("Notification", {
   message: text("message").notNull(),
   status: text("status").default("unread"), // unread, read
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("notif_userId_idx").on(table.userId),
+  statusIdx: index("notif_status_idx").on(table.status),
+}));
 
 // --- Relations ---
 

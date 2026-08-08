@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 
 const DraggableItinerary = dynamic(() => import("@/components/itinerary/DraggableItinerary").then((mod) => mod.DraggableItinerary), { ssr: false, loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-3xl" /> });
-const ItineraryMap = dynamic(() => import("@/components/itinerary/ItineraryMap").then((mod) => mod.ItineraryMap), { ssr: false, loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-3xl" /> });
+const InteractiveRouteMap = dynamic(() => import("@/components/itinerary/ItineraryMap").then((mod) => mod.InteractiveRouteMap), { ssr: false, loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-3xl" /> });
 const ExportPDFButton = dynamic(() => import("@/components/itinerary/ExportPDFButton").then((mod) => mod.ExportPDFButton), { ssr: false });
 const BudgetTracker = dynamic(() => import("@/components/budget/BudgetTracker").then((mod) => mod.BudgetTracker), { ssr: false });
 const SmartPackingList = dynamic(() => import("@/components/recommendations/SmartPackingList").then((mod) => mod.SmartPackingList), { ssr: false });
@@ -109,13 +109,22 @@ export default function ItineraryDetailsPage() {
             <h2 className="text-2xl font-bold mb-8">Day-by-Day Itinerary</h2>
             <div className="space-y-12">
               {tripDays.map((day: any, dayIndex: number) => {
+                // Seed lat/lng from destination name for consistent mock coordinates
+                const destHash = (itinerary.destination || "Paris").split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
+                const baseLat = ((destHash % 180) - 90) * 0.5 + 25;
+                const baseLng = ((destHash * 7) % 360) - 180 + 75;
+
                 const mappedActivities = (day.activities || []).map((act: any, i: number) => ({
-                  id: `${day.id}-${i}`,
+                  id: act.id || `${day.id}-${i}`,
                   name: act.name,
                   time: act.time,
                   location: act.location,
-                  lat: 48.8566 + (Math.random() * 0.05), // Mock coordinates for map
-                  lng: 2.3522 + (Math.random() * 0.05)
+                  description: act.description,
+                  category: act.category || "activity",
+                  estimatedCost: act.estimatedCost,
+                  imageUrl: act.imageUrl,
+                  lat: act.lat || baseLat + (i * 0.008) + (dayIndex * 0.003),
+                  lng: act.lng || baseLng + (i * 0.01) - (dayIndex * 0.005),
                 }));
 
                 return (
@@ -146,9 +155,9 @@ export default function ItineraryDetailsPage() {
                           />
                         </div>
 
-                        {/* Interactive Map for the Day */}
-                        <div className="h-[400px] w-full rounded-2xl overflow-hidden hidden lg:block">
-                          <ItineraryMap activities={mappedActivities} />
+                        {/* Interactive Route Map for the Day */}
+                        <div className="h-[450px] w-full rounded-2xl overflow-hidden hidden lg:block">
+                          <InteractiveRouteMap activities={mappedActivities} />
                         </div>
                       </div>
                     </div>

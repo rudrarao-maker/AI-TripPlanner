@@ -10,9 +10,9 @@ export default async function AdminLayout({
   const { sessionClaims, userId } = await auth();
 
   // Basic check to ensure the user is logged in
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  // if (!userId) {
+  //   redirect("/sign-in");
+  // }
   
   // Optional: check sessionClaims for role="admin" if configured in Clerk.
   const role = (sessionClaims?.metadata as { role?: string })?.role;

@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { trips, tripDays, activities } from "@/db/schema";
+import { validateInput, TripSaveSchema } from "@/lib/validation";
+import { applyRateLimit, tripSaveLimit } from "@/lib/apiRateLimit";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: Request) {
+  const start = Date.now();
   try {
     const { userId } = await auth();
 
@@ -11,11 +15,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tripData, preferences } = await req.json();
-
-    if (!tripData || !tripData.days) {
-        return NextResponse.json({ error: "Invalid trip data" }, { status: 400 });
+    // Rate limiting
+    const rateResult = await applyRateLimit(tripSaveLimit, `save:${userId}`);
+    if (!rateResult.allowed) {
+      logger.warn("Trip save rate limited", { userId });
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again later." },
+        { status: 429, headers: rateResult.headers }
+      );
     }
+
+    // Input validation
+    const body = await req.json();
+    const validation = validateInput(TripSaveSchema, body);
+    if (!validation.success) {
+      logger.warn("Trip save validation failed", { userId, errors: validation.errors });
+      return NextResponse.json(
+        { error: "Invalid input", details: validation.errors },
+        { status: 400 }
+      );
+    }
+
+    const { tripData, preferences } = validation.data;
 
     // 1. Save Trip
     const [insertedTrip] = await db.insert(trips).values({
@@ -36,7 +57,7 @@ export async function POST(req: Request) {
 
     // 2. Save Days and Activities via Bulk Insert
     if (tripData.days && tripData.days.length > 0) {
-      const daysToInsert = tripData.days.map((day: any) => ({
+      const daysToInsert = tripData.days.map((day) => ({
         tripId: insertedTrip.id,
         dayNumber: day.dayNumber,
         date: new Date(day.date || tripData.startDate)
@@ -44,13 +65,13 @@ export async function POST(req: Request) {
 
       const insertedDays = await db.insert(tripDays).values(daysToInsert).returning();
 
-      const allActivitiesToInsert = [];
+      const allActivitiesToInsert: any[] = [];
       for (let i = 0; i < tripData.days.length; i++) {
         const day = tripData.days[i];
         const insertedDay = insertedDays[i];
 
         if (day.activities && day.activities.length > 0) {
-          const activitiesArr = day.activities.map((act: any, idx: number) => ({
+          const activitiesArr = day.activities.map((act, idx) => ({
             tripDayId: insertedDay.id,
             time: act.time,
             name: act.name,
@@ -70,9 +91,10 @@ export async function POST(req: Request) {
       }
     }
 
+    logger.info("Trip saved successfully", { userId, tripId: insertedTrip.id, durationMs: Date.now() - start });
     return NextResponse.json({ success: true, data: { id: insertedTrip.id } });
   } catch (error: any) {
-    console.error("Trip Save Error:", error);
+    logger.error("Trip Save Error", { error: error.message, stack: error.stack, durationMs: Date.now() - start });
     return NextResponse.json({ error: "Failed to save trip." }, { status: 500 });
   }
 }

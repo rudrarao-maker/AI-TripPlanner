@@ -3,8 +3,11 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { trips } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { logger } from "@/lib/logger";
+import { queryCache, QUERY_CACHE_TTL, cacheFirst } from "@/lib/cache";
 
 export async function GET(req: Request) {
+  const start = Date.now();
   try {
     const { userId } = await auth();
 
@@ -12,13 +15,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const tripsData = await db.select().from(trips).where(eq(trips.userId, userId)).orderBy(desc(trips.createdAt));
+    const cacheKey = `trips:${userId}`;
+    const tripsData = await cacheFirst(queryCache, cacheKey, QUERY_CACHE_TTL, async () => {
+      return db.select().from(trips).where(eq(trips.userId, userId)).orderBy(desc(trips.createdAt));
+    });
 
+    logger.apiRequest("GET", "/api/trips", 200, Date.now() - start, { userId, count: tripsData.length });
     return NextResponse.json({ success: true, data: tripsData });
   } catch (error: any) {
-    console.error("Fetch Trips Error:", error);
+    logger.error("Fetch Trips Error", { error: error.message, durationMs: Date.now() - start });
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: "Failed to fetch trips" },
       { status: 500 }
     );
   }

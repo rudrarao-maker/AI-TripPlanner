@@ -120,16 +120,16 @@ IMPORTANT CONSTRAINTS:
             dayNumber: i + 1,
             date: date.toISOString().split("T")[0],
             activities: [
-              { name: "Check-in & Relax", description: \`Settle into your \${tier.hotelCategory} hotel.\`, time: "14:00", location: preferences.destination + " Hotel", category: "hotel", estimatedCost: hotelCost, currency: "INR" },
-              { name: "Local Sightseeing", description: \`Explore \${preferences.destination}.\`, time: "16:00", location: \`Central \${preferences.destination}\`, category: "sightseeing", estimatedCost: activityCost, currency: "INR" },
-              { name: "Dinner", description: "Enjoy local cuisine.", time: "19:00", location: \`Downtown \${preferences.destination}\`, category: "food", estimatedCost: foodCost, currency: "INR" }
+              { name: "Check-in & Relax", description: `Settle into your ${tier.hotelCategory} hotel.`, time: "14:00", location: preferences.destination + " Hotel", category: "hotel", estimatedCost: hotelCost, currency: "INR" },
+              { name: "Local Sightseeing", description: `Explore ${preferences.destination}.`, time: "16:00", location: `Central ${preferences.destination}`, category: "sightseeing", estimatedCost: activityCost, currency: "INR" },
+              { name: "Dinner", description: "Enjoy local cuisine.", time: "19:00", location: `Downtown ${preferences.destination}`, category: "food", estimatedCost: foodCost, currency: "INR" }
             ]
           };
         });
 
         return {
-          id: \`temp-\${tier.id}-\${Date.now()}\`,
-          title: \`Ultimate \${preferences.destination} Getaway\`,
+          id: `temp-${tier.id}-${Date.now()}`,
+          title: `Ultimate ${preferences.destination} Getaway`,
           origin: preferences.origin || "Home",
           destination: preferences.destination,
           startDate: start.toISOString().split("T")[0],

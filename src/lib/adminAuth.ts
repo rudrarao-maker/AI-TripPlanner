@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { users, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
+import { applyRateLimit, adminApiLimit } from "@/lib/apiRateLimit";
 
 type AdminHandler = (req: Request, context: { adminId: string; params: any }) => Promise<NextResponse>;
 
@@ -15,41 +17,47 @@ export function withAdminAuth(handler: AdminHandler, actionName: string) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
-      // Verify if the user is an admin in the database
+      // Apply rate limiting for admin APIs
+      const rateResult = await applyRateLimit(adminApiLimit, `admin:${userId}`);
+      if (!rateResult.allowed) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded. Please slow down." },
+          { status: 429, headers: rateResult.headers }
+        );
+      }
+
+      // Verify the user has admin role in the database
       const user = await db.query.users.findFirst({
         where: eq(users.clerkId, userId),
       });
 
-      // Allow if user is an admin or super_admin
-      // In development/mock scenarios where we just created the project, 
-      // we might want to temporarily bypass this if there's no way to set the first admin.
-      // But for production readiness, we strictly enforce it.
       if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
-         return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+        logger.warn("Admin access denied", { userId, role: user?.role, action: actionName });
+        return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
       }
 
       // Execute the actual handler
       const response = await handler(req, { ...context, adminId: user.id });
 
-      // Audit Logging
+      // Audit Logging for mutating operations
       if (req.method !== "GET") {
         try {
           await db.insert(auditLogs).values({
             adminId: user.id,
             action: actionName,
-            targetType: new URL(req.url).pathname, // Route path as targetType
+            targetType: new URL(req.url).pathname,
             details: `Method: ${req.method}`,
           });
         } catch (logError) {
-          console.error("Failed to write audit log:", logError);
+          logger.error("Failed to write audit log", { error: logError, action: actionName });
         }
       }
 
       return response;
     } catch (error: any) {
-      console.error(`Admin API Error (${actionName}):`, error);
+      logger.error(`Admin API Error (${actionName})`, { error: error.message, stack: error.stack });
       return NextResponse.json(
-        { error: "Internal Server Error", details: error.message },
+        { error: "Internal Server Error" },
         { status: 500 }
       );
     }
