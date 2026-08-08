@@ -38,8 +38,8 @@ function formatLog(level: LogLevel, message: string, context?: LogContext) {
   };
 
   // Strip error stacks in production for cleaner logs (Sentry captures full stacks)
-  if (level === "error" && context?.stack && process.env.NODE_ENV === "production") {
-    delete entry.stack;
+  if (level === "error" && (context as any)?.stack && process.env.NODE_ENV === "production") {
+    delete (entry as any).stack;
   }
 
   return JSON.stringify(entry);

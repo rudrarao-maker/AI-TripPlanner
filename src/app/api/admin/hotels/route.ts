@@ -28,8 +28,7 @@ async function createHotelHandler(req: Request) {
     name: body.name,
     address: body.address,
     rating: String(body.rating),
-    pricePerNight: String(body.pricePerNight),
-    status: body.status,
+    price: String(body.pricePerNight),
   }).returning();
 
   return NextResponse.json({ success: true, data: newHotel[0] });

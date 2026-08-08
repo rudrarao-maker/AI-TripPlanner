@@ -38,11 +38,11 @@ export default function ItineraryDetailsPage() {
 
   const handleUseItinerary = () => {
     router.push(
-      `/trip-planner?dest=${encodeURIComponent(itinerary.destination)}&days=${itinerary.tripDays?.length || 5}`,
+      `/trip-planner?dest=${encodeURIComponent(itinerary.destination)}&days=${(itinerary as any).tripDays?.length || 5}`,
     );
   };
 
-  const tripDays = itinerary.tripDays || [];
+  const tripDays = (itinerary as any).tripDays || [];
   const durationDays = tripDays.length;
 
   return (

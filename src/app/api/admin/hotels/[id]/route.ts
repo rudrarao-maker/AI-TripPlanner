@@ -14,8 +14,7 @@ async function updateHotelHandler(req: Request, { params }: any) {
       name: body.name,
       address: body.address,
       rating: String(body.rating),
-      pricePerNight: String(body.pricePerNight),
-      status: body.status,
+      price: String(body.pricePerNight),
     })
     .where(eq(hotels.id, id))
     .returning();

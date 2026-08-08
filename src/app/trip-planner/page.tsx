@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -103,7 +103,7 @@ function getCoordinates(destination: string): { lat: number; lng: number } {
   return { lat: 20.5937, lng: 78.9629 };
 }
 
-export default function TripPlannerPage() {
+function TripPlannerContent() {
   const navigate = useRouter();
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -432,5 +432,13 @@ export default function TripPlannerPage() {
       listening={listening}
       handleMicClick={handleMicClick}
     />
+  );
+}
+
+export default function TripPlannerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-24 pb-12 flex items-center justify-center">Loading planner...</div>}>
+      <TripPlannerContent />
+    </Suspense>
   );
 }

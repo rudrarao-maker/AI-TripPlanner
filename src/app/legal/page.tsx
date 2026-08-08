@@ -1,7 +1,13 @@
 "use client";
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function LegalPage({ type }: { type: "privacy" | "terms" | "cookies" }) {
+function LegalContent() {
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type");
+  const type = (typeParam === "privacy" || typeParam === "cookies") ? typeParam : "terms";
+
   const content = {
     privacy: {
       title: "Privacy Policy",
@@ -38,5 +44,13 @@ export default function LegalPage({ type }: { type: "privacy" | "terms" | "cooki
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LegalPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-24 min-h-[70vh]">Loading...</div>}>
+      <LegalContent />
+    </Suspense>
   );
 }

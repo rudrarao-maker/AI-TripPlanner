@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     }
 
     const cacheKey = `trips:${userId}`;
-    const tripsData = await cacheFirst(queryCache, cacheKey, QUERY_CACHE_TTL, async () => {
+    const tripsData = await cacheFirst<typeof trips.$inferSelect[]>(queryCache as any, cacheKey, QUERY_CACHE_TTL, async () => {
       return db.select().from(trips).where(eq(trips.userId, userId)).orderBy(desc(trips.createdAt));
     });
 
