@@ -9,7 +9,12 @@ if (!connectionString) {
 }
 
 // Production-ready connection pool configuration
-const client = connectionString
+// Prevent connection exhaustion during HMR in development
+const globalForDb = globalThis as unknown as {
+  postgresClient: ReturnType<typeof postgres> | undefined;
+};
+
+const client = globalForDb.postgresClient ?? (connectionString
   ? postgres(connectionString, {
       prepare: false,
       max: 10,                    // Maximum 10 connections in pool
@@ -18,6 +23,10 @@ const client = connectionString
       max_lifetime: 60 * 30,      // Recycle connections every 30 minutes
       onnotice: () => {},         // Suppress NOTICE messages in production
     })
-  : ({} as any);
+  : ({} as any));
+
+if (process.env.NODE_ENV !== 'production' && connectionString) {
+  globalForDb.postgresClient = client;
+}
 
 export const db = drizzle(client, { schema });

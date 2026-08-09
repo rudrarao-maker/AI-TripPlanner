@@ -118,9 +118,7 @@ export function Scene() {
             )}
           </group>
 
-          {/* Environment reflection for solid globe */}
-          <Environment preset={isDark ? "city" : "apartment"} />
-          
+
           <ParallaxCamera isMobile={isMobile} prefersReducedMotion={prefersReducedMotion} />
         </Suspense>
       </Canvas>

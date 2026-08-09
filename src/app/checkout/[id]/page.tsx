@@ -29,15 +29,37 @@ export default function CheckoutPage({ params }: { params: { id: string } }) {
     );
   }
 
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePayment = async () => {
     setIsProcessing(true);
 
-    // Simulate API call to Stripe
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    toast.success("Payment successful! Your trip is booked.");
-    router.push("/dashboard?payment=success");
+    try {
+      // Mock costs
+      const totalBudget = Number(trip.budget) || 120000;
+      const amount = totalBudget * 0.75 + totalBudget * 0.05; // flights + hotel + fee
+
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tripId: trip.id,
+          amount,
+          currency: 'inr' // keeping the UI currency consistent
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe Checkout
+      } else {
+        toast.error(data.error || 'Failed to initiate checkout.');
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred during checkout.');
+      setIsProcessing(false);
+    }
   };
 
   // Mock costs if not present
@@ -117,89 +139,35 @@ export default function CheckoutPage({ params }: { params: { id: string } }) {
             <h2 className="text-2xl font-bold">Secure Checkout</h2>
           </div>
 
-          <form onSubmit={handlePayment} className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Contact Information</h3>
-              <Input 
-                type="email" 
-                placeholder="Email address" 
-                required 
-                value={formData.email}
-                onChange={e => setFormData({...formData, email: e.target.value})}
-                className="py-6 glass"
-              />
-            </div>
-
-            <div className="space-y-4 pt-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                Payment Details <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </h3>
-              
-              <div className="space-y-3">
-                <Input 
-                  placeholder="Cardholder Name" 
-                  required 
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="py-6 glass"
-                />
-                
-                <div className="relative">
-                  <Input 
-                    placeholder="Card Number" 
-                    required 
-                    value={formData.cardNumber}
-                    onChange={e => setFormData({...formData, cardNumber: e.target.value})}
-                    className="py-6 glass pl-12"
-                    maxLength={19}
-                  />
-                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <Input 
-                    placeholder="MM/YY" 
-                    required 
-                    value={formData.expiry}
-                    onChange={e => setFormData({...formData, expiry: e.target.value})}
-                    className="py-6 glass"
-                    maxLength={5}
-                  />
-                  <div className="relative">
-                    <Input 
-                      type="password"
-                      placeholder="CVC" 
-                      required 
-                      value={formData.cvc}
-                      onChange={e => setFormData({...formData, cvc: e.target.value})}
-                      className="py-6 glass pl-12"
-                      maxLength={4}
-                    />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="space-y-6 text-center">
+            <p className="text-muted-foreground mb-8">
+              You will be securely redirected to Stripe to complete your payment via credit card, debit card, or local payment methods.
+            </p>
 
             <Button 
-              type="submit" 
+              onClick={handlePayment} 
               disabled={isProcessing}
               variant="gradient" 
-              className="w-full py-6 text-lg shadow-xl shadow-primary/20 mt-4"
+              className="w-full py-8 text-xl font-bold shadow-xl shadow-primary/20 rounded-2xl"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Processing...
+                  <Loader2 className="h-6 w-6 animate-spin mr-3" /> Redirecting to Stripe...
                 </>
               ) : (
                 `Pay ₹${(flightsCost + hotelCost + feeCost).toLocaleString()}`
               )}
             </Button>
             
-            <p className="text-xs text-center text-muted-foreground mt-4 flex items-center justify-center gap-1">
-              <Lock className="h-3 w-3" /> Payments are secure and encrypted.
+            <div className="flex items-center justify-center gap-4 mt-8 opacity-60">
+              <ShieldCheck className="h-8 w-8" />
+              <Lock className="h-8 w-8" />
+              <CreditCard className="h-8 w-8" />
+            </div>
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              Secured and Encrypted by Stripe.
             </p>
-          </form>
+          </div>
         </div>
       </div>
     </div>

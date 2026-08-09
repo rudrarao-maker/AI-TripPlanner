@@ -55,13 +55,9 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 import "regenerator-runtime/runtime";
 import { useGenerateTrip, useParsePrompt } from "@/hooks/useTrips";
-import {
-  useHotels,
-  useRestaurants,
-  useAttractions,
-  useTransport,
-} from "@/hooks/useRecommendations";
+import { useHotels, useRestaurants, useAttractions, useTransport } from "@/hooks/useRecommendations";
 import { useSocket } from "@/hooks/useSocket";
+import { useTripPlanner } from "@/hooks/useTripPlanner";
 
 // Destination coordinate lookup for weather/map integration
 const DESTINATION_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -106,16 +102,21 @@ function getCoordinates(destination: string): { lat: number; lng: number } {
 function TripPlannerContent() {
   const navigate = useRouter();
   const [step, setStep] = useState(1);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [itinerary, setItinerary] = useState<any>(null);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState<number | null>(
-    null,
-  );
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState<number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const searchParams = useSearchParams();
-  const generateTripMutation = useGenerateTrip();
   const parsePromptMutation = useParsePrompt();
+
+  const {
+    isGenerating,
+    setIsGenerating,
+    plans,
+    setPlans,
+    itinerary,
+    setItinerary,
+    optimisticItinerary,
+    generateWithData
+  } = useTripPlanner();
 
   // Real-time socket
   const { collaborators, emit, subscribe, socketId } = useSocket(itinerary?.id);
@@ -217,49 +218,7 @@ function TripPlannerContent() {
     }
   }, [searchParams]);
 
-  const generateWithData = async (dataToUse: typeof formData) => {
-    // Parse dates from formData (format: "YYYY-MM-DD to YYYY-MM-DD")
-    let startD = new Date();
-    let endD = new Date(new Date().setDate(new Date().getDate() + 7));
-    if (dataToUse.dates && dataToUse.dates.includes("to")) {
-      const parts = dataToUse.dates.split("to");
-      if (parts[0].trim()) startD = new Date(parts[0].trim());
-      if (parts[1]?.trim()) endD = new Date(parts[1].trim());
-    }
-
-    const tripData = {
-      origin: dataToUse.departureCity || "Home",
-      destination: dataToUse.destinations[0] || "Bali",
-      startDate: startD.toISOString(),
-      endDate: endD.toISOString(),
-      travelers: dataToUse.adults + dataToUse.children + dataToUse.seniors,
-      budget: dataToUse.budget || "100000",
-      budgetTier: dataToUse.budgetTier, // 'cheap', 'moderate', 'luxury', 'compare'
-      tripType: dataToUse.tripType,
-      interests: dataToUse.interests,
-    };
-
-    try {
-      const res = await api.post("/trips/generate", tripData);
-      const generatedPlans = res.data.data; // Now returns an array of plans
-      setPlans(generatedPlans);
-      
-      if (generatedPlans.length === 1) {
-        // If they chose a specific tier, skip comparison and go straight to plan
-        setItinerary(generatedPlans[0]);
-        setSelectedPlanIndex(0);
-      }
-      
-      setIsGenerating(false);
-      // We don't need to change step, the UI will render PlanComparison or TripPlannerView
-      // because plans.length > 0 or itinerary is set
-    } catch (err: any) {
-      console.error("Plan generation failed:", err);
-      setIsGenerating(false);
-      const errorMessage = err.response?.data?.error || "Failed to generate plans. Please try again.";
-      toast.error(errorMessage);
-    }
-  };
+  // Generate logic is now handled by useTripPlanner hook
 
   // Recommendation Hooks
   const destination = formData.destinations[0] || "Bali";
@@ -373,7 +332,7 @@ function TripPlannerContent() {
   }
 
   const selectedPlan = selectedPlanIndex !== null ? plans[selectedPlanIndex] : null;
-  const activeItinerary = selectedPlan || itinerary;
+  const activeItinerary = selectedPlan || optimisticItinerary;
 
   if (plans.length > 0 && selectedPlanIndex === null) {
     return (
@@ -393,7 +352,7 @@ function TripPlannerContent() {
       <TripPlannerView
         activeItinerary={activeItinerary}
         formData={formData}
-        itinerary={itinerary}
+        itinerary={optimisticItinerary}
         plans={plans}
         setSelectedPlanIndex={setSelectedPlanIndex}
         collaborators={collaborators}

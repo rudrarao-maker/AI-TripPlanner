@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const PLANS = [
   {
@@ -105,12 +106,14 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <Button 
-                variant={plan.popular ? "default" : "outline"} 
-                className="w-full rounded-full h-12 font-medium"
-              >
-                {plan.buttonText}
-              </Button>
+              <Link href="/pricing" className="w-full">
+                <Button 
+                  variant={plan.popular ? "default" : "outline"} 
+                  className="w-full rounded-full h-12 font-medium"
+                >
+                  {plan.buttonText}
+                </Button>
+              </Link>
             </motion.div>
           ))}
         </div>

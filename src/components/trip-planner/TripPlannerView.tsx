@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import dynamic from "next/dynamic";
-const GlobeMap = dynamic(() => import("@/components/trip/GlobeMap").then((mod) => mod.GlobeMap), { ssr: false });
+const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), { ssr: false });
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { RestaurantCard } from "@/components/recommendations/RestaurantCard";
 import { AttractionCard } from "@/components/recommendations/AttractionCard";
@@ -61,6 +61,28 @@ export function TripPlannerView({
 }: any) {
   const [activeTab, setActiveTab] = useState<"itinerary" | "logistics" | "packing" | "expenses">("itinerary");
   const [recTab, setRecTab] = useState<"hotels" | "restaurants" | "attractions" | "transport">("hotels");
+
+  // Extract map markers from the itinerary
+  const mapMarkers = activeItinerary?.days?.flatMap((day: any) => 
+    day.activities?.filter((act: any) => act.coordinates?.lat && act.coordinates?.lng).map((act: any) => ({
+      id: `${day.dayNumber}-${act.name}`,
+      position: { lat: act.coordinates.lat, lng: act.coordinates.lng },
+      title: act.name,
+      type: act.category,
+      description: act.description
+    })) || []
+  ) || [];
+
+  // Add destination as main marker if no activities yet
+  if (mapMarkers.length === 0) {
+    mapMarkers.push({
+      id: 'dest',
+      position: destCoords,
+      title: formData.destinations[0] || "Destination",
+      type: "destination",
+      description: "Trip Destination"
+    });
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -377,118 +399,63 @@ export function TripPlannerView({
 
             {activeTab === "logistics" && (
               <div className="space-y-6">
-                {/* Transport Comparison */}
+                {/* Transport Booking Widget */}
                 <Card className="glass-card overflow-hidden">
                   <CardHeader className="bg-muted/30 pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Plane className="h-5 w-5 text-primary" /> Transport
-                      Comparison
+                      <Plane className="h-5 w-5 text-primary" /> Book Flights
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="divide-y divide-border/50">
-                      <div className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center bg-primary/5 cursor-pointer">
+                      <div 
+                        className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer group"
+                        onClick={() => {
+                          const origin = formData.departureCity || "Any";
+                          const dest = formData.destinations[0] || "Destination";
+                          window.open(`https://www.skyscanner.com/transport/flights/${origin}/${dest}`, "_blank");
+                        }}
+                      >
                         <div className="flex items-center gap-4">
-                          <div className="bg-primary/20 p-2 rounded-lg text-primary">
-                            <Plane className="h-5 w-5" />
+                          <div className="bg-primary/20 p-3 rounded-xl text-primary group-hover:scale-110 transition-transform">
+                            <Plane className="h-6 w-6" />
                           </div>
                           <div>
-                            <p className="font-bold flex items-center gap-2">
-                              AirAsia{" "}
-                              <span className="text-[10px] bg-green-500/20 text-green-600 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                Fastest
-                              </span>
+                            <p className="font-bold flex items-center gap-2 text-lg">
+                              Search Flights to {formData.destinations[0]}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              2h 30m • Direct
+                              Find the cheapest flights on Skyscanner
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-lg">₹12,500</p>
-                          <span className="text-xs text-primary font-medium hover:underline">
-                            Select
-                          </span>
+                          <Button variant="gradient" className="rounded-full shadow-lg">Search Flights →</Button>
                         </div>
                       </div>
-                      <div className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer">
+                      
+                      <div 
+                        className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer group"
+                        onClick={() => {
+                          const dest = formData.destinations[0] || "Destination";
+                          window.open(`https://www.booking.com/searchresults.html?ss=${dest}`, "_blank");
+                        }}
+                      >
                         <div className="flex items-center gap-4">
-                          <div className="bg-accent/10 p-2 rounded-lg text-accent">
-                            <svg
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect
-                                x="4"
-                                y="3"
-                                width="16"
-                                height="16"
-                                rx="2"
-                              />
-                              <path d="M4 11h16" />
-                              <path d="M12 3v8" />
-                              <path d="m8 19-2 3" />
-                              <path d="m16 19 2 3" />
-                              <path d="M2 9h2" />
-                              <path d="M20 9h2" />
-                            </svg>
+                          <div className="bg-blue-500/20 p-3 rounded-xl text-blue-500 group-hover:scale-110 transition-transform">
+                            <Hotel className="h-6 w-6" />
                           </div>
                           <div>
-                            <p className="font-bold">Express Railway</p>
+                            <p className="font-bold flex items-center gap-2 text-lg">
+                              Book Hotels in {formData.destinations[0]}
+                            </p>
                             <p className="text-sm text-muted-foreground">
-                              8h 45m • Scenic Route
+                              Find top-rated stays on Booking.com
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-lg">₹4,200</p>
-                          <span className="text-xs text-muted-foreground font-medium hover:underline">
-                            View
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer">
-                        <div className="flex items-center gap-4">
-                          <div className="bg-orange-500/10 p-2 rounded-lg text-orange-500">
-                            <svg
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                              <circle cx="7" cy="17" r="2" />
-                              <path d="M9 17h6" />
-                              <circle cx="17" cy="17" r="2" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="font-bold flex items-center gap-2">
-                              Sleeper Coach{" "}
-                              <span className="text-[10px] bg-orange-500/20 text-orange-600 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                Cheapest
-                              </span>
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              14h 00m • Overnight
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-lg">₹2,800</p>
-                          <span className="text-xs text-muted-foreground font-medium hover:underline">
-                            View
-                          </span>
+                          <Button variant="outline" className="rounded-full bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400">Search Hotels →</Button>
                         </div>
                       </div>
                     </div>
@@ -516,10 +483,13 @@ export function TripPlannerView({
             <div className="sticky top-24 space-y-8">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-                  <MapLucide className="h-5 w-5 text-primary" /> Interactive 3D Globe
+                  <MapLucide className="h-5 w-5 text-primary" /> Live Itinerary Map
                 </h2>
-                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative">
-                  <GlobeMap destination={{ ...destCoords, name: itinerary?.destination || searchParams.get("dest") || "Destination" }} />
+                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative bg-muted/20">
+                  <LeafletMap 
+                    center={mapMarkers.length > 0 ? mapMarkers[0].position : destCoords} 
+                    markers={mapMarkers} 
+                  />
                 </div>
               </div>
 

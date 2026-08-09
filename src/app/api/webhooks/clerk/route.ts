@@ -2,6 +2,8 @@ import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { Resend } from 'resend'
+import { db } from '@/db'
+import { users } from '@/db/schema'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -47,8 +49,24 @@ export async function POST(req: Request) {
   const eventType = evt.type
 
   if (eventType === 'user.created') {
-    const { id, email_addresses, first_name } = evt.data
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data
     const email = email_addresses[0]?.email_address
+    const fullName = `${first_name || ''} ${last_name || ''}`.trim() || 'Traveler'
+
+    // Insert user into local DB
+    if (email) {
+      try {
+        await db.insert(users).values({
+          clerkId: id,
+          email,
+          name: fullName,
+          avatar: image_url,
+        }).onConflictDoNothing({ target: users.email })
+      } catch (dbError) {
+        console.error('Failed to sync user to database:', dbError)
+        return new Response('Error: Database sync failed, retrying later', { status: 500 })
+      }
+    }
 
     if (email && process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_placeholder') {
       try {

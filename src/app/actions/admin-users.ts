@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { users, auditLogs, payments } from "@/db/schema";
 import { inArray, eq, sql, desc, or, ilike, and, gte, lte } from "drizzle-orm";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 // Ensure only admins can execute these actions
@@ -148,8 +148,28 @@ export async function batchImportUsers(usersData: any[]) {
   }));
   
   let insertedCount = 0;
+  const client = await clerkClient();
   
   if (toInsert.length > 0) {
+    // 1. First, create users in Clerk silently
+    for (const u of toInsert) {
+      try {
+        const clerkUser = await client.users.createUser({
+          emailAddress: [u.email],
+          firstName: u.name.split(' ')[0],
+          lastName: u.name.split(' ').slice(1).join(' '),
+          password: "password123", // Default password requested by admin
+        });
+        
+        // Add the new clerkId to our DB payload
+        (u as any).clerkId = clerkUser.id;
+      } catch (error) {
+        console.error(`Failed to create Clerk user for ${u.email}:`, error);
+        // We will still insert them into DB, they just won't have a clerkId yet
+      }
+    }
+
+    // 2. Insert into PostgreSQL
     await db.insert(users).values(toInsert);
     insertedCount = toInsert.length;
     

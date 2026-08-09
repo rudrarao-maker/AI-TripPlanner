@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { generateObject } from "ai";
+import { generateObject, streamObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import { ratelimit } from "@/lib/ratelimit";
 import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { users, trips } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -25,6 +28,7 @@ const PlanSchema = z.object({
       time: z.string().describe("Time of the activity e.g. 09:00 AM"),
       name: z.string().describe("Activity name"),
       location: z.string().describe("Location name"),
+      coordinates: z.object({ lat: z.number(), lng: z.number() }).describe("Approximate latitude and longitude of the location"),
       description: z.string().describe("Short description"),
       category: z.string().describe("transport|sightseeing|food|hotel|shopping|other"),
       estimatedCost: z.number(),
@@ -32,6 +36,8 @@ const PlanSchema = z.object({
     }))
   }))
 });
+
+export const maxDuration = 60; // Allow 60s for LLM processing
 
 export async function POST(req: Request) {
   try {
@@ -42,116 +48,72 @@ export async function POST(req: Request) {
     }
 
     if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_URL !== "https://dummy-upstash.upstash.io") {
-      const { success, limit, reset, remaining } = await ratelimit.limit(userId);
+      const { success } = await ratelimit.limit(userId);
       if (!success) {
-        return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { 
-          status: 429,
-          headers: {
-            "X-RateLimit-Limit": limit.toString(),
-            "X-RateLimit-Remaining": remaining.toString(),
-            "X-RateLimit-Reset": reset.toString()
-          }
-        });
+        return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
       }
     }
+
+    // --- PRICING GATE LOGIC ---
+    const userRecords = await db.select().from(users).where(eq(users.clerkId, userId)).limit(1);
+    if (userRecords.length > 0) {
+      const user = userRecords[0];
+      
+      // If user is on the Free plan, enforce the 3 trip limit
+      if (user.planType === "free" || user.subscriptionStatus !== "active") {
+        const [tripCount] = await db.select({ count: sql<number>`count(*)` })
+          .from(trips)
+          .where(eq(trips.userId, userId));
+          
+        if (Number(tripCount.count) >= 3) {
+          return NextResponse.json({ 
+            error: "Free plan limit reached (3 trips). Please upgrade to Pro or Premium to generate unlimited trips!" 
+          }, { status: 403 });
+        }
+      }
+    }
+    // -------------------------
 
     const preferences = await req.json();
     const baseBudget = Number(preferences.budget) || 100000;
 
     const planTiers = [
-      {
-        id: "cheap",
-        label: "💰 Cheap",
-        hotelCategory: "budget",
-        budget: Math.round(baseBudget * 0.6),
-        tag: "Cheapest",
-      },
-      {
-        id: "moderate",
-        label: "💙 Moderate",
-        hotelCategory: "4-star",
-        budget: baseBudget,
-        tag: "Best Value",
-      },
-      {
-        id: "luxury",
-        label: "💎 Luxury",
-        hotelCategory: "luxury",
-        budget: Math.round(baseBudget * 1.8),
-        tag: "Most Comfort",
-      },
+      { id: "cheap", label: "💰 Cheap", hotelCategory: "budget", budget: Math.round(baseBudget * 0.6), tag: "Cheapest" },
+      { id: "moderate", label: "💙 Moderate", hotelCategory: "4-star", budget: baseBudget, tag: "Best Value" },
+      { id: "luxury", label: "💎 Luxury", hotelCategory: "luxury", budget: Math.round(baseBudget * 1.8), tag: "Most Comfort" },
     ];
 
-    const generatePlan = async (tier: any) => {
-      const prompt = `Create a travel itinerary based on these preferences: ${JSON.stringify(preferences)}.
-IMPORTANT CONSTRAINTS:
-1. You MUST design this as a strictly ${tier.hotelCategory} tier trip.
-2. The TOTAL budget MUST be exactly around ${tier.budget} amount for ${preferences.travelers || 1} travelers.
-3. You MUST generate the exact number of days requested based on the startDate (${preferences.startDate}) and endDate (${preferences.endDate}).
-4. Ensure transport reflects their preference.
-5. Ensure hotels and activities match the ${tier.hotelCategory} level.`;
-
-      try {
-        const result = await generateObject({
-          model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
-          system: "You are an expert AI travel agent. Generate a detailed, realistic, and culturally immersive travel itinerary perfectly matching the requested budget tier and exact number of days.",
-          prompt,
-          schema: PlanSchema,
-        });
-        return { ...result.object, _tier: tier, id: `temp-${tier.id}-${Date.now()}` };
-      } catch (err) {
-        console.warn(`⚠️ AI Generation Failed for ${tier.id}. Falling back to mock data.`, err);
-        // Mock fallback logic
-        const start = preferences.startDate ? new Date(preferences.startDate) : new Date();
-        const end = preferences.endDate ? new Date(preferences.endDate) : new Date(new Date().setDate(start.getDate() + 4));
-        const daysCount = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1);
-        
-        const totalBudget = tier.budget;
-        const flightsCost = Math.round(totalBudget * 0.3);
-        const dailyBudget = (totalBudget - flightsCost) / daysCount;
-        const hotelCost = Math.round(dailyBudget * 0.4);
-        const foodCost = Math.round(dailyBudget * 0.3);
-        const activityCost = Math.round(dailyBudget * 0.3);
-
-        const days = Array.from({ length: daysCount }).map((_, i) => {
-          const date = new Date(start);
-          date.setDate(date.getDate() + i);
-          return {
-            dayNumber: i + 1,
-            date: date.toISOString().split("T")[0],
-            activities: [
-              { name: "Check-in & Relax", description: `Settle into your ${tier.hotelCategory} hotel.`, time: "14:00", location: preferences.destination + " Hotel", category: "hotel", estimatedCost: hotelCost, currency: "INR" },
-              { name: "Local Sightseeing", description: `Explore ${preferences.destination}.`, time: "16:00", location: `Central ${preferences.destination}`, category: "sightseeing", estimatedCost: activityCost, currency: "INR" },
-              { name: "Dinner", description: "Enjoy local cuisine.", time: "19:00", location: `Downtown ${preferences.destination}`, category: "food", estimatedCost: foodCost, currency: "INR" }
-            ]
-          };
-        });
-
-        return {
-          id: `temp-${tier.id}-${Date.now()}`,
-          title: `Ultimate ${preferences.destination} Getaway`,
-          origin: preferences.origin || "Home",
-          destination: preferences.destination,
-          startDate: start.toISOString().split("T")[0],
-          endDate: end.toISOString().split("T")[0],
-          budget: totalBudget,
-          flightsCost: flightsCost,
-          currency: "INR",
-          days: days,
-          _tier: tier,
-        };
-      }
-    };
-
-    // If budgetTier is compare, generate all 3. If a specific tier, generate only that one.
-    let plansToGenerate = planTiers;
-    if (preferences.budgetTier && preferences.budgetTier !== "compare") {
-      plansToGenerate = planTiers.filter(t => t.id === preferences.budgetTier);
+    if (preferences.budgetTier === "compare") {
+      // Comparison generates multiple static plans at once (hard to stream into one UI component easily)
+      const plans = await Promise.all(planTiers.map(async (tier) => {
+        const prompt = `Create a travel itinerary based on these preferences: ${JSON.stringify(preferences)}. Ensure strictly ${tier.hotelCategory} tier and total budget around ${tier.budget}.`;
+        try {
+          const result = await generateObject({
+            model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+            system: "You are an expert AI travel agent. Generate a detailed, realistic, and culturally immersive travel itinerary perfectly matching the requested budget tier and exact number of days.",
+            prompt,
+            schema: PlanSchema,
+          });
+          return { ...result.object, _tier: tier, id: `temp-${tier.id}-${Date.now()}` };
+        } catch (err) {
+          throw new Error("Generation failed for comparison.");
+        }
+      }));
+      return NextResponse.json({ success: true, data: plans, isStream: false });
     }
 
-    const plans = await Promise.all(plansToGenerate.map(tier => generatePlan(tier)));
+    // Stream Single Plan
+    const tier = planTiers.find(t => t.id === preferences.budgetTier) || planTiers[1];
+    const prompt = `Create a travel itinerary based on these preferences: ${JSON.stringify(preferences)}. Ensure strictly ${tier.hotelCategory} tier and total budget around ${tier.budget}.`;
 
-    return NextResponse.json({ success: true, data: plans });
+    const result = await streamObject({
+      model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+      system: "You are an expert AI travel agent. Generate a detailed, realistic, and culturally immersive travel itinerary.",
+      prompt,
+      schema: PlanSchema,
+    });
+
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error("Trip Generation Route Error:", error);
     return NextResponse.json({ error: "Failed to generate trips." }, { status: 500 });

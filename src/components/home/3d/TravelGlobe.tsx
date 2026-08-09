@@ -11,12 +11,12 @@ export function TravelGlobe() {
   const { theme } = useThemeStore();
   const isDark = theme === "dark";
 
-  // Load realistic textures from stable CDNs
+  // Load realistic textures locally to avoid WebGL CORS issues
   const [colorMap, bumpMap, specularMap, cloudsMap] = useTexture([
-    "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg",
-    "https://unpkg.com/three-globe/example/img/earth-topology.png",
-    "https://unpkg.com/three-globe/example/img/earth-water.png",
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png"
+    "/textures/earth_atmos_2048.jpg",
+    "/textures/earth_normal_2048.jpg",
+    "/textures/earth_specular_2048.jpg",
+    "/textures/earth_clouds_1024.png"
   ]);
 
   // Optimize texture quality

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Send,
   Bot,
@@ -7,7 +7,6 @@ import {
   Sparkles,
   X,
   ChevronRight,
-  Zap,
   RefreshCw,
   Mic,
 } from "lucide-react";
@@ -18,21 +17,7 @@ import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 import "regenerator-runtime/runtime";
-import api from "@/lib/api";
-
-interface Message {
-  id: string;
-  type: "user" | "ai";
-  text: string;
-  actions?: ChatAction[];
-  timestamp: Date;
-}
-
-interface ChatAction {
-  type: string;
-  label: string;
-  data?: Record<string, any>;
-}
+import posthog from "posthog-js";
 
 interface TripContext {
   destination?: string;
@@ -43,6 +28,12 @@ interface TripContext {
   transportPreference?: string;
   hotelCategory?: string;
   foodPreference?: string;
+}
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
 }
 
 interface AIChatSidebarProps {
@@ -59,34 +50,35 @@ export function AIChatSidebar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      type: "ai",
-      text: "Hi! I'm your AI Travel Assistant powered by Gemini. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?",
-      timestamp: new Date(),
+      role: "assistant",
+      content: `Hi! I'm your AI Travel Assistant. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?`,
     },
   ]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+
   const [suggestions, setSuggestions] = useState<string[]>([
     "Find vegetarian restaurants near my hotel.",
     "Plan Day 3 with less walking.",
     "Reduce budget by ₹5000.",
   ]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Dynamic welcome message
   useEffect(() => {
     if (tripContext?.destination) {
-      setMessages((prev) => {
-        const newMsgs = [...prev];
-        if (newMsgs.length > 0 && newMsgs[0].id === "1") {
-          newMsgs[0].text = `Hi! I'm your AI Travel Assistant for your trip to ${tripContext.destination}. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?`;
-        }
-        return newMsgs;
-      });
+      setMessages([
+        {
+          id: "1",
+          role: "assistant",
+          content: `Hi! I'm your AI Travel Assistant for your trip to ${tripContext.destination}. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?`,
+        },
+      ]);
     }
   }, [tripContext?.destination]);
 
@@ -95,7 +87,7 @@ export function AIChatSidebar({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  }, [messages, isLoading]);
 
   // Focus input when sidebar opens
   useEffect(() => {
@@ -127,94 +119,104 @@ export function AIChatSidebar({
     }
   };
 
-  const handleSend = useCallback(
-    async (text: string) => {
-      if (!text.trim() || isTyping) return;
-
-      const userMsg: Message = {
-        id: Date.now().toString(),
-        type: "user",
-        text: text.trim(),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      setInput("");
-      setIsTyping(true);
-
-      try {
-        // Send to real API with trip context and chat history
-        const response = await api.post("/chat", {
-          message: text.trim(),
-          tripContext: {
-            destination: tripContext?.destination,
-            budget: tripContext?.budget,
-            currency: tripContext?.currency || "INR",
-            days: tripContext?.days,
-            travelStyle: tripContext?.travelStyle,
-            transportPreference: tripContext?.transportPreference,
-            hotelCategory: tripContext?.hotelCategory,
-            foodPreference: tripContext?.foodPreference,
-          },
-          chatHistory: messages.slice(-8).map((m) => ({
-            type: m.type,
-            text: m.text,
-          })),
-        });
-
-        const data = response.data.data;
-
-        const aiMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          type: "ai",
-          text: data.reply,
-          actions: data.actions || [],
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, aiMsg]);
-
-        // Update suggestions from AI response
-        if (data.suggestions && data.suggestions.length > 0) {
-          setSuggestions(data.suggestions);
-        }
-      } catch (error) {
-        console.error("Chat API error:", error);
-        const errorMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          type: "ai",
-          text: "Sorry, I encountered an error. Please try again in a moment.",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorMsg]);
-      } finally {
-        setIsTyping(false);
-      }
-    },
-    [isTyping, messages, tripContext],
-  );
-
-  const handleActionClick = (action: ChatAction) => {
-    // Send the action as a follow-up message
-    handleSend(`Apply action: ${action.label}`);
-  };
-
   const clearChat = () => {
     setMessages([
       {
         id: Date.now().toString(),
-        type: "ai",
-        text: "Chat cleared! How can I help you with your trip?",
-        timestamp: new Date(),
+        role: "assistant",
+        content: "Chat cleared! How can I help you with your trip?",
       },
-    ]);
-    setSuggestions([
-      "Find vegetarian restaurants near my hotel.",
-      "Plan Day 3 with less walking.",
-      "Reduce budget by ₹5000.",
     ]);
   };
 
-  // Format message text with markdown-like bold
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    posthog.capture('chat_message_sent', { 
+      length: input.length,
+      has_context: !!tripContext?.destination 
+    });
+
+    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    const assistantId = (Date.now() + 1).toString();
+    setMessages((prev) => [
+      ...prev,
+      { id: assistantId, role: "assistant", content: "" },
+    ]);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          tripContext,
+        }),
+      });
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let text = "";
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value, { stream: true });
+        
+        // Next.js AI SDK streams text in simple chunks, but sometimes formats them like: 0:"Chunk"
+        // Let's implement a very basic text parsing:
+        const lines = chunkValue.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("0:")) {
+            try {
+              text += JSON.parse(line.substring(2));
+            } catch (e) {
+              text += line.substring(2);
+            }
+          } else if (line.trim()) {
+            // Some streams just send raw text chunks
+            // We just append plain string if it's not JSON structured
+            if (!line.includes('0:"')) {
+               text += line.replace(/\\n/g, "\n").replace(/\\"/g, '"');
+            }
+          }
+        }
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: text } : msg
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantId
+            ? { ...msg, content: "Sorry, I encountered an error. Please try again." }
+            : msg
+        )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSuggestion = (s: string) => {
+    setInput(s);
+    setTimeout(() => {
+      document.getElementById("chat-form")?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    }, 50);
+  };
+
   const formatText = (text: string) => {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
@@ -225,7 +227,6 @@ export function AIChatSidebar({
           </strong>
         );
       }
-      // Handle newlines
       return part.split("\n").map((line, j) => (
         <span key={`${i}-${j}`}>
           {j > 0 && <br />}
@@ -306,19 +307,19 @@ export function AIChatSidebar({
                   initial={idx > 0 ? { opacity: 0, y: 10 } : false}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`flex max-w-[88%] gap-2 ${msg.type === "user" ? "flex-row-reverse" : "flex-row"}`}
+                    className={`flex max-w-[88%] gap-2 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                   >
                     <div
                       className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center mt-auto ${
-                        msg.type === "user"
+                        msg.role === "user"
                           ? "bg-primary text-primary-foreground"
                           : "bg-gradient-to-br from-primary/20 to-accent/20 text-primary"
                       }`}
                     >
-                      {msg.type === "user" ? (
+                      {msg.role === "user" ? (
                         <User className="h-3.5 w-3.5" />
                       ) : (
                         <Bot className="h-3.5 w-3.5" />
@@ -328,48 +329,22 @@ export function AIChatSidebar({
                     <div className="space-y-2">
                       <div
                         className={`p-3.5 rounded-2xl ${
-                          msg.type === "user"
+                          msg.role === "user"
                             ? "bg-primary text-primary-foreground rounded-br-sm"
                             : "bg-muted text-foreground rounded-bl-sm"
                         }`}
                       >
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                          {formatText(msg.text)}
+                          {formatText(msg.content)}
                         </p>
                       </div>
-
-                      {/* Action Buttons */}
-                      {msg.actions && msg.actions.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pl-1">
-                          {msg.actions.map((action, i) => (
-                            <button
-                              key={i}
-                              onClick={() => handleActionClick(action)}
-                              className="inline-flex items-center gap-1 text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1.5 hover:bg-primary/20 transition-colors"
-                            >
-                              <Zap className="h-3 w-3" />
-                              {action.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Timestamp */}
-                      <p
-                        className={`text-[10px] text-muted-foreground/50 ${msg.type === "user" ? "text-right" : ""}`}
-                      >
-                        {msg.timestamp.toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
                     </div>
                   </div>
                 </motion.div>
               ))}
 
               {/* Typing indicator */}
-              {isTyping && (
+              {isLoading && messages[messages.length - 1].role === "user" && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -411,8 +386,8 @@ export function AIChatSidebar({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05 }}
-                    onClick={() => handleSend(s)}
-                    disabled={isTyping}
+                    onClick={() => handleSuggestion(s)}
+                    disabled={isLoading}
                     className="text-[10px] bg-background border rounded-full px-3 py-1.5 text-muted-foreground hover:text-foreground hover:border-primary transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
                   >
                     {s} <ChevronRight className="h-3 w-3" />
@@ -422,10 +397,8 @@ export function AIChatSidebar({
 
               {/* Input */}
               <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSend(input);
-                }}
+                id="chat-form"
+                onSubmit={handleSubmit}
                 className="relative"
               >
                 <Input
@@ -434,7 +407,7 @@ export function AIChatSidebar({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   className={`pr-[5.5rem] rounded-full bg-background ${listening ? "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : ""}`}
-                  disabled={isTyping}
+                  disabled={isLoading}
                 />
 
                 {mounted && browserSupportsSpeechRecognition && (
@@ -444,7 +417,7 @@ export function AIChatSidebar({
                     variant="ghost"
                     onClick={handleMicClick}
                     className={`absolute right-10 top-1 bottom-1 h-auto w-10 ${listening ? "text-red-500 animate-pulse bg-red-500/10 hover:bg-red-500/20 hover:text-red-600" : "text-muted-foreground hover:bg-transparent hover:text-primary/80"}`}
-                    disabled={isTyping}
+                    disabled={isLoading}
                   >
                     <Mic className="h-4 w-4" />
                   </Button>
@@ -455,7 +428,7 @@ export function AIChatSidebar({
                   size="icon"
                   variant="ghost"
                   className="absolute right-1 top-1 bottom-1 h-auto w-10 text-primary hover:bg-transparent hover:text-primary/80"
-                  disabled={!input.trim() || isTyping}
+                  disabled={!input.trim() || isLoading}
                 >
                   <Send className="h-4 w-4" />
                 </Button>

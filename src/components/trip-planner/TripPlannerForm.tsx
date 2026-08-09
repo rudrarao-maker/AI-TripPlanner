@@ -5,7 +5,8 @@ import { MapPin, Calendar as CalendarIcon, Users, Sparkles, Navigation } from "l
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plane, Hotel } from "lucide-react";
+import { Plane, Hotel, Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function TripPlannerForm({
   step,
@@ -22,7 +23,15 @@ export function TripPlannerForm({
   handleMicClick,
 }: any) {
   const [mounted, setMounted] = useState(false);
+  const [magicPrompt, setMagicPrompt] = useState("");
+  const router = useRouter();
+  
   useEffect(() => setMounted(true), []);
+
+  const handleMagicSubmit = () => {
+    if (!magicPrompt.trim()) return;
+    router.push(`/trip-planner?prompt=${encodeURIComponent(magicPrompt)}`);
+  };
 
   const TRIP_TYPES = [
     "Solo", "Couple", "Family", "Friends", "Business", 
@@ -327,6 +336,42 @@ export function TripPlannerForm({
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-4xl mx-auto relative z-10">
+        
+        {/* Magic Prompt Section */}
+        {step === 1 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto mb-16 text-center"
+          >
+            <h3 className="text-xl font-bold mb-4 flex items-center justify-center gap-2">
+              <Wand2 className="h-5 w-5 text-primary" /> Magic Prompt
+            </h3>
+            <div className="relative shadow-2xl shadow-primary/10 rounded-full">
+              <Input 
+                value={magicPrompt}
+                onChange={(e) => setMagicPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleMagicSubmit()}
+                placeholder="e.g. Plan a 3-day cheap trip to Paris for 2 foodies..."
+                className="py-7 pl-6 pr-32 text-lg rounded-full glass border-primary/30 bg-background/50"
+              />
+              <Button 
+                onClick={handleMagicSubmit}
+                className="absolute right-2 top-2 bottom-2 rounded-full px-6"
+                variant="gradient"
+                disabled={isGenerating}
+              >
+                Generate
+              </Button>
+            </div>
+            <div className="mt-8 flex items-center gap-4">
+              <div className="h-px bg-border/50 flex-1" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Or build it manually</span>
+              <div className="h-px bg-border/50 flex-1" />
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex items-center justify-center gap-2 mb-12 max-w-lg mx-auto">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex-1 flex items-center">

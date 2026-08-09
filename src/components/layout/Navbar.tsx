@@ -74,10 +74,10 @@ export function Navbar() {
             />
           ) : (
             <div className="flex items-center gap-2">
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" fallbackRedirectUrl="/admin">
                 <Button variant="ghost" className="rounded-full px-5">Log in</Button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/admin">
                 <Button variant="gradient" className="rounded-full shadow-lg px-5">Sign up</Button>
               </SignUpButton>
             </div>
@@ -127,10 +127,10 @@ export function Navbar() {
             <div className="flex flex-col gap-1 py-4 border-t mt-2">
               {!isSignedIn && (
                 <div className="flex flex-col gap-2 px-2">
-                  <SignInButton mode="modal">
+                  <SignInButton mode="modal" fallbackRedirectUrl="/admin">
                     <Button variant="outline" className="w-full rounded-xl">Log in</Button>
                   </SignInButton>
-                  <SignUpButton mode="modal">
+                  <SignUpButton mode="modal" fallbackRedirectUrl="/admin">
                     <Button variant="gradient" className="w-full rounded-xl">Sign up</Button>
                   </SignUpButton>
                 </div>

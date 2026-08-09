@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, boolean, timestamp, integer, numeric, doublePrecision, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, boolean, timestamp, integer, numeric, doublePrecision, index, jsonb } from "drizzle-orm/pg-core";
+import { vector } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("User", {
@@ -11,6 +12,10 @@ export const users = pgTable("User", {
   provider: text("provider").default("clerk"),
   verified: boolean("verified").default(true),
   status: text("status").default("active"),
+  stripeCustomerId: text("stripeCustomerId"),
+  stripeSubscriptionId: text("stripeSubscriptionId"),
+  subscriptionStatus: text("subscriptionStatus").default("inactive"), // inactive, active, past_due, canceled
+  planType: text("planType").default("free"), // free, pro, premium
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -387,3 +392,12 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// --- RAG Pipeline Tables ---
+export const knowledgeBase = pgTable("KnowledgeBase", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  content: text("content").notNull(),
+  embedding: vector("embedding", { dimensions: 768 }), // Gemini text-embedding-004 is 768 dims
+  metadata: jsonb("metadata"), // e.g. { source: "guide", location: "Paris" }
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
