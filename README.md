@@ -90,5 +90,20 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## 🐳 Docker Setup
+
+This project is configured to run efficiently using Docker.
+
+### 1. Build the Docker Image
+```bash
+docker build -t ai-trip-planner .
+```
+
+### 2. Run the Container
+```bash
+docker run -p 3000:3000 --env-file .env.local ai-trip-planner
+```
+Your application will be available at [http://localhost:3000](http://localhost:3000). Ensure your `.env.local` file contains all necessary environment variables for the application to function correctly.
+
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome!
