@@ -64,7 +64,7 @@ export const useTripPlanner = () => {
   );
 
   const generateWithData = async (dataToUse: any) => {
-    setIsGenerating(true);
+    setIsGeneratingCompare(true);
 
     let startD = new Date();
     let endD = new Date(new Date().setDate(new Date().getDate() + 7));

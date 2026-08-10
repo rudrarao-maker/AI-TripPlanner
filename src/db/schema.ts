@@ -37,10 +37,12 @@ export const trips = pgTable("Trip", {
   foodPreference: text("foodPreference").notNull(),
   status: text("status").default("planned"),
   coverImage: text("coverImage"),
+  isPublic: boolean("isPublic").default(false),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("userId_idx").on(table.userId),
+  isPublicIdx: index("isPublic_idx").on(table.isPublic),
 }));
 
 export const tripDays = pgTable("TripDay", {

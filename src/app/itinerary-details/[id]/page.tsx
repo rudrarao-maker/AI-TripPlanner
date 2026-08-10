@@ -2,8 +2,11 @@
 import { useRouter, useParams } from 'next/navigation';
 import { useGetTrip } from "@/hooks/useTrips";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, CreditCard, ChevronLeft, Loader2 } from "lucide-react";
+import { MapPin, Calendar, CreditCard, ChevronLeft, Loader2, Share2, Globe2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 
 const DraggableItinerary = dynamic(() => import("@/components/itinerary/DraggableItinerary").then((mod) => mod.DraggableItinerary), { ssr: false, loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-3xl" /> });
@@ -11,13 +14,41 @@ const InteractiveRouteMap = dynamic(() => import("@/components/itinerary/Itinera
 const ExportPDFButton = dynamic(() => import("@/components/itinerary/ExportPDFButton").then((mod) => mod.ExportPDFButton), { ssr: false });
 const BudgetTracker = dynamic(() => import("@/components/budget/BudgetTracker").then((mod) => mod.BudgetTracker), { ssr: false });
 const SmartPackingList = dynamic(() => import("@/components/recommendations/SmartPackingList").then((mod) => mod.SmartPackingList), { ssr: false });
+const WeatherWidget = dynamic(() => import("@/components/weather/WeatherWidget").then((mod) => mod.WeatherWidget), { ssr: false, loading: () => <div className="h-[300px] w-full bg-muted animate-pulse rounded-2xl" /> });
 
 export default function ItineraryDetailsPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
-
+  const { userId } = useAuth();
+  
   const { data: itinerary, isLoading } = useGetTrip(id);
+  const [isPublic, setIsPublic] = useState(itinerary?.isPublic || false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  // Sync state when itinerary loads
+  useEffect(() => {
+    if (itinerary) setIsPublic(itinerary.isPublic);
+  }, [itinerary]);
+
+  const handleTogglePublic = async () => {
+    try {
+      setIsToggling(true);
+      const res = await fetch(`/api/trips/${id}/public`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic: !isPublic })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsPublic(data.isPublic);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -44,6 +75,10 @@ export default function ItineraryDetailsPage() {
 
   const tripDays = (itinerary as any).tripDays || [];
   const durationDays = tripDays.length;
+
+  const destHash = (itinerary.destination || "Paris").split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
+  const baseLat = ((destHash % 180) - 90) * 0.5 + 25;
+  const baseLng = ((destHash * 7) % 360) - 180 + 75;
 
   return (
     <div className="min-h-screen pb-20 bg-muted/20">
@@ -171,9 +206,23 @@ export default function ItineraryDetailsPage() {
         {/* Sidebar */}
         <div className="w-full xl:w-[400px] shrink-0 space-y-6">
           <div className="sticky top-24 space-y-6">
+            <WeatherWidget lat={baseLat} lng={baseLng} location={itinerary.destination} />
             <SmartPackingList destination={itinerary.destination} />
             
             <div className="bg-card border border-border p-6 rounded-2xl shadow-lg flex flex-col gap-6">
+              {userId === itinerary.userId && (
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                      <Globe2 className="h-4 w-4 text-primary" />
+                      Public Trip
+                    </div>
+                    <span className="text-xs text-muted-foreground">Allow others to see and clone this trip</span>
+                  </div>
+                  <Checkbox checked={isPublic} onCheckedChange={handleTogglePublic} disabled={isToggling} className="h-6 w-6 rounded-md" />
+                </div>
+              )}
+
               <div>
                 <h3 className="font-bold text-lg mb-2">Ready to go?</h3>
                 <p className="text-sm text-muted-foreground">

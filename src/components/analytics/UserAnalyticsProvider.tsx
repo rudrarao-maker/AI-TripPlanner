@@ -27,6 +27,10 @@ export function UserAnalyticsProvider({ children }: { children: React.ReactNode 
         email: email,
         username: user.fullName || undefined,
       })
+      
+      // Ensure user is synced to our local Postgres database
+      // This protects against Bulk Import users missing the user.created webhook
+      fetch('/api/auth/sync', { method: 'POST' }).catch(console.error);
     } else {
       // User logged out
       posthog.reset()

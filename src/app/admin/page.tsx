@@ -34,26 +34,10 @@ export default function AdminDashboardOverview() {
     try {
       setLoading(true);
       setError(null);
-      // Wait, let's mock it for now since the API route might not exist yet
-      // const res = await api.get("/admin/overview");
-      // setOverviewData(res.data.data);
       
-      // MOCK DATA for layout testing until API is built
-      setTimeout(() => {
-        setOverviewData({
-          stats: {
-            totalUsers: 14502,
-            totalTrips: 3450,
-            totalRevenue: 245000,
-            serverLoad: 42
-          },
-          recentSignups: [
-            { id: 1, name: "John Doe", email: "john@example.com", avatar: null, createdAt: new Date().toISOString() },
-            { id: 2, name: "Alice Smith", email: "alice@example.com", avatar: null, createdAt: new Date().toISOString() },
-          ]
-        });
-        setLoading(false);
-      }, 1000);
+      const res = await api.get("/admin/overview");
+      setOverviewData(res.data.data);
+      setLoading(false);
       
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to load overview data");

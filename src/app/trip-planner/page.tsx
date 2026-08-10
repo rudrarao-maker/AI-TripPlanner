@@ -310,8 +310,11 @@ function TripPlannerContent() {
       });
       if (res.data.success) {
         toast.success("Trip saved to your profile!", { id: loadingToast });
+        setItinerary({ ...itinerary, id: res.data.data.id });
+        return res.data.data.id;
       } else {
         toast.error("Failed to save trip.", { id: loadingToast });
+        return null;
       }
     } catch (err) {
       console.error(err);

@@ -320,7 +320,10 @@ export function TripPlannerForm({
                 variant={formData.budgetTier === 'compare' ? 'default' : 'outline'} 
                 size="lg" 
                 className={`rounded-full px-8 py-6 text-lg ${formData.budgetTier === 'compare' ? 'shadow-xl scale-105' : ''}`}
-                onClick={() => updateForm("budgetTier", "compare")}
+                onClick={() => {
+                  updateForm("budgetTier", "compare");
+                  handleGenerate();
+                }}
               >
                 Compare All Plans
               </Button>

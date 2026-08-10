@@ -89,13 +89,14 @@ export async function POST(req: Request) {
         const prompt = `Create a travel itinerary based on these preferences: ${JSON.stringify(preferences)}. Ensure strictly ${tier.hotelCategory} tier and total budget around ${tier.budget}.`;
         try {
           const result = await generateObject({
-            model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+            model: google(process.env.GEMINI_MODEL || "gemini-flash-latest"),
             system: "You are an expert AI travel agent. Generate a detailed, realistic, and culturally immersive travel itinerary perfectly matching the requested budget tier and exact number of days.",
             prompt,
             schema: PlanSchema,
           });
           return { ...result.object, _tier: tier, id: `temp-${tier.id}-${Date.now()}` };
         } catch (err) {
+          console.error("Inner generation error:", err);
           throw new Error("Generation failed for comparison.");
         }
       }));
@@ -107,7 +108,7 @@ export async function POST(req: Request) {
     const prompt = `Create a travel itinerary based on these preferences: ${JSON.stringify(preferences)}. Ensure strictly ${tier.hotelCategory} tier and total budget around ${tier.budget}.`;
 
     const result = await streamObject({
-      model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+      model: google(process.env.GEMINI_MODEL || "gemini-flash-latest"),
       system: "You are an expert AI travel agent. Generate a detailed, realistic, and culturally immersive travel itinerary.",
       prompt,
       schema: PlanSchema,

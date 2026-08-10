@@ -16,7 +16,9 @@ import {
   Plane,
   Bot,
   MapPin,
-  CreditCard
+  CreditCard,
+  Hotel,
+  Utensils
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -187,7 +189,14 @@ export function TripPlannerView({
                   <Button
                     size="sm"
                     variant="gradient"
-                    onClick={() => window.location.href = `/checkout/${itinerary.id}`}
+                    onClick={async () => {
+                      if (itinerary.id.startsWith("temp-")) {
+                        const newId = await handleSave();
+                        if (newId) window.location.href = `/checkout/${newId}`;
+                      } else {
+                        window.location.href = `/checkout/${itinerary.id}`;
+                      }
+                    }}
                     className="hidden sm:flex shadow-md shadow-primary/20"
                   >
                     <CreditCard className="h-4 w-4 mr-2" /> Book Trip
@@ -239,6 +248,54 @@ export function TripPlannerView({
                     </span>
                   </div>
                 )}
+                {hotels && hotels.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-xl font-extrabold flex items-center gap-2 mb-4">
+                      <Hotel className="h-6 w-6 text-primary" />
+                      Suggested Accommodations
+                    </h3>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                      {hotels.map((hotel: any) => (
+                        <div key={hotel.id} className="min-w-[300px] snap-center">
+                          <HotelCard hotel={hotel} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {restaurants && restaurants.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-xl font-extrabold flex items-center gap-2 mb-4">
+                      <Utensils className="h-6 w-6 text-primary" />
+                      AI Picks: Local Dining & Cafes
+                    </h3>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                      {restaurants.map((restaurant: any) => (
+                        <div key={restaurant.id} className="min-w-[300px] snap-center">
+                          <RestaurantCard restaurant={restaurant} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {attractions && attractions.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-xl font-extrabold flex items-center gap-2 mb-4">
+                      <MapPin className="h-6 w-6 text-primary" />
+                      Must-See Places & Clubs
+                    </h3>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                      {attractions.map((attraction: any) => (
+                        <div key={attraction.id} className="min-w-[300px] snap-center">
+                          <AttractionCard activity={attraction} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-8">
                   {activeItinerary?.days?.map((day: any) => {
                     const dayCost = day.activities?.reduce((sum: number, act: any) => sum + (Number(act.estimatedCost) || 0), 0) || 0;
@@ -520,67 +577,7 @@ export function TripPlannerView({
                 locationName={formData.destinations[0] || "Destination"}
               />
 
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" /> AI Picks
-                  </h2>
-                  <div className="flex bg-muted p-1 rounded-lg">
-                    <button
-                      onClick={() => setRecTab("transport")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === "transport" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-                    >
-                      Transport
-                    </button>
-                    <button
-                      onClick={() => setRecTab("hotels")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === "hotels" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-                    >
-                      Hotels
-                    </button>
-                    <button
-                      onClick={() => setRecTab("restaurants")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === "restaurants" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-                    >
-                      Food
-                    </button>
-                    <button
-                      onClick={() => setRecTab("attractions")}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${recTab === "attractions" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-                    >
-                      Places
-                    </button>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {recTab === "transport" &&
-                    transportOptions.map((transport: any) => (
-                      <TransportCard
-                        key={transport.id}
-                        transport={transport}
-                      />
-                    ))}
-                  {recTab === "hotels" &&
-                    hotels.map((hotel: any) => (
-                      <HotelCard key={hotel.id} hotel={hotel} />
-                    ))}
-                  {recTab === "restaurants" &&
-                    restaurants.map((restaurant: any) => (
-                      <RestaurantCard
-                        key={restaurant.id}
-                        restaurant={restaurant}
-                      />
-                    ))}
-                  {recTab === "attractions" &&
-                    attractions.map((attraction: any) => (
-                      <AttractionCard
-                        key={attraction.id}
-                        activity={attraction}
-                      />
-                    ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>

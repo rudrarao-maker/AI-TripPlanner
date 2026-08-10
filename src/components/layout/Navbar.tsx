@@ -59,6 +59,32 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {isSignedIn && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
+                    pathname.startsWith("/dashboard")
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+                  )}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
+                    pathname.startsWith("/admin")
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+                  )}
+                >
+                  Admin Panel
+                </Link>
+              </>
+            )}
           </div>
         </nav>
 
@@ -122,6 +148,32 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            {isSignedIn && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
+                    pathname.startsWith("/dashboard")
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-foreground hover:bg-muted/60",
+                  )}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
+                    pathname.startsWith("/admin")
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-foreground hover:bg-muted/60",
+                  )}
+                >
+                  Admin Panel
+                </Link>
+              </>
+            )}
 
             <hr className="my-3 border-border/50" />
             <div className="flex flex-col gap-1 py-4 border-t mt-2">

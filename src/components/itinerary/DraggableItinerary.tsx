@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSocket } from "@/hooks/useSocket";
+import { optimizeRoute } from "@/lib/routeOptimizer";
 import {
   DndContext,
   closestCenter,
@@ -19,10 +20,11 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
-import { GripVertical, Clock, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { GripVertical, Clock, MapPin, Wand2, Car } from "lucide-react";
 
 // Placeholder for Sortable Activity Item
-function SortableActivity({ activity }: { activity: any }) {
+function SortableActivity({ activity, nextTravelTime }: { activity: any; nextTravelTime?: number }) {
   const {
     attributes,
     listeners,
@@ -37,6 +39,7 @@ function SortableActivity({ activity }: { activity: any }) {
   };
 
   return (
+    <div>
     <Card
       ref={setNodeRef}
       style={style}
@@ -58,11 +61,21 @@ function SortableActivity({ activity }: { activity: any }) {
         </p>
       </div>
     </Card>
+    {nextTravelTime !== undefined && nextTravelTime > 0 && (
+      <div className="flex justify-center -my-3 z-10 relative">
+        <div className="bg-background px-2 py-0.5 rounded-full text-[10px] text-muted-foreground flex items-center gap-1 border border-border shadow-sm">
+          <Car className="w-3 h-3"/> {nextTravelTime} min drive
+        </div>
+      </div>
+    )}
+    </div>
   );
 }
 
 export function DraggableItinerary({ initialActivities, tripId }: { initialActivities: any[], tripId: string }) {
   const [activities, setActivities] = useState(initialActivities || []);
+  const [travelTimes, setTravelTimes] = useState<number[]>([]);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const { emit, subscribe, collaborators, socketId } = useSocket(tripId);
   const [activeEditor, setActiveEditor] = useState<string | null>(null);
 
@@ -89,6 +102,17 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
     })
   );
 
+  const handleOptimize = () => {
+    setIsOptimizing(true);
+    setTimeout(() => {
+      const { optimized, travelTimes: newTimes } = optimizeRoute(activities);
+      setActivities([...optimized]);
+      setTravelTimes(newTimes);
+      emit("activity_reordered", optimized);
+      setIsOptimizing(false);
+    }, 600);
+  };
+
   function handleDragStart() {
     emit("activity_dragging", { user: "Someone" }); // Would pass actual user name
   }
@@ -105,6 +129,7 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
         
         // Broadcast the new order to all collaborators
         emit("activity_reordered", newOrder);
+        setTravelTimes([]); // Reset travel times as order changed manually
         
         return newOrder;
       });
@@ -119,16 +144,29 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
 
   return (
     <div className="space-y-4">
-      {/* Presence Indicator */}
-      {activeEditor && (
-        <div className="text-xs font-medium text-primary flex items-center gap-2 animate-pulse bg-primary/10 px-3 py-1.5 rounded-full w-fit">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-          </span>
-          {activeEditor} is moving an activity...
-        </div>
-      )}
+      <div className="flex justify-between items-center mb-4">
+        {/* Presence Indicator */}
+        {activeEditor ? (
+          <div className="text-xs font-medium text-primary flex items-center gap-2 animate-pulse bg-primary/10 px-3 py-1.5 rounded-full w-fit">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            {activeEditor} is moving an activity...
+          </div>
+        ) : <div />}
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleOptimize} 
+          disabled={isOptimizing} 
+          className="ml-auto flex gap-1.5 text-primary border-primary/20 hover:bg-primary/10"
+        >
+          <Wand2 className={`w-4 h-4 ${isOptimizing ? "animate-spin" : ""}`} />
+          {isOptimizing ? "Optimizing..." : "Optimize Route"}
+        </Button>
+      </div>
 
       <DndContext 
         sensors={sensors}
@@ -141,8 +179,12 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
           strategy={verticalListSortingStrategy}
         >
         <div className="space-y-1">
-          {activities.map((activity) => (
-            <SortableActivity key={activity.id} activity={activity} />
+          {activities.map((activity, index) => (
+            <SortableActivity 
+              key={activity.id} 
+              activity={activity} 
+              nextTravelTime={travelTimes[index]}
+            />
           ))}
         </div>
         </SortableContext>

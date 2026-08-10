@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,10 @@ import { Loader2, CreditCard, Lock, ArrowLeft, Building, Plane, ShieldCheck } fr
 import { useGetTrip } from "@/hooks/useTrips";
 import toast from "react-hot-toast";
 
-export default function CheckoutPage({ params }: { params: { id: string } }) {
+export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { data: trip, isLoading } = useGetTrip(params.id);
+  const { id } = use(params);
+  const { data: trip, isLoading } = useGetTrip(id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
