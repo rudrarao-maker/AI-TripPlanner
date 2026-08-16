@@ -1,4 +1,3 @@
-import html2pdf from "html2pdf.js";
 
 interface PdfTripData {
   destination: string;
@@ -260,6 +259,7 @@ export async function exportTripToPdf(data: PdfTripData): Promise<void> {
   };
 
   try {
+    const html2pdf = (await import("html2pdf.js")).default;
     await html2pdf().set(opt).from(container).save();
   } finally {
     document.body.removeChild(container);

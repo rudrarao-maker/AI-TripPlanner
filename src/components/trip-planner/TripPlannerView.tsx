@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon,
   Users,
@@ -18,7 +18,10 @@ import {
   MapPin,
   CreditCard,
   Hotel,
-  Utensils
+  Utensils,
+  Globe,
+  Wand2,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -36,6 +39,10 @@ import { AIChatSidebar } from "@/components/itinerary/AIChatSidebar";
 import { WeatherWidget } from "@/components/weather/WeatherWidget";
 import { NearbyPlaces } from "@/components/map/NearbyPlaces";
 import { ExpenseTracker } from "@/components/itinerary/ExpenseTracker";
+import { ActivityPreviewCard } from "@/components/trip-planner/ActivityPreviewCard";
+import { findDestinationInfo } from "@/lib/destinationData";
+import { useRegenerateDay } from "@/hooks/useTrips";
+import { toast } from "react-hot-toast";
 
 export function TripPlannerView({
   activeItinerary,
@@ -63,6 +70,42 @@ export function TripPlannerView({
 }: any) {
   const [activeTab, setActiveTab] = useState<"itinerary" | "logistics" | "packing" | "expenses">("itinerary");
   const [recTab, setRecTab] = useState<"hotels" | "restaurants" | "attractions" | "transport">("hotels");
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const regenerateDayMutation = useRegenerateDay();
+
+  const handleRegenerateDay = async (dayNumber: number) => {
+    try {
+      toast.loading(`Regenerating Day ${dayNumber}...`, { id: "regen-day" });
+      const newDay = await regenerateDayMutation.mutateAsync({
+        dayNumber,
+        existingPlan: activeItinerary,
+        preferences: formData,
+      });
+      
+      // Update local state by replacing the day
+      if (newDay && newDay.activities) {
+        const updatedDays = [...activeItinerary.days];
+        const dayIndex = updatedDays.findIndex((d: any) => d.dayNumber === dayNumber);
+        if (dayIndex >= 0) {
+          updatedDays[dayIndex] = newDay;
+          // Emit socket event if collaborative trip
+          if (emit) {
+            // Need a more complex emit for full itinerary update, but for now we'll update local state
+            // and trigger an optimistic save if possible, or just replace the day array
+          }
+        }
+      }
+      toast.success(`Day ${dayNumber} regenerated!`, { id: "regen-day" });
+    } catch (err) {
+      toast.error("Failed to regenerate day", { id: "regen-day" });
+    }
+  };
+
+  // Detect if this is an international trip
+  const destinationInfo = useMemo(
+    () => findDestinationInfo(formData.destinations?.[0] || ""),
+    [formData.destinations?.[0]]
+  );
 
   // Extract map markers from the itinerary
   const mapMarkers = activeItinerary?.days?.flatMap((day: any) => 
@@ -121,6 +164,18 @@ export function TripPlannerView({
               {formData.adults + formData.children} travelers
             </span>
           </div>
+          {/* International trip badge */}
+          {destinationInfo?.isInternational && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/20 backdrop-blur-md text-amber-100 text-xs font-bold"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              🛂 International Trip • Passport Required • {destinationInfo.currency} ({destinationInfo.currencySymbol})
+              {destinationInfo.visaRequired && ` • ${destinationInfo.visaType === "embassy" ? "Embassy Visa" : destinationInfo.visaType === "e-visa" ? "E-Visa" : "Visa on Arrival"}`}
+            </motion.div>
+          )}
           {plans.length > 0 && (
             <Button
               variant="outline"
@@ -220,6 +275,20 @@ export function TripPlannerView({
               </div>
             </div>
 
+            {/* AI Travel Tips (e.g. Passport/Visa, Transport) */}
+            {activeItinerary?.travelTips && activeItinerary.travelTips.length > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                <h3 className="flex items-center text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                  <Info className="h-4 w-4 mr-1.5" /> AI Travel Agent Tips
+                </h3>
+                <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-400 space-y-1">
+                  {activeItinerary.travelTips.map((tip: string, idx: number) => (
+                    <li key={idx}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {activeTab === "itinerary" && (
               <div className="space-y-6">
                 {collaborators.length > 0 && (
@@ -308,6 +377,20 @@ export function TripPlannerView({
                             </span>
                             <span className="tracking-tight">{day.date || "Detailed Itinerary"}</span>
                           </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs bg-background/50 hover:bg-background"
+                            onClick={() => handleRegenerateDay(day.dayNumber)}
+                            disabled={regenerateDayMutation.isPending}
+                          >
+                            {regenerateDayMutation.isPending ? (
+                              <div className="h-3 w-3 mr-2 animate-spin rounded-full border-2 border-primary border-r-transparent" />
+                            ) : (
+                              <Wand2 className="h-3 w-3 mr-2 text-primary" />
+                            )}
+                            Regenerate Day
+                          </Button>
                         </div>
                         <div className="p-0">
                           <div className="grid grid-cols-12 gap-4 px-8 py-4 border-b border-border/50 bg-muted/20 text-xs uppercase tracking-wider font-bold text-muted-foreground">
@@ -317,8 +400,15 @@ export function TripPlannerView({
                           </div>
                           <div className="divide-y divide-border/50">
                             {day.activities?.length > 0 ? (
-                              day.activities.map((act: any, idx: number) => (
-                                <div key={idx} className="grid grid-cols-12 gap-4 px-8 py-5 items-start hover:bg-muted/10 transition-colors group">
+                              day.activities.map((act: any, idx: number) => {
+                                const activityId = `${day.dayNumber}-${idx}`;
+                                const isSelected = selectedActivity && selectedActivity._id === activityId;
+                                return (
+                                <div
+                                  key={idx}
+                                  className={`grid grid-cols-12 gap-4 px-8 py-5 items-start hover:bg-muted/10 transition-all group cursor-pointer ${isSelected ? 'ring-2 ring-primary/50 bg-primary/5 rounded-xl' : ''}`}
+                                  onClick={() => setSelectedActivity({ ...act, _id: activityId })}
+                                >
                                   <div className="col-span-3 font-semibold text-sm text-primary/80 mt-1">{act.time}</div>
                                   <div className="col-span-6">
                                     <div className="font-bold text-base text-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
@@ -339,19 +429,19 @@ export function TripPlannerView({
                                       {act.estimatedCost > 0 ? `₹${Number(act.estimatedCost).toLocaleString()}` : <span className="text-muted-foreground/50 text-sm font-medium uppercase tracking-widest">Included</span>}
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={(e) => e.stopPropagation()}>
                                         <Bot className="h-3.5 w-3.5" />
                                       </Button>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary">
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={(e) => e.stopPropagation()}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
                                       </Button>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive">
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={(e) => e.stopPropagation()}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                       </Button>
                                     </div>
                                   </div>
                                 </div>
-                              ))
+                              );})
                             ) : (
                                <div className="px-8 py-12 text-center text-muted-foreground font-medium bg-muted/5">No activities planned for this day yet.</div>
                             )}
@@ -540,13 +630,43 @@ export function TripPlannerView({
             <div className="sticky top-24 space-y-8">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-                  <MapLucide className="h-5 w-5 text-primary" /> Live Itinerary Map
+                  <MapLucide className="h-5 w-5 text-primary" />
+                  {selectedActivity ? "Place Preview" : "Live Itinerary Map"}
+                  {selectedActivity && (
+                    <button
+                      onClick={() => setSelectedActivity(null)}
+                      className="ml-auto text-xs font-medium text-primary hover:underline"
+                    >
+                      ← Back to Map
+                    </button>
+                  )}
                 </h2>
-                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative bg-muted/20">
-                  <LeafletMap 
-                    center={mapMarkers.length > 0 ? mapMarkers[0].position : destCoords} 
-                    markers={mapMarkers} 
-                  />
+                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative bg-muted/20" style={{ perspective: "1200px" }}>
+                  <AnimatePresence mode="wait">
+                    {selectedActivity ? (
+                      <ActivityPreviewCard
+                        key={`preview-${selectedActivity._id}`}
+                        activity={selectedActivity}
+                        onClose={() => setSelectedActivity(null)}
+                      />
+                    ) : (
+                      <motion.div
+                        key="map"
+                        initial={{ rotateY: -90, opacity: 0 }}
+                        animate={{ rotateY: 0, opacity: 1 }}
+                        exit={{ rotateY: 90, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="h-full w-full"
+                        style={{ backfaceVisibility: "hidden" }}
+                      >
+                        <LeafletMap
+                          center={mapMarkers.length > 0 ? mapMarkers[0].position : destCoords}
+                          markers={mapMarkers}
+                          activeMarkerId={selectedActivity?._id}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 

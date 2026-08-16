@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Calendar as CalendarIcon, Users, Sparkles, Navigation } from "lucide-react";
+import { MapPin, Calendar as CalendarIcon, Users, Sparkles, Navigation, AlertTriangle, Globe, Zap, Shield, CreditCard as CreditCardIcon, Train, Car, Bus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plane, Hotel, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { findDestinationInfo, formatBudgetRange, areCitiesInSameState, type DestinationInfo } from "@/lib/destinationData";
 
 export function TripPlannerForm({
   step,
@@ -27,6 +28,39 @@ export function TripPlannerForm({
   const router = useRouter();
   
   useEffect(() => setMounted(true), []);
+
+  // Auto-detect destination info for budget + passport advisory
+  const destinationInfo: DestinationInfo | null = useMemo(
+    () => findDestinationInfo(formData.destinations[0]),
+    [formData.destinations[0]]
+  );
+
+  // Compute trip days from dates
+  const tripDays = useMemo(() => {
+    const d = parseInt(formData.days);
+    if (d > 0) return d;
+    const parts = formData.dates.split("to");
+    if (parts.length === 2) {
+      const start = new Date(parts[0].trim());
+      const end = new Date(parts[1].trim());
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      }
+    }
+    return 7; // default
+  }, [formData.days, formData.dates]);
+
+  const budgetRange = useMemo(
+    () => (destinationInfo ? formatBudgetRange(destinationInfo, tripDays) : null),
+    [destinationInfo, tripDays]
+  );
+
+  // Auto-fill budget when destination changes (only if budget is empty)
+  useEffect(() => {
+    if (budgetRange && !formData.budget) {
+      updateForm("budget", budgetRange.moderateTotal.toString());
+    }
+  }, [destinationInfo?.name]);
 
   const handleMagicSubmit = () => {
     if (!magicPrompt.trim()) return;
@@ -77,6 +111,114 @@ export function TripPlannerForm({
                 </div>
               </div>
 
+              {/* Budget Suggestion Pill */}
+              <AnimatePresence mode="wait">
+                {destinationInfo && budgetRange && (
+                  <motion.div
+                    key={destinationInfo.name}
+                    initial={{ opacity: 0, y: -10, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -10, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 rounded-2xl p-4 border border-primary/20">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-primary/20 p-2 rounded-xl flex-shrink-0">
+                          <Zap className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm text-foreground flex items-center gap-2">
+                            💡 {destinationInfo.name}, {destinationInfo.country}
+                            {destinationInfo.isInternational && (
+                              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold uppercase">
+                                <Globe className="h-2.5 w-2.5" /> International
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            ~{budgetRange.perDay} per day · Suggested for {tripDays} days: <span className="font-bold text-foreground">{budgetRange.total}</span>
+                          </p>
+                          {destinationInfo.currency !== "INR" && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              💱 Local currency: {destinationInfo.currency} ({destinationInfo.currencySymbol})
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Passport / Visa Advisory — only for international trips */}
+              <AnimatePresence mode="wait">
+                {destinationInfo?.isInternational && (
+                  <motion.div
+                    key={`passport-${destinationInfo.name}`}
+                    initial={{ opacity: 0, y: -10, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -10, height: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                  >
+                    <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/5 rounded-2xl p-4 border border-amber-500/20">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-amber-500/20 p-2 rounded-xl flex-shrink-0">
+                          <span className="text-xl">🛂</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm text-foreground">
+                            International Trip — Passport Required
+                          </p>
+                          <div className="mt-3 space-y-2">
+                            {destinationInfo.visaRequired ? (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-base">📋</span>
+                                <span className="text-muted-foreground">
+                                  <span className="font-semibold text-foreground">
+                                    Visa: {destinationInfo.visaType === "embassy" ? "Embassy Visa" : destinationInfo.visaType === "e-visa" ? "E-Visa Available" : "Visa on Arrival"}
+                                  </span>
+                                  {destinationInfo.visaNote && ` — ${destinationInfo.visaNote}`}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-base">✅</span>
+                                <span className="text-muted-foreground">
+                                  <span className="font-semibold text-green-600 dark:text-green-400">No visa required</span>
+                                  {destinationInfo.visaNote && ` — ${destinationInfo.visaNote}`}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-base">💱</span>
+                              <span className="text-muted-foreground">
+                                Currency: <span className="font-semibold text-foreground">{destinationInfo.currency} ({destinationInfo.currencySymbol})</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-base">🔌</span>
+                              <span className="text-muted-foreground">
+                                Power adapter: <span className="font-semibold text-foreground">{destinationInfo.adapterType}</span>
+                              </span>
+                            </div>
+                            {destinationInfo.insuranceRecommended && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-base">🏥</span>
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">Travel insurance recommended</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg w-fit">
+                            <AlertTriangle className="h-3 w-3" />
+                            Ensure passport validity ≥ 6 months from travel date
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Departure City */}
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
@@ -89,6 +231,48 @@ export function TripPlannerForm({
                   />
                 </div>
               </div>
+
+              {/* Intra-State Transport Selector */}
+              <AnimatePresence mode="wait">
+                {formData.departureCity && formData.destinations[0] && areCitiesInSameState(formData.departureCity, formData.destinations[0]) && (
+                  <motion.div
+                    key="transport-selector"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-3 p-4 rounded-2xl border border-primary/20 bg-primary/5">
+                      <label className="text-sm font-semibold text-primary flex items-center gap-2">
+                        <MapPin className="h-4 w-4" /> Traveling within the same state? Choose transport:
+                      </label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: "flight", label: "Flight", icon: Plane },
+                          { id: "train", label: "Train", icon: Train },
+                          { id: "car", label: "Car", icon: Car },
+                          { id: "bus", label: "Bus", icon: Bus },
+                        ].map((mode) => (
+                          <button
+                            key={mode.id}
+                            type="button"
+                            onClick={() => updateForm("transportMode", mode.id)}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                              (formData.transportMode || "flight") === mode.id
+                                ? "bg-primary text-primary-foreground border-primary shadow-md"
+                                : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                          >
+                            <mode.icon className="h-5 w-5 mb-1.5" />
+                            <span className="text-xs font-medium">{mode.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
@@ -248,6 +432,58 @@ export function TripPlannerForm({
                   {interest}
                 </button>
               ))}
+            </div>
+
+            <div className="mt-12 space-y-8">
+              {/* Dietary Preferences */}
+              <div>
+                <h3 className="text-xl font-bold mb-4 text-center">Dietary Requirements</h3>
+                <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
+                  {["Vegan", "Vegetarian", "Halal", "Gluten-Free", "Kosher"].map((diet) => (
+                    <button
+                      key={diet}
+                      onClick={() => {
+                        const newDietary = formData.dietary?.includes(diet)
+                          ? formData.dietary.filter((d: string) => d !== diet)
+                          : [...(formData.dietary || []), diet];
+                        updateForm("dietary", newDietary);
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        formData.dietary?.includes(diet)
+                          ? "bg-green-500 text-white shadow-lg scale-105"
+                          : "glass border border-white/10 hover:border-green-500/50 text-foreground"
+                      }`}
+                    >
+                      {diet}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accessibility */}
+              <div>
+                <h3 className="text-xl font-bold mb-4 text-center">Accessibility Needs</h3>
+                <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
+                  {["Wheelchair Accessible", "Low Walking", "Stroller Friendly", "Visual Aid", "Hearing Aid"].map((acc) => (
+                    <button
+                      key={acc}
+                      onClick={() => {
+                        const newAcc = formData.accessibility?.includes(acc)
+                          ? formData.accessibility.filter((a: string) => a !== acc)
+                          : [...(formData.accessibility || []), acc];
+                        updateForm("accessibility", newAcc);
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        formData.accessibility?.includes(acc)
+                          ? "bg-blue-500 text-white shadow-lg scale-105"
+                          : "glass border border-white/10 hover:border-blue-500/50 text-foreground"
+                      }`}
+                    >
+                      {acc}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         );

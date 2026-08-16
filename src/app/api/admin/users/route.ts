@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { withAdminAuth } from "@/lib/adminAuth";
 
-export async function GET(req: Request) {
+async function getUsersHandler(req: Request) {
   try {
-    const { userId, sessionClaims } = await auth();
-
-    // Check if user is authenticated and has admin role
-    const role = (sessionClaims?.metadata as { role?: string })?.role;
-    
-    // Allow for local testing without strict role enforcement (optional)
-    // if (!userId || role !== "admin") {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "20");
     const page = parseInt(searchParams.get("page") || "1");
@@ -25,7 +13,6 @@ export async function GET(req: Request) {
     const client = await clerkClient();
     
     // Fetch users with pagination and search
-    // Note: Clerk v5 uses `client.users.getUserList()`
     const usersResponse = await client.users.getUserList({
       limit,
       offset,
@@ -36,6 +23,7 @@ export async function GET(req: Request) {
        query: query ? query : undefined,
     });
 
+    // Trimming API responses: Only returning necessary, non-sensitive fields
     const formattedUsers = usersResponse.data.map((u) => ({
       id: u.id,
       name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Unknown",
@@ -68,23 +56,12 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+async function createUserHandler(req: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    
-    if (user.publicMetadata?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const body = await req.json();
     const { email, name, role, password } = body;
 
+    const client = await clerkClient();
     const newUser = await client.users.createUser({
       emailAddress: [email],
       firstName: name?.split(' ')[0] || '',
@@ -95,7 +72,15 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.json({ success: true, data: newUser });
+    // Trim output
+    const trimmedUser = {
+      id: newUser.id,
+      name: `${newUser.firstName || ""} ${newUser.lastName || ""}`.trim(),
+      email: newUser.emailAddresses[0]?.emailAddress,
+      role: newUser.publicMetadata?.role,
+    };
+
+    return NextResponse.json({ success: true, data: trimmedUser });
   } catch (error: any) {
     console.error("Create User Error:", error);
     return NextResponse.json(
@@ -104,3 +89,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export const GET = (req: Request, ctx: any) => withAdminAuth(getUsersHandler, "FETCH_USERS")(req, ctx);
+export const POST = (req: Request, ctx: any) => withAdminAuth(createUserHandler, "CREATE_USER")(req, ctx);

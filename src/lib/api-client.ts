@@ -34,8 +34,8 @@ export async function apiClient(endpoint: string, options: RequestInit = {}) {
     }
 
     return response;
-  } catch (error) {
-    console.error(`[API Client Error] ${endpoint}:`, error);
+  } catch (error: any) {
+    console.log(`[API Client Error] ${endpoint}:`, error.message || error);
     throw error;
   }
 }

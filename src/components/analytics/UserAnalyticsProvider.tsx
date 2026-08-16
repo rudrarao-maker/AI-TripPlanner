@@ -30,7 +30,7 @@ export function UserAnalyticsProvider({ children }: { children: React.ReactNode 
       
       // Ensure user is synced to our local Postgres database
       // This protects against Bulk Import users missing the user.created webhook
-      fetch('/api/auth/sync', { method: 'POST' }).catch(console.error);
+      fetch('/api/auth/sync', { method: 'POST' }).catch(() => {});
     } else {
       // User logged out
       posthog.reset()

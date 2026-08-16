@@ -151,6 +151,8 @@ function TripPlannerContent() {
     seniors: 0,
     tripType: [] as string[],
     interests: [] as string[],
+    dietary: [] as string[],
+    accessibility: [] as string[],
     budgetTier: "compare", // 'cheap', 'moderate', 'luxury', 'compare'
     budget: "",
     style: "",

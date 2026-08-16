@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import { useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Coordinates } from "@/types";
@@ -28,6 +28,22 @@ interface LeafletMapProps {
   markers?: LocationMarker[];
   className?: string;
   activeMarkerId?: string;
+}
+
+// Component to handle map updates when props change
+function MapUpdater({ activeMarkerId, markers }: { activeMarkerId?: string; markers: LocationMarker[] }) {
+  const map = useMap();
+  const activeMarker = markers.find(m => m.id === activeMarkerId);
+
+  useEffect(() => {
+    if (activeMarker) {
+      map.flyTo([activeMarker.position.lat, activeMarker.position.lng], 15, {
+        duration: 1.5,
+      });
+    }
+  }, [activeMarkerId, activeMarker, map]);
+
+  return null;
 }
 
 export default function LeafletMap({
@@ -72,6 +88,8 @@ export default function LeafletMap({
             </Popup>
           </Marker>
         ))}
+
+        <MapUpdater activeMarkerId={activeMarkerId} markers={markers} />
       </MapContainer>
     </div>
   );

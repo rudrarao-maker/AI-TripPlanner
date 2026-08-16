@@ -46,8 +46,8 @@ export const useTripPlanner = () => {
       }
     },
     onError: (error) => {
-      console.error("Stream error:", error);
-      toast.error("Failed to generate trip stream.");
+      console.log("Stream error:", error.message || error);
+      toast.error("AI is currently busy or rate limited. Please wait 30 seconds and try again.");
     }
   });
 
@@ -101,7 +101,7 @@ export const useTripPlanner = () => {
         submit(tripData);
       }
     } catch (err: any) {
-      console.error("Plan generation failed:", err);
+      console.log("Plan generation failed:", err.message);
       toast.error(err.message || "Failed to generate plans. Please try again.");
       setIsGeneratingCompare(false);
     }

@@ -1,28 +1,18 @@
 import { NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { withAdminAuth } from "@/lib/adminAuth";
 
-export async function PUT(
+async function updateUserHandler(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    
-    if (user.publicMetadata?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const body = await req.json();
     const updates: any = {};
     
+    const client = await clerkClient();
+
     if (body.role) {
       updates.publicMetadata = { role: body.role };
     }
@@ -52,25 +42,13 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+async function deleteUserHandler(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-
     const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    
-    if (user.publicMetadata?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     await client.users.deleteUser(id);
 
     return NextResponse.json({ success: true });
@@ -82,3 +60,6 @@ export async function DELETE(
     );
   }
 }
+
+export const PUT = (req: Request, ctx: any) => withAdminAuth(updateUserHandler, "UPDATE_USER")(req, ctx);
+export const DELETE = (req: Request, ctx: any) => withAdminAuth(deleteUserHandler, "DELETE_USER")(req, ctx);

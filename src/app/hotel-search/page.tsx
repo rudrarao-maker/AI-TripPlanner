@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Search, Building2, MapPin, Filter } from "lucide-react";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Building2, MapPin, Filter, CalendarDays, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useHotels } from "@/hooks/useRecommendations";
 import { HotelCard } from "@/components/recommendations/HotelCard";
 import { HotelCardSkeleton } from "@/components/ui/Skeletons";
+import { differenceInCalendarDays, addDays, format } from "date-fns";
 
 export default function HotelSearchPage() {
   const [searchParams, setSearchParams] = useState({
@@ -18,6 +19,30 @@ export default function HotelSearchPage() {
   const [maxPrice, setMaxPrice] = useState(50000);
 
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Auto-calculate number of nights between check-in and check-out
+  const nightsCount = useMemo(() => {
+    if (!searchParams.checkIn || !searchParams.checkOut) return null;
+    const checkInDate = new Date(searchParams.checkIn);
+    const checkOutDate = new Date(searchParams.checkOut);
+    const diff = differenceInCalendarDays(checkOutDate, checkInDate);
+    return diff > 0 ? diff : null;
+  }, [searchParams.checkIn, searchParams.checkOut]);
+
+  // Minimum check-out date is the day after check-in
+  const minCheckOutDate = useMemo(() => {
+    if (!searchParams.checkIn) return "";
+    return format(addDays(new Date(searchParams.checkIn), 1), "yyyy-MM-dd");
+  }, [searchParams.checkIn]);
+
+  const handleCheckInChange = (value: string) => {
+    const updates: typeof searchParams = { ...searchParams, checkIn: value };
+    // If check-out is before or equal to the new check-in, reset it
+    if (searchParams.checkOut && searchParams.checkOut <= value) {
+      updates.checkOut = "";
+    }
+    setSearchParams(updates);
+  };
 
   const {
     data: hotels = [],
@@ -49,9 +74,9 @@ export default function HotelSearchPage() {
       <div className="glass-card p-6 rounded-2xl shadow-xl max-w-4xl mx-auto mb-12 border-primary/20">
         <form
           onSubmit={handleSearch}
-          className="grid grid-cols-1 md:grid-cols-4 gap-4"
+          className="grid grid-cols-1 md:grid-cols-12 gap-4"
         >
-          <div className="space-y-2 md:col-span-2">
+          <div className="space-y-2 md:col-span-4">
             <label className="text-sm font-medium ml-1">Destination</label>
             <div className="relative">
               <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
@@ -67,20 +92,62 @@ export default function HotelSearchPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium ml-1">Check-in / Out</label>
+          {/* Check-in date */}
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium ml-1 flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" /> Check-in
+            </label>
             <Input
               required
               type="date"
               className="bg-background/50 h-12"
+              min={format(new Date(), "yyyy-MM-dd")}
               value={searchParams.checkIn}
+              onChange={(e) => handleCheckInChange(e.target.value)}
+            />
+          </div>
+
+          {/* Check-out date */}
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium ml-1 flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" /> Check-out
+            </label>
+            <Input
+              required
+              type="date"
+              className="bg-background/50 h-12"
+              min={minCheckOutDate}
+              disabled={!searchParams.checkIn}
+              value={searchParams.checkOut}
               onChange={(e) =>
-                setSearchParams({ ...searchParams, checkIn: e.target.value })
+                setSearchParams({ ...searchParams, checkOut: e.target.value })
               }
             />
           </div>
 
-          <div className="space-y-2">
+          {/* Nights counter badge */}
+          <div className="space-y-2 md:col-span-1 flex flex-col items-center justify-end">
+            <AnimatePresence mode="wait">
+              {nightsCount !== null && (
+                <motion.div
+                  key={nightsCount}
+                  initial={{ opacity: 0, scale: 0.5, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.5, y: -10 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  className="h-12 px-3 rounded-xl bg-primary/10 border border-primary/30 flex flex-col items-center justify-center"
+                >
+                  <span className="text-lg font-bold text-primary leading-tight">{nightsCount}</span>
+                  <span className="text-[10px] font-medium text-primary/70 leading-tight flex items-center gap-0.5">
+                    <Moon className="h-2.5 w-2.5" />
+                    {nightsCount === 1 ? "night" : "nights"}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="space-y-2 md:col-span-3">
             <label className="text-sm font-medium ml-1">Guests</label>
             <Input
               required
@@ -93,7 +160,7 @@ export default function HotelSearchPage() {
               }
             />
           </div>
-          <div className="md:col-span-4 flex justify-end mt-2">
+          <div className="md:col-span-12 flex justify-end mt-2">
             <Button
               type="submit"
               size="lg"

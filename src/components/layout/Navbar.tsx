@@ -10,13 +10,16 @@ import { Logo } from "../common/Logo";
 import { Button } from "../ui/button";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useAuth, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { useAuth, useUser, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
-export function Navbar() {
+export function Navbar({ dbIsAdmin = false }: { dbIsAdmin?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const isClerkAdmin = user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "super_admin";
+  const isAdmin = dbIsAdmin || isClerkAdmin;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,28 +64,32 @@ export function Navbar() {
             ))}
             {isSignedIn && (
               <>
-                <Link
-                  href="/dashboard"
-                  className={cn(
-                    "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
-                    pathname.startsWith("/dashboard")
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-                  )}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin"
-                  className={cn(
-                    "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
-                    pathname.startsWith("/admin")
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-                  )}
-                >
-                  Admin Panel
-                </Link>
+                {!isAdmin && (
+                  <Link
+                    href="/dashboard"
+                    className={cn(
+                      "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
+                      pathname.startsWith("/dashboard")
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+                    )}
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={cn(
+                      "text-sm font-medium transition-all duration-200 px-3.5 py-2 rounded-full whitespace-nowrap",
+                      pathname.startsWith("/admin")
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+                    )}
+                  >
+                    Admin Panel
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -150,28 +157,32 @@ export function Navbar() {
             ))}
             {isSignedIn && (
               <>
-                <Link
-                  href="/dashboard"
-                  className={cn(
-                    "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
-                    pathname.startsWith("/dashboard")
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-foreground hover:bg-muted/60",
-                  )}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin"
-                  className={cn(
-                    "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
-                    pathname.startsWith("/admin")
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-foreground hover:bg-muted/60",
-                  )}
-                >
-                  Admin Panel
-                </Link>
+                {!isAdmin && (
+                  <Link
+                    href="/dashboard"
+                    className={cn(
+                      "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
+                      pathname.startsWith("/dashboard")
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={cn(
+                      "text-base font-medium py-3 px-4 rounded-xl transition-all duration-200",
+                      pathname.startsWith("/admin")
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    Admin Panel
+                  </Link>
+                )}
               </>
             )}
 

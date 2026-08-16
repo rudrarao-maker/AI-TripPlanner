@@ -25,6 +25,7 @@ import dynamic from "next/dynamic";
 import { SavedTrips } from "@/components/dashboard/SavedTrips";
 import { RecentSearches } from "@/components/dashboard/RecentSearches";
 import { AISuggestions } from "@/components/dashboard/AISuggestions";
+import { LocalDiscoveries } from "@/components/dashboard/LocalDiscoveries";
 
 const MonthlySpendingChart = dynamic(() => import("@/components/dashboard/MonthlySpendingChart").then((mod) => mod.MonthlySpendingChart), { ssr: false, loading: () => <div className="h-[300px] w-full bg-muted animate-pulse rounded-xl" /> });
 
@@ -179,6 +180,8 @@ export default function DashboardHome() {
             )}
 
             <AISuggestions />
+            
+            <LocalDiscoveries />
             
             <div className="mt-8">
               <MonthlySpendingChart />

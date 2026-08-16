@@ -53,3 +53,15 @@ export const useParsePrompt = () => {
     },
   });
 };
+
+export const useRegenerateDay = () => {
+  return useMutation({
+    mutationFn: async (payload: { dayNumber: number; existingPlan: any; preferences: any }) => {
+      const response = await api.post("/trips/regenerate-day", payload);
+      return response.data.data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to regenerate day");
+    },
+  });
+};

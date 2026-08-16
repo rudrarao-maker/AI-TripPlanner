@@ -1,25 +1,11 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { users, trips } from '@/db/schema';
-import { desc, count, eq } from 'drizzle-orm';
+import { desc, count } from 'drizzle-orm';
+import { withAdminAuth } from '@/lib/adminAuth';
 
-export async function GET() {
+async function getOverviewHandler() {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify admin role
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, userId)
-    });
-    
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
-    }
-
     // Fetch real metrics from Postgres
     const [totalUsers] = await db.select({ count: count() }).from(users);
     const [totalTrips] = await db.select({ count: count() }).from(trips);
@@ -54,3 +40,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch overview metrics' }, { status: 500 });
   }
 }
+
+export const GET = (req: Request, ctx: any) => withAdminAuth(getOverviewHandler, "FETCH_OVERVIEW")(req, ctx);

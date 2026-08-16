@@ -23,12 +23,12 @@ export default function ItineraryDetailsPage() {
   const { userId } = useAuth();
   
   const { data: itinerary, isLoading } = useGetTrip(id);
-  const [isPublic, setIsPublic] = useState(itinerary?.isPublic || false);
+  const [isPublic, setIsPublic] = useState((itinerary as any)?.isPublic || false);
   const [isToggling, setIsToggling] = useState(false);
 
   // Sync state when itinerary loads
   useEffect(() => {
-    if (itinerary) setIsPublic(itinerary.isPublic);
+    if (itinerary) setIsPublic((itinerary as any).isPublic);
   }, [itinerary]);
 
   const handleTogglePublic = async () => {

@@ -77,7 +77,7 @@ export default async function DestinationDetailPage({ params }: { params: Promis
 async function AITravelGuide({ destinationName, country }: { destinationName: string, country: string }) {
   try {
     const { object: guide } = await generateObject({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.5-flash"),
       schema: z.object({
         overview: z.string().describe("A beautiful, inspiring 2-paragraph description of the destination."),
         thingsToExplore: z.array(
