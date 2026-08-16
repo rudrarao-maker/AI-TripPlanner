@@ -28,8 +28,8 @@ const PlanSchema = z.object({
     date: z.string().describe("YYYY-MM-DD"),
     activities: z.array(z.object({
       time: z.string().describe("Time of the activity e.g. 09:00 AM"),
-      name: z.string().describe("Activity name"),
-      location: z.string().describe("Location name"),
+      name: z.string().describe("The REAL name of the specific place, restaurant, cafe, or club. DO NOT use generic names like 'Authentic Cuisine Tasting'. You MUST provide the actual, specific name of the establishment or tourist attraction."),
+      location: z.string().describe("The specific neighborhood, address, or district location of the place"),
       coordinates: z.object({ lat: z.number(), lng: z.number() }).describe("Approximate latitude and longitude of the location"),
       description: z.string().describe("Short description"),
       category: z.string().describe("transport|sightseeing|food|hotel|shopping|other"),
@@ -203,11 +203,22 @@ export async function POST(req: Request) {
         - The total estimated cost must be around ${tier.budget} ${preferences.currency || 'INR'}.
         - If the destination is foreign relative to the origin, you MUST add a passport/visa reminder in the "travelTips" array.
         - If the destination is in the same state/country, you MUST suggest Train or Car as alternative transport modes in the "travelTips" array.
-        - Generate a highly personalized "packingList" tailored to the destination and the provided weather context.`;
+        - Generate a highly personalized "packingList" tailored to the destination and the provided weather context.
+        
+        DETAILED ITINERARY RULES:
+        1. Only recommend real, currently operating places. Do not invent names.
+        2. Group activities by geographic proximity to minimize travel time within a day.
+        3. Account for realistic opening hours, weekly closures, and seasonal conditions (weather, daylight hours).
+        4. Balance popular must-see spots with 1-2 lesser-known local spots per day matching the stated interests.
+        5. Include realistic transit time between activities (walking/taxi/transit).
+        6. Include local food recommendations for each meal — real restaurant names or specific dish/street food types if unknown.
+        7. Flag anything that typically requires advance booking (tickets, reservations, permits) in the activity description.
+        8. Keep total daily activities realistic for the stated pace — don't overpack. Ensure there are multiple activities per day covering morning, afternoon, and evening.
+        9. MUST include an activity with category 'hotel' each day (e.g., "Check-in at [Hotel Name]" or "Overnight at [Hotel Name]"). The 'name' must be a REAL hotel matching the budget tier, and 'estimatedCost' must be the price per night.`;
         
         try {
           const result = await generateObject({
-            model: google(process.env.GEMINI_MODEL || "gemini-1.5-flash-latest"),
+            model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
             system: `You are an expert AI travel agent. You MUST follow all strict constraints. Generate a realistic and culturally immersive travel itinerary perfectly matching the requested budget tier and exact number of days (${numDays} days). Your output must contain exactly ${numDays} items in the "days" array.`,
             prompt,
             schema: PlanSchema,
@@ -250,13 +261,24 @@ export async function POST(req: Request) {
     - Hotel category expected: ${tier.hotelCategory}.
     - If the destination is foreign relative to the origin, you MUST add a passport/visa reminder in the "travelTips" array.
     - If the destination is in the same state/country, you MUST suggest Train or Car as alternative transport modes in the "travelTips" array.
-    ${constraintsContext}`;
+    ${constraintsContext}
+    
+    DETAILED ITINERARY RULES:
+    1. Only recommend real, currently operating places. Do not invent names.
+    2. Group activities by geographic proximity to minimize travel time within a day.
+    3. Account for realistic opening hours, weekly closures, and seasonal conditions (weather, daylight hours).
+    4. Balance popular must-see spots with 1-2 lesser-known local spots per day matching the stated interests.
+    5. Include realistic transit time between activities (walking/taxi/transit).
+    6. Include local food recommendations for each meal — real restaurant names or specific dish/street food types if unknown.
+    7. Flag anything that typically requires advance booking (tickets, reservations, permits) in the activity description.
+    8. Keep total daily activities realistic for the stated pace — don't overpack. Ensure there are multiple activities per day covering morning, afternoon, and evening.
+    9. MUST include an activity with category 'hotel' each day (e.g., "Check-in at [Hotel Name]" or "Overnight at [Hotel Name]"). The 'name' must be a REAL hotel matching the budget tier, and 'estimatedCost' must be the price per night.`;
 
     const systemPrompt = `You are an expert AI travel agent. You MUST generate an itinerary with exactly ${numDays} days in the days array. Generate a realistic and culturally immersive travel itinerary.${weatherContext}`;
 
     try {
       const result = await streamObject({
-        model: google(process.env.GEMINI_MODEL || "gemini-1.5-flash-latest"),
+        model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
         system: systemPrompt,
         prompt,
         schema: PlanSchema,

@@ -833,6 +833,7 @@ export function TripPlannerView({
           </Button>
         </motion.div>
       )}
+    </div>
     </>
   );
 }

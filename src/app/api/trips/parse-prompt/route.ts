@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     const result = await generateObject({
-      model: google(process.env.GEMINI_MODEL || "gemini-flash-latest"),
+      model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
       system: "You are a travel assistant parsing unstructured text into a structured travel JSON object.",
       prompt: `Extract travel preferences from the following prompt: "${prompt}"`,
       schema: PromptSchema,

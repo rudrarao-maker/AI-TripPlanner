@@ -16,12 +16,12 @@ ${JSON.stringify(itineraryContext, null, 2)}
 Be concise, enthusiastic, and highly specific to their destination.`;
 
     const result = streamText({
-      model: google("gemini-1.5-flash-latest"),
+      model: google("gemini-3.1-pro-preview"),
       system: systemPrompt,
       messages,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error("Chat Error:", error);
     return new Response(JSON.stringify({ error: "Failed to generate chat response" }), { status: 500 });
