@@ -29,6 +29,22 @@ export function TripPlannerForm({
   
   useEffect(() => setMounted(true), []);
 
+  // Auto-calculate number of days when dates change
+  useEffect(() => {
+    const [startStr, endStr] = formData.dates.split("to");
+    if (startStr && endStr) {
+      const start = new Date(startStr.trim());
+      const end = new Date(endStr.trim());
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+          updateForm("days", diffDays.toString());
+        }
+      }
+    }
+  }, [formData.dates]);
+
   // Auto-detect destination info for budget + passport advisory
   const destinationInfo: DestinationInfo | null = useMemo(
     () => findDestinationInfo(formData.destinations[0]),

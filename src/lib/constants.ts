@@ -788,6 +788,7 @@ export const NAV_LINKS = [
   { label: "Home", path: "/" },
   { label: "Destinations", path: "/destinations" },
   { label: "AI Trip Planner", path: "/trip-planner" },
+  { label: "Discover", path: "/discover" },
 ];
 
 export const USER_NAV_LINKS = [

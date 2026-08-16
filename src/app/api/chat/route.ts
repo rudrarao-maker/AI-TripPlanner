@@ -1,41 +1,29 @@
-import { NextResponse } from "next/server";
+import { google } from "@ai-sdk/google";
 import { streamText } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { retrieveSimilarContext } from "@/lib/rag";
-
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-});
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
-    
-    // Get the latest user message
-    const latestMessage = messages[messages.length - 1];
-    const userQuery = latestMessage.content;
+    const { messages, itineraryContext } = await req.json();
 
-    // Retrieve relevant context from Knowledge Base
-    const contextResults = await retrieveSimilarContext(userQuery);
-    const contextText = contextResults.map(r => r.content).join("\n\n");
+    const systemPrompt = `You are a highly capable AI Travel Concierge for Trip Planner.
+You have been provided with the context of the user's current active itinerary.
+Use this context to answer questions, suggest modifications, and offer hyper-local recommendations.
+If they ask about swapping an activity, recommend alternatives that fit the same vibe and budget.
 
-    const systemPrompt = `You are a helpful travel assistant.
-Use the following context from our knowledge base to answer the user's question if relevant.
-If the context doesn't have the answer, just answer normally using your own knowledge.
+Current Itinerary Context:
+${JSON.stringify(itineraryContext, null, 2)}
 
-Knowledge Base Context:
-${contextText || "No specific local context found."}
-`;
+Be concise, enthusiastic, and highly specific to their destination.`;
 
-    const result = await streamText({
-      model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+    const result = streamText({
+      model: google("gemini-1.5-flash-latest"),
       system: systemPrompt,
       messages,
     });
 
-    return result.toTextStreamResponse();
+    return result.toDataStreamResponse();
   } catch (error) {
-    console.error("Chat RAG Route Error:", error);
-    return NextResponse.json({ error: "Failed to generate response." }, { status: 500 });
+    console.error("Chat Error:", error);
+    return new Response(JSON.stringify({ error: "Failed to generate chat response" }), { status: 500 });
   }
 }

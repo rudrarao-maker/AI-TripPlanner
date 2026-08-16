@@ -22,6 +22,7 @@ const PlanSchema = z.object({
   flightsCost: z.number().describe("Estimated total cost for flights/travel from origin to destination"),
   currency: z.string().describe("Currency code, e.g. INR"),
   travelTips: z.array(z.string()).describe("List of important tips, e.g. passport/visa reminders or transport alternatives like Train/Car").optional(),
+  packingList: z.array(z.string()).describe("Smart packing list items tailored to the destination, weather, and activities").optional(),
   days: z.array(z.object({
     dayNumber: z.number(),
     date: z.string().describe("YYYY-MM-DD"),
@@ -134,7 +135,6 @@ export async function POST(req: Request) {
         mockDays.push({
           dayNumber: i,
           date: currentDate.toISOString().split('T')[0], // YYYY-MM-DD format
-          title: `Day ${i}: ${mAct.name.split(' ')[0]} & More in ${prefs.destination || 'Paradise'}`,
           activities: [
             {
               time: "09:00 AM",
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
               currency: prefs.currency || 'INR'
             }
           ],
-          hotel: { name: `The ${tier.label} Resort ${prefs.destination}`, rating: tier.id === 'luxury' ? 5 : 4, pricePerNight: Math.round(tier.budget * 0.3 / days) }
+          hotel: { name: `The ${tier.label} Resort ${prefs.destination || 'Paradise'}`, rating: tier.id === 'luxury' ? 5 : 4, pricePerNight: Math.round(tier.budget * 0.3 / days) }
         });
       }
       return {
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
         budget: tier.budget,
         currency: prefs.currency || 'INR',
         flightsCost: Math.round(tier.budget * 0.25),
-        travelStyle: prefs.tripType || "Adventure",
+        packingList: ["Clothing", "Toiletries", "Documents", "Electronics"],
         days: mockDays,
         _tier: tier,
         id: `mock-${tier.id}-${Date.now()}`
@@ -202,11 +202,12 @@ export async function POST(req: Request) {
         - Ensure strictly ${tier.hotelCategory} tier accommodations.
         - The total estimated cost must be around ${tier.budget} ${preferences.currency || 'INR'}.
         - If the destination is foreign relative to the origin, you MUST add a passport/visa reminder in the "travelTips" array.
-        - If the destination is in the same state/country, you MUST suggest Train or Car as alternative transport modes in the "travelTips" array.`;
+        - If the destination is in the same state/country, you MUST suggest Train or Car as alternative transport modes in the "travelTips" array.
+        - Generate a highly personalized "packingList" tailored to the destination and the provided weather context.`;
         
         try {
           const result = await generateObject({
-            model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+            model: google(process.env.GEMINI_MODEL || "gemini-1.5-flash-latest"),
             system: `You are an expert AI travel agent. You MUST follow all strict constraints. Generate a realistic and culturally immersive travel itinerary perfectly matching the requested budget tier and exact number of days (${numDays} days). Your output must contain exactly ${numDays} items in the "days" array.`,
             prompt,
             schema: PlanSchema,
@@ -255,7 +256,7 @@ export async function POST(req: Request) {
 
     try {
       const result = await streamObject({
-        model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+        model: google(process.env.GEMINI_MODEL || "gemini-1.5-flash-latest"),
         system: systemPrompt,
         prompt,
         schema: PlanSchema,

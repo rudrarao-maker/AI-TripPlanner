@@ -31,8 +31,25 @@ const INITIAL_PACKING_LIST = {
   ],
 };
 
-export function PackingList() {
-  const [list, setList] = useState(INITIAL_PACKING_LIST);
+export function PackingList({ aiPackingItems = [] }: { aiPackingItems?: string[] }) {
+  // Dynamically build the initial list, injecting AI items into a new category
+  const getInitialList = () => {
+    const list: Record<string, { id: string, label: string, checked: boolean }[]> = {
+      ...INITIAL_PACKING_LIST,
+    };
+    
+    if (aiPackingItems && aiPackingItems.length > 0) {
+      list["smart"] = aiPackingItems.map((item, idx) => ({
+        id: `ai-${idx}`,
+        label: item,
+        checked: false
+      }));
+    }
+    
+    return list;
+  };
+
+  const [list, setList] = useState(getInitialList());
 
   const toggleItem = (
     category: keyof typeof INITIAL_PACKING_LIST,
@@ -74,6 +91,14 @@ export function PackingList() {
       icon: <Pill className="h-5 w-5 text-emerald-500" />,
     },
   ];
+
+  if (list["smart"]) {
+    categories.unshift({
+      key: "smart" as any,
+      title: "Smart Suggestions (AI)",
+      icon: <Briefcase className="h-5 w-5 text-purple-500" />
+    });
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

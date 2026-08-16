@@ -21,7 +21,8 @@ import {
   Utensils,
   Globe,
   Wand2,
-  Info
+  Info,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import { AIChatSidebar } from "@/components/itinerary/AIChatSidebar";
 import { WeatherWidget } from "@/components/weather/WeatherWidget";
 import { NearbyPlaces } from "@/components/map/NearbyPlaces";
 import { ExpenseTracker } from "@/components/itinerary/ExpenseTracker";
+import { LiveCursors } from "@/components/itinerary/LiveCursors";
 import { ActivityPreviewCard } from "@/components/trip-planner/ActivityPreviewCard";
 import { findDestinationInfo } from "@/lib/destinationData";
 import { useRegenerateDay } from "@/hooks/useTrips";
@@ -71,6 +73,8 @@ export function TripPlannerView({
   const [activeTab, setActiveTab] = useState<"itinerary" | "logistics" | "packing" | "expenses">("itinerary");
   const [recTab, setRecTab] = useState<"hotels" | "restaurants" | "attractions" | "transport">("hotels");
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [isPublic, setIsPublic] = useState(activeItinerary.isPublic || false);
+  const [isTogglingPublic, setIsTogglingPublic] = useState(false);
   const regenerateDayMutation = useRegenerateDay();
 
   const handleRegenerateDay = async (dayNumber: number) => {
@@ -107,6 +111,33 @@ export function TripPlannerView({
     [formData.destinations?.[0]]
   );
 
+  const handleTogglePublic = async () => {
+    if (!itinerary?.id || itinerary.id.startsWith("temp-")) {
+      toast.error("Please save the trip first before making it public.");
+      return;
+    }
+
+    try {
+      setIsTogglingPublic(true);
+      const res = await fetch(`/api/trips/${itinerary.id}/public`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic: !isPublic }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsPublic(!isPublic);
+        toast.success(!isPublic ? "Trip is now visible to the community!" : "Trip is now private.");
+      } else {
+        toast.error("Failed to update visibility");
+      }
+    } catch (error) {
+      toast.error("Something went wrong");
+    } finally {
+      setIsTogglingPublic(false);
+    }
+  };
+
   // Extract map markers from the itinerary
   const mapMarkers = activeItinerary?.days?.flatMap((day: any) => 
     day.activities?.filter((act: any) => act.coordinates?.lat && act.coordinates?.lng).map((act: any) => ({
@@ -130,7 +161,17 @@ export function TripPlannerView({
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <>
+      {socketId && collaborators && (
+        <LiveCursors
+          collaborators={collaborators}
+          subscribe={subscribe}
+          emit={emit}
+          socketId={socketId}
+        />
+      )}
+      
+      <div className="min-h-screen bg-background pb-20">
       <div className="relative h-[40vh] min-h-[300px] w-full flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-black/50 z-10" />
         <img
@@ -240,6 +281,21 @@ export function TripPlannerView({
                 >
                   <BookmarkPlus className="h-4 w-4 mr-2" /> Save Trip
                 </Button>
+                {itinerary?.id && !itinerary.id.startsWith("temp-") && (
+                  <Button
+                    variant={isPublic ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleTogglePublic}
+                    disabled={isTogglingPublic}
+                    className="hidden sm:flex transition-all"
+                  >
+                    {isPublic ? (
+                      <><Globe className="h-4 w-4 mr-2" /> Public</>
+                    ) : (
+                      <><Lock className="h-4 w-4 mr-2 text-muted-foreground" /> Private</>
+                    )}
+                  </Button>
+                )}
                 {itinerary?.id && (
                   <Button
                     size="sm"
@@ -264,6 +320,18 @@ export function TripPlannerView({
                   className="hidden sm:flex"
                 >
                   <Share2 className="h-4 w-4 mr-2" /> Share
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const link = `${window.location.origin}/trip-planner?id=${itinerary.id}&invite=true`;
+                    navigator.clipboard.writeText(link);
+                    toast.success("Invite link copied to clipboard!");
+                  }}
+                  className="hidden sm:flex text-primary border-primary/20 hover:bg-primary/10"
+                >
+                  <Users className="h-4 w-4 mr-2" /> Invite
                 </Button>
                 <Button
                   variant="outline"
@@ -559,8 +627,25 @@ export function TripPlannerView({
                         className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer group"
                         onClick={() => {
                           const origin = formData.departureCity || "Any";
-                          const dest = formData.destinations[0] || "Destination";
-                          window.open(`https://www.skyscanner.com/transport/flights/${origin}/${dest}`, "_blank");
+                          const dest = activeItinerary.destination || formData.destinations[0];
+                          
+                          // Skyscanner uses YYMMDD format
+                          let dateParams = "";
+                          if (activeItinerary.days && activeItinerary.days.length > 0) {
+                            const startDate = new Date(activeItinerary.days[0].date);
+                            const endDate = new Date(activeItinerary.days[activeItinerary.days.length - 1].date);
+                            
+                            const formatSSDate = (d: Date) => {
+                              const yy = String(d.getFullYear()).slice(2);
+                              const mm = String(d.getMonth() + 1).padStart(2, '0');
+                              const dd = String(d.getDate()).padStart(2, '0');
+                              return `${yy}${mm}${dd}`;
+                            };
+                            
+                            dateParams = `/${formatSSDate(startDate)}/${formatSSDate(endDate)}`;
+                          }
+                          
+                          window.open(`https://www.skyscanner.com/transport/flights/${origin}/${dest}${dateParams}`, "_blank");
                         }}
                       >
                         <div className="flex items-center gap-4">
@@ -584,8 +669,18 @@ export function TripPlannerView({
                       <div 
                         className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer group"
                         onClick={() => {
-                          const dest = formData.destinations[0] || "Destination";
-                          window.open(`https://www.booking.com/searchresults.html?ss=${dest}`, "_blank");
+                          const dest = activeItinerary.destination || formData.destinations[0];
+                          let queryParams = `ss=${dest}`;
+                          
+                          if (activeItinerary.days && activeItinerary.days.length > 0) {
+                            const startDate = activeItinerary.days[0].date;
+                            const endDate = activeItinerary.days[activeItinerary.days.length - 1].date;
+                            queryParams += `&checkin=${startDate}&checkout=${endDate}`;
+                          }
+                          
+                          queryParams += `&group_adults=${formData.adults}&group_children=${formData.children}`;
+                          
+                          window.open(`https://www.booking.com/searchresults.html?${queryParams}`, "_blank");
                         }}
                       >
                         <div className="flex items-center gap-4">
@@ -620,7 +715,7 @@ export function TripPlannerView({
 
             {activeTab === "packing" && (
               <div className="space-y-6">
-                <PackingList />
+                <PackingList aiPackingItems={activeItinerary.packingList} />
               </div>
             )}
           </div>
@@ -738,6 +833,6 @@ export function TripPlannerView({
           </Button>
         </motion.div>
       )}
-    </div>
+    </>
   );
 }

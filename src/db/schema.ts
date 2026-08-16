@@ -106,6 +106,17 @@ export const expenses = pgTable("Expense", {
   tripIdIdx: index("expense_tripId_idx").on(table.tripId),
 }));
 
+export const expenseSplits = pgTable("ExpenseSplit", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  expenseId: uuid("expenseId").references(() => expenses.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  expenseIdIdx: index("split_expenseId_idx").on(table.expenseId),
+  userIdIdx: index("split_userId_idx").on(table.userId),
+}));
+
 export const savedPlaces = pgTable("SavedPlace", {
   id: uuid("id").primaryKey().defaultRandom(),
   tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }).notNull(),
@@ -303,13 +314,25 @@ export const tripCollaboratorsRelations = relations(tripCollaborators, ({ one })
   }),
 }));
 
-export const expensesRelations = relations(expenses, ({ one }) => ({
+export const expensesRelations = relations(expenses, ({ one, many }) => ({
   trip: one(trips, {
     fields: [expenses.tripId],
     references: [trips.id],
   }),
   user: one(users, {
     fields: [expenses.userId],
+    references: [users.id],
+  }),
+  splits: many(expenseSplits),
+}));
+
+export const expenseSplitsRelations = relations(expenseSplits, ({ one }) => ({
+  expense: one(expenses, {
+    fields: [expenseSplits.expenseId],
+    references: [expenses.id],
+  }),
+  user: one(users, {
+    fields: [expenseSplits.userId],
     references: [users.id],
   }),
 }));

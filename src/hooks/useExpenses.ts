@@ -47,7 +47,7 @@ export const useGetExpenses = (tripId: string) => {
     queryKey: ["expenses", tripId],
     queryFn: async () => {
       if (!tripId) return [];
-      const { data } = await api.get(`/expenses/${tripId}`);
+      const { data } = await api.get(`/trips/${tripId}/expenses`);
       return data.data;
     },
     enabled: !!tripId,
@@ -59,7 +59,7 @@ export const useAddExpense = () => {
 
   return useMutation({
     mutationFn: async (payload: AddExpensePayload) => {
-      const { data } = await api.post("/expenses", payload);
+      const { data } = await api.post(`/trips/${payload.tripId}/expenses`, payload);
       return data.data;
     },
     onSuccess: (_, variables) => {

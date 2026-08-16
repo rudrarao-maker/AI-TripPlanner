@@ -1,147 +1,117 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSocket } from "@/hooks/useSocket";
 import type { Collaborator } from "@/hooks/useSocket";
-import { MousePointer2 } from "lucide-react";
 
 interface CursorPosition {
   x: number;
   y: number;
 }
 
-interface RemoteCursor extends Collaborator {
-  position: CursorPosition;
-  lastUpdated: number;
+interface LiveCursorsProps {
+  collaborators: Collaborator[];
+  subscribe: (event: string, cb: (data: any) => void) => () => void;
+  emit: (event: string, data: any) => void;
+  socketId?: string;
 }
 
-export function LiveCursors({
-  tripId,
-  containerRef,
-}: {
-  tripId: string;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const { isConnected, emit, subscribe, socketId } = useSocket(tripId);
-  const [cursors, setCursors] = useState<Record<string, RemoteCursor>>({});
-  const emitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export function LiveCursors({ collaborators, subscribe, emit, socketId }: LiveCursorsProps) {
+  const [cursors, setCursors] = useState<Record<string, CursorPosition>>({});
 
   useEffect(() => {
-    if (!isConnected) return;
+    // Listen for incoming cursor movements
+    const unsubscribe = subscribe("cursor_move", (data: { socketId: string; x: number; y: number }) => {
+      if (data.socketId === socketId) return; // Don't render our own cursor
+      setCursors((prev) => ({
+        ...prev,
+        [data.socketId]: { x: data.x, y: data.y },
+      }));
+    });
 
-    // Track mouse move on the container
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-
-      // Throttle emits to save bandwidth (e.g. 50ms)
-      if (emitTimeoutRef.current) return;
-
-      emitTimeoutRef.current = setTimeout(() => {
-        emit("cursor_moved", { tripId, position: { x, y } });
-        emitTimeoutRef.current = null;
-      }, 50);
-    };
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener("mousemove", handleMouseMove);
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener("mousemove", handleMouseMove);
-      }
-      if (emitTimeoutRef.current) clearTimeout(emitTimeoutRef.current);
-    };
-  }, [isConnected, tripId, emit, containerRef]);
-
-  useEffect(() => {
-    // Listen for remote cursors
-    const unsubscribe = subscribe(
-      "cursor_moved",
-      (data: {
-        socketId: string;
-        position: CursorPosition;
-        user: Collaborator;
-      }) => {
-        // Ignore our own cursor echoes
-        if (data.socketId === socketId) return;
-
-        setCursors((prev) => ({
-          ...prev,
-          [data.socketId]: {
-            ...data.user,
-            position: data.position,
-            lastUpdated: Date.now(),
-          },
-        }));
-      },
-    );
-
-    // Cleanup stale cursors
-    const cleanupInterval = setInterval(() => {
-      const now = Date.now();
-      setCursors((prev) => {
-        const next = { ...prev };
-        let changed = false;
-        for (const [id, cursor] of Object.entries(next)) {
-          // If no movement for 5 seconds, fade them out
-          if (now - cursor.lastUpdated > 5000) {
-            delete next[id];
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
-    }, 2000);
-
-    return () => {
-      unsubscribe();
-      clearInterval(cleanupInterval);
-    };
+    return () => unsubscribe();
   }, [subscribe, socketId]);
 
+  useEffect(() => {
+    // Emit our own cursor movements
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!socketId) return;
+      
+      // Throttle slightly if needed, but for now emit directly
+      emit("cursor_move", {
+        x: e.clientX,
+        y: e.clientY,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [emit, socketId]);
+
+  // Clean up disconnected users' cursors
+  useEffect(() => {
+    const activeIds = new Set(collaborators.map((c) => c.socketId));
+    setCursors((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((id) => {
+        if (!activeIds.has(id)) {
+          delete next[id];
+        }
+      });
+      return next;
+    });
+  }, [collaborators]);
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden">
       <AnimatePresence>
-        {Object.entries(cursors).map(([id, cursor]) => {
-          if (!containerRef.current) return null;
-          const rect = containerRef.current.getBoundingClientRect();
+        {Object.entries(cursors).map(([id, pos]) => {
+          const user = collaborators.find((c) => c.socketId === id);
+          if (!user) return null;
 
           return (
             <motion.div
               key={id}
-              initial={{ opacity: 0 }}
+              className="absolute left-0 top-0 flex flex-col items-center pointer-events-none"
+              initial={{ opacity: 0, scale: 0.5 }}
               animate={{
                 opacity: 1,
-                x: cursor.position.x * rect.width,
-                y: cursor.position.y * rect.height,
+                scale: 1,
+                x: pos.x,
+                y: pos.y,
               }}
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{
                 type: "spring",
+                stiffness: 400,
                 damping: 25,
-                stiffness: 200,
                 mass: 0.5,
               }}
-              className="absolute top-0 left-0 flex items-start gap-1 drop-shadow-xl"
-              style={{ zIndex: 100 }}
             >
-              <MousePointer2
-                className="w-5 h-5 -mt-[1px] -ml-[1px]"
-                fill={cursor.color}
-                color="white"
-                strokeWidth={1.5}
-              />
-              <div
-                className="px-2 py-1 rounded-full text-xs font-semibold text-white whitespace-nowrap shadow-sm mt-4"
-                style={{ backgroundColor: cursor.color }}
+              {/* Pointer Icon SVG */}
+              <svg
+                width="24"
+                height="36"
+                viewBox="0 0 24 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="drop-shadow-lg"
+                style={{ fill: user.color }}
               >
-                {cursor.name}
+                <path
+                  d="M5.65376 2.15376C5.40117 1.83803 4.90806 1.87413 4.70823 2.22295L0.279328 9.94827C0.0384262 10.3685 0.38531 10.8715 0.874317 10.8105L4.44445 10.3644C4.69372 10.3333 4.9452 10.4571 5.07471 10.6749L7.54561 14.8291C7.81033 15.2743 8.44199 15.3537 8.81079 14.9882L13.1118 10.7259C13.4339 10.4068 13.3859 9.87858 13.0135 9.64573L9.62002 7.52554C9.3905 7.38214 9.3134 7.07823 9.44426 6.83737L11.5307 2.99728C11.7588 2.57763 11.411 2.06214 10.9238 2.10307L5.65376 2.15376Z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              {/* Name Tag */}
+              <div
+                className="mt-1 px-3 py-1 text-xs font-bold text-white rounded-full shadow-md whitespace-nowrap"
+                style={{ backgroundColor: user.color }}
+              >
+                {user.name}
               </div>
             </motion.div>
           );

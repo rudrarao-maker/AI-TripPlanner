@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useChat } from "@ai-sdk/react";
 import {
   Send,
   Bot,
@@ -50,15 +51,17 @@ export function AIChatSidebar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: `Hi! I'm your AI Travel Assistant. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?`,
-    },
-  ]);
+  const { messages, input, handleInputChange, handleSubmit: _handleSubmit, isLoading, setInput, setMessages } = useChat({
+    api: "/api/chat",
+    body: { itineraryContext: tripContext },
+    initialMessages: [
+      {
+        id: "1",
+        role: "assistant",
+        content: `Hi! I'm your AI Travel Assistant. I can help you modify your itinerary, find restaurants, optimize your budget, and more. What would you like to do?`,
+      },
+    ],
+  });
 
   const [suggestions, setSuggestions] = useState<string[]>([
     "Find vegetarian restaurants near my hotel.",
@@ -138,76 +141,7 @@ export function AIChatSidebar({
       has_context: !!tripContext?.destination 
     });
 
-    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    const assistantId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      { id: assistantId, role: "assistant", content: "" },
-    ]);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          tripContext,
-        }),
-      });
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let text = "";
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value, { stream: true });
-        
-        // Next.js AI SDK streams text in simple chunks, but sometimes formats them like: 0:"Chunk"
-        // Let's implement a very basic text parsing:
-        const lines = chunkValue.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("0:")) {
-            try {
-              text += JSON.parse(line.substring(2));
-            } catch (e) {
-              text += line.substring(2);
-            }
-          } else if (line.trim()) {
-            // Some streams just send raw text chunks
-            // We just append plain string if it's not JSON structured
-            if (!line.includes('0:"')) {
-               text += line.replace(/\\n/g, "\n").replace(/\\"/g, '"');
-            }
-          }
-        }
-
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantId ? { ...msg, content: text } : msg
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantId
-            ? { ...msg, content: "Sorry, I encountered an error. Please try again." }
-            : msg
-        )
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    _handleSubmit(e);
   };
 
   const handleSuggestion = (s: string) => {
@@ -397,15 +331,15 @@ export function AIChatSidebar({
 
               {/* Input */}
               <form
-                id="chat-form"
-                onSubmit={handleSubmit}
-                className="relative"
-              >
-                <Input
-                  ref={inputRef}
-                  placeholder="Ask me anything about your trip..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  id="chat-form"
+                  onSubmit={handleSubmit}
+                  className="flex items-end gap-2 relative"
+                >
+                  <div className="relative flex-1">
+                    <Input
+                      ref={inputRef}
+                      value={input}
+                      onChange={handleInputChange}
                   className={`pr-[5.5rem] rounded-full bg-background ${listening ? "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : ""}`}
                   disabled={isLoading}
                 />
@@ -432,6 +366,7 @@ export function AIChatSidebar({
                 >
                   <Send className="h-4 w-4" />
                 </Button>
+                </div>
               </form>
             </div>
           </motion.div>
