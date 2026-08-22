@@ -547,76 +547,7 @@ export function TripPlannerView({
                     );
                   })}
                   
-                  {/* Budget Summary Card */}
-                  {activeItinerary?.days?.length > 0 && (
-                    <div className="mt-12 bg-gradient-to-br from-card to-muted/20 rounded-3xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 max-w-xl mx-auto relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                      <h3 className="text-2xl font-extrabold mb-8 text-center flex items-center justify-center gap-3">
-                        <span className="bg-background shadow-sm p-2 rounded-xl border border-border/50">💰</span> Trip Budget Summary
-                      </h3>
-                      <div className="space-y-4 mb-4 relative z-10">
-                        {(() => {
-                          const totals = { flights: Number(activeItinerary.flightsCost) || 0, hotel: 0, food: 0, transport: 0, sightseeing: 0, shopping: 0, other: 0, total: 0 };
-                          totals.total += totals.flights;
-                          
-                          activeItinerary.days.forEach((d: any) => {
-                            d.activities?.forEach((act: any) => {
-                              const cost = Number(act.estimatedCost) || 0;
-                              totals.total += cost;
-                              if (act.category === "hotel") totals.hotel += cost;
-                              else if (act.category === "food") totals.food += cost;
-                              else if (act.category === "transport") totals.transport += cost;
-                              else if (act.category === "shopping") totals.shopping += cost;
-                              else if (act.category === "other") totals.other += cost;
-                              else totals.sightseeing += cost;
-                            });
-                          });
-                          
-                          return (
-                            <>
-                              {totals.flights > 0 && (
-                                <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                  <span className="flex items-center gap-2 font-medium"><span className="text-xl">✈️</span> Flights</span> 
-                                  <span className="font-bold text-foreground">₹{totals.flights.toLocaleString()}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                <span className="flex items-center gap-2 font-medium"><span className="text-xl">🏨</span> Hotel</span> 
-                                <span className="font-bold text-foreground">₹{totals.hotel.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                <span className="flex items-center gap-2 font-medium"><span className="text-xl">🍽️</span> Food</span> 
-                                <span className="font-bold text-foreground">₹{totals.food.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                <span className="flex items-center gap-2 font-medium"><span className="text-xl">🚕</span> Transportation</span> 
-                                <span className="font-bold text-foreground">₹{totals.transport.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                <span className="flex items-center gap-2 font-medium"><span className="text-xl">📍</span> Activities</span> 
-                                <span className="font-bold text-foreground">₹{totals.sightseeing.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                <span className="flex items-center gap-2 font-medium"><span className="text-xl">🛍️</span> Shopping</span> 
-                                <span className="font-bold text-foreground">₹{totals.shopping.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-muted-foreground bg-background/50 p-4 rounded-2xl border border-border/30">
-                                <span className="flex items-center gap-2 font-medium"><span className="text-xl">✨</span> Miscellaneous</span> 
-                                <span className="font-bold text-foreground">₹{totals.other.toLocaleString()}</span>
-                              </div>
-                              
-                              <div className="pt-6 border-t border-border mt-6 flex justify-between items-end">
-                                <div>
-                                  <div className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mb-1">Estimated Total</div>
-                                </div>
-                                <span className="font-black text-4xl text-primary drop-shadow-sm">₹{totals.total.toLocaleString()}</span>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
+
                 </div>
               </div>
             )}
