@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Camera, Image as ImageIcon, Loader2, Sparkles, MapPin, Calendar, ArrowLeft } from "lucide-react";
+import { Camera, Image as ImageIcon, Loader2, Sparkles, MapPin, Calendar, ArrowLeft, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 

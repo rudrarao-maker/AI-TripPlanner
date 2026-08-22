@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon,
@@ -71,6 +72,7 @@ export function TripPlannerView({
   setActiveItemHover,
   searchParams
 }: any) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"itinerary" | "logistics" | "packing" | "expenses">("itinerary");
   const [recTab, setRecTab] = useState<"hotels" | "restaurants" | "attractions" | "transport">("hotels");
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
@@ -143,9 +145,9 @@ export function TripPlannerView({
   // Extract map markers from the itinerary
   const mapMarkers = activeItinerary?.days?.flatMap((day: any) => 
     day.activities?.filter((act: any) => act.coordinates?.lat && act.coordinates?.lng).map((act: any) => ({
-      id: `${day.dayNumber}-${act.name}`,
+      id: `${day.dayNumber}-${act.title || act.name}`,
       position: { lat: act.coordinates.lat, lng: act.coordinates.lng },
-      title: act.name,
+      title: act.title || act.name,
       type: act.category,
       description: act.description
     })) || []
@@ -496,18 +498,20 @@ export function TripPlannerView({
                                   key={idx}
                                   className={`grid grid-cols-12 gap-4 px-8 py-5 items-start hover:bg-muted/10 transition-all group cursor-pointer ${isSelected ? 'ring-2 ring-primary/50 bg-primary/5 rounded-xl' : ''}`}
                                   onClick={() => setSelectedActivity({ ...act, _id: activityId })}
-                                >
-                                  <div className="col-span-3 font-semibold text-sm text-primary/80 mt-1">{act.time}</div>
-                                  <div className="col-span-6">
-                                    <div className="font-bold text-base text-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                                  >
+                                    <div className="col-span-3 font-semibold text-sm text-primary/80 mt-1">{act.startTime || act.time || "Flexible"}</div>
+                                    <div className="col-span-6">
+                                      <div className="font-bold text-base text-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                                       <span className="text-lg bg-background shadow-sm h-8 w-8 rounded-lg flex items-center justify-center border border-border/50">
                                         {act.category === "hotel" ? "🏨" : act.category === "food" ? "🍽️" : act.category === "transport" ? "🚕" : act.category === "shopping" ? "🛍️" : act.category === "other" ? "✨" : "📍"}
                                       </span>
-                                      {act.name}
-                                    </div>
-                                    <div className="text-sm font-medium text-muted-foreground/80 mt-2 flex items-center gap-1.5">
-                                      <MapPin className="h-3.5 w-3.5 text-primary/60" /> {act.location}
-                                    </div>
+                                        {act.title || act.name}
+                                      </div>
+                                    {(act.location || act.address) && (
+                                      <div className="text-sm font-medium text-muted-foreground/80 mt-2 flex items-center gap-1.5">
+                                        <MapPin className="h-3.5 w-3.5 text-primary/60" /> {act.location || act.address}
+                                      </div>
+                                    )}
                                     {act.description && (
                                       <div className="text-sm text-muted-foreground mt-2 leading-relaxed bg-muted/30 p-3 rounded-xl border border-border/30">{act.description}</div>
                                     )}

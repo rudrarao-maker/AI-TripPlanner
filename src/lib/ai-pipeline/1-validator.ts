@@ -20,7 +20,7 @@ export const TripInputSchema = z.object({
   dietary: z.array(z.string()).optional(),
   accessibility: z.array(z.string()).optional(),
   additionalNotes: z.string().optional(),
-  userProfileWeights: z.record(z.number()).optional(),
+  userProfileWeights: z.record(z.string(), z.number()).optional(),
 });
 
 export class TripInputValidator {
@@ -35,7 +35,7 @@ export class TripInputValidator {
     }
 
     return {
-      preferences: parsed,
+      preferences: parsed as any,
       context: {},
       discoveredPlaces: [],
       rankedPlaces: [],

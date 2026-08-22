@@ -62,7 +62,7 @@ function SortableActivity({ activity, nextTravelTime, votes, onVote }: { activit
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <h4 className="font-semibold flex items-center gap-2">
-              {activity.name}
+              {activity.title || activity.name}
               {activity.isAIUpdated && (
                 <motion.span 
                   initial={{ scale: 0 }} 
@@ -82,13 +82,15 @@ function SortableActivity({ activity, nextTravelTime, votes, onVote }: { activit
                 <span className={votes > 0 ? "text-primary font-bold" : "text-muted-foreground"}>{votes > 0 ? votes : ""}</span>
               </button>
               <span className="text-sm font-medium text-primary flex items-center gap-1">
-                <Clock className="h-3 w-3" /> {activity.time || "Flexible"}
+                <Clock className="h-3 w-3" /> {activity.startTime || activity.time || "Flexible"}
               </span>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground flex items-center gap-1">
-            <MapPin className="h-3 w-3" /> {activity.location}
-          </p>
+          {(activity.location || activity.address) && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> {activity.location || activity.address}
+            </p>
+          )}
         </div>
       </Card>
     </motion.div>

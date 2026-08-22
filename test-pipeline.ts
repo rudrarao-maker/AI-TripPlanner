@@ -54,7 +54,7 @@ async function run() {
     console.log("✅ Initial itinerary draft generated successfully!");
 
     console.log("\n6. Running Schedule Optimizer...");
-    state = ScheduleOptimizer.optimize(state);
+    state = await ScheduleOptimizer.optimize(state);
     console.log("✅ Route schedules optimized!");
 
     console.log("\n7. Running Budget Planner...");

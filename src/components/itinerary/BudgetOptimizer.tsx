@@ -9,13 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 const EXCHANGE_RATES: Record<string, number> = {
   INR: 1,
@@ -95,16 +89,17 @@ export function BudgetOptimizer({
           <div>
             <p className="text-sm text-muted-foreground flex items-center justify-between">
               Target Budget
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger className="h-6 text-xs w-20 border-none bg-primary/5 ml-2">
-                  <SelectValue placeholder="Currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(EXCHANGE_RATES).map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="h-6 text-xs w-20 border-none bg-primary/5 ml-2 rounded outline-none"
+              >
+                {Object.keys(EXCHANGE_RATES).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </p>
             <p className="text-2xl font-bold">{symbol}{convert(budget)}</p>
           </div>

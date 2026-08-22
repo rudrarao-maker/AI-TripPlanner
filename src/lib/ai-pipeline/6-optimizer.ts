@@ -147,7 +147,7 @@ export class ScheduleOptimizer {
         newActivities.push(act);
       }
       
-      day.activities = newActivities;
+      day.activities = newActivities as any;
     }
 
     if (routeImprovements > 0) {

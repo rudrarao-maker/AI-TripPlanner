@@ -7,12 +7,15 @@ import Image from "next/image";
 
 interface ActivityPreviewCardProps {
   activity: {
-    name: string;
-    location: string;
+    name?: string;
+    title?: string;
+    location?: string;
+    address?: string;
     description?: string;
     category?: string;
     estimatedCost?: number;
     time?: string;
+    startTime?: string;
     coordinates?: { lat: number; lng: number };
     rating?: number;
   };
@@ -32,13 +35,13 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
   const categoryInfo = CATEGORY_CONFIG[activity.category || "other"] || CATEGORY_CONFIG.other;
 
   // Generate Unsplash image URL based on the place name
-  const imageQuery = encodeURIComponent(`${activity.name} ${activity.location} travel`);
+  const imageQuery = encodeURIComponent(`${activity.title || activity.name || "Activity"} ${activity.location || activity.address || "Local area"} travel`);
   const imageUrl = `https://source.unsplash.com/800x600/?${imageQuery}`;
 
   // Google Maps link
   const mapsUrl = activity.coordinates
     ? `https://www.google.com/maps/@${activity.coordinates.lat},${activity.coordinates.lng},17z`
-    : `https://www.google.com/maps/search/${encodeURIComponent(activity.name + " " + activity.location)}`;
+    : `https://www.google.com/maps/search/${encodeURIComponent((activity.title || activity.name || "Activity") + " " + (activity.location || "Local area"))}`;
 
   return (
     <motion.div
@@ -53,7 +56,7 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
       <div className="relative h-48 w-full overflow-hidden bg-muted flex-shrink-0">
         <Image
           src={imageUrl}
-          alt={activity.name}
+          alt={activity.title || activity.name || "Activity image"}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 33vw"
@@ -77,10 +80,10 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
         {/* Name overlay */}
         <div className="absolute bottom-3 left-4 right-4">
           <h3 className="text-white font-bold text-lg leading-tight drop-shadow-lg">
-            {activity.name}
+            {activity.title || activity.name || "Activity"}
           </h3>
           <p className="text-white/80 text-sm flex items-center gap-1 mt-1">
-            <MapPin className="h-3 w-3" /> {activity.location}
+            <MapPin className="h-3 w-3" /> {activity.location || "Local area"}
           </p>
         </div>
       </div>
@@ -89,9 +92,9 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
       <div className="flex-1 p-4 flex flex-col gap-3">
         {/* Meta row */}
         <div className="flex items-center gap-3 flex-wrap">
-          {activity.time && (
+          {(activity.startTime || activity.time) && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
-              <Clock className="h-3.5 w-3.5" /> {activity.time}
+              <Clock className="h-3.5 w-3.5" /> {activity.startTime || activity.time}
             </span>
           )}
           {activity.estimatedCost !== undefined && activity.estimatedCost > 0 && (
@@ -139,9 +142,11 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
             className="w-full gap-1.5"
             onClick={() => {
               let url = mapsUrl;
-              if (activity.category === 'hotel') url = generateHotelBookingLink(activity.location);
-              else if (activity.category === 'food') url = generateRestaurantBookingLink(activity.name, activity.location);
-              else url = generateActivityBookingLink(activity.name, activity.location);
+              const loc = activity.location || activity.address || "Local area";
+              const nam = activity.title || activity.name || "Activity";
+              if (activity.category === 'hotel') url = generateHotelBookingLink(loc);
+              else if (activity.category === 'food') url = generateRestaurantBookingLink(nam, loc);
+              else url = generateActivityBookingLink(nam, loc);
               window.open(url, "_blank");
             }}
           >

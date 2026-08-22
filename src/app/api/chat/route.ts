@@ -36,7 +36,7 @@ Be concise, enthusiastic, and highly specific to their destination.`;
               duration: z.string().describe("The duration (e.g. '2 hours')."),
             })
           }),
-        }),
+        } as any),
         optimizeRoute: tool({
           description: "Optimize or reorder the destinations in a multi-destination trip for the best logical route. Call this when the user asks to reorder, rearrange, or optimize their multi-city route.",
           parameters: z.object({

@@ -70,6 +70,7 @@ export interface PipelineState {
 export const ActivitySchema = z.object({
   title: z.string(),
   placeId: z.string().optional(), // References our internal Place ID or external API ID
+  location: z.string().optional(),
   category: z.string(),
   startTime: z.string(),
   endTime: z.string(),

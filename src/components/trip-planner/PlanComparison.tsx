@@ -11,6 +11,7 @@ export function PlanComparison({
   setItinerary,
   setPlans,
   setStep,
+  generateWithData,
 }: any) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted pt-28 pb-20 px-4">
@@ -63,7 +64,13 @@ export function PlanComparison({
                   }`}
                   onClick={() => {
                     setSelectedPlanIndex(idx);
-                    setItinerary(plan);
+                    setPlans([]); // Unmount this screen
+                    generateWithData({
+                      ...formData,
+                      budgetTier: tier.tag.toLowerCase(),
+                      budget: tier.budget.toString(),
+                      hotel: tier.hotelPref || "4-star",
+                    });
                   }}
                 >
                   {isRecommended && (
@@ -135,12 +142,19 @@ export function PlanComparison({
                     <Button
                       variant={isRecommended ? "gradient" : "outline"}
                       className="w-full gap-2 group-hover:shadow-lg transition-shadow"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedPlanIndex(idx);
-                        setItinerary(plan);
+                        setPlans([]);
+                        generateWithData({
+                          ...formData,
+                          budgetTier: tier.tag.toLowerCase(),
+                          budget: tier.budget.toString(),
+                          hotel: tier.hotelPref || "4-star",
+                        });
                       }}
                     >
-                      View Full Itinerary <Navigation className="h-4 w-4" />
+                      Build AI Itinerary <Navigation className="h-4 w-4" />
                     </Button>
                   </CardContent>
                 </Card>

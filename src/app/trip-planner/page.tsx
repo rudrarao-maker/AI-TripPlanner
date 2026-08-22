@@ -118,7 +118,8 @@ function TripPlannerContent() {
     setItinerary,
     optimisticItinerary,
     updateOptimisticItinerary,
-    generateWithData
+    generateWithData,
+    generateBudgetPlans
   } = useTripPlanner();
 
   // Real-time socket
@@ -244,8 +245,8 @@ function TripPlannerContent() {
   const destCoords = getCoordinates(formData.destinations[0] || "Bali");
 
   const handleGenerate = async () => {
-    setIsGenerating(true);
-    await generateWithData(formData);
+    // setIsGenerating(true); // Don't set this yet!
+    generateBudgetPlans(formData);
   };
 
   const updateForm = (field: string, value: any) => {
@@ -354,6 +355,7 @@ function TripPlannerContent() {
         setItinerary={setItinerary}
         setPlans={setPlans}
         setStep={setStep}
+        generateWithData={generateWithData}
       />
     );
   }

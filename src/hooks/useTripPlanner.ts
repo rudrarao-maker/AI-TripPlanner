@@ -1,6 +1,7 @@
 import { useOptimistic, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import posthog from "posthog-js";
+import { findDestinationInfo, formatBudgetRange } from "@/lib/destinationData";
 
 export type PipelineStep = {
   id: string;
@@ -34,6 +35,59 @@ export const useTripPlanner = () => {
       ...newItinerary,
     })
   );
+
+  const generateBudgetPlans = (dataToUse: any) => {
+    // 1. Calculate trip days
+    let tripDays = 7;
+    if (dataToUse.days && parseInt(dataToUse.days) > 0) {
+      tripDays = parseInt(dataToUse.days);
+    } else if (dataToUse.dates && dataToUse.dates.includes("to")) {
+      const parts = dataToUse.dates.split("to");
+      const startD = new Date(parts[0].trim());
+      const endD = new Date(parts[1].trim());
+      if (!isNaN(startD.getTime()) && !isNaN(endD.getTime())) {
+        tripDays = Math.max(1, Math.ceil((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      }
+    }
+
+    // 2. Lookup destination
+    const destination = dataToUse.tripMode === "multi" && dataToUse.destinationEntries?.length > 0
+      ? dataToUse.destinationEntries[0].name
+      : dataToUse.destinations[0] || "Bali";
+    
+    const info = findDestinationInfo(destination);
+    
+    // 3. Get generic ranges
+    const budgetRange = info ? formatBudgetRange(info, tripDays) : {
+      budgetTotal: 20000,
+      moderateTotal: 50000,
+      luxuryTotal: 120000,
+    };
+
+    const mockDays = Array.from({ length: tripDays }).map((_, i) => ({
+      dayNumber: i + 1,
+      date: `Day ${i + 1}`,
+      activities: []
+    }));
+
+    // 4. Create 3 skeleton plans
+    const cheapPlan = {
+      _tier: { label: "Budget Plan", tag: "CHEAP", budget: budgetRange.budgetTotal, hotelPref: "budget", name: "Budget Stay" },
+      days: mockDays.map(d => ({ ...d, activities: [{ category: 'hotel', estimatedCost: Math.floor(budgetRange.budgetTotal * 0.4 / tripDays), name: 'Budget Hotel / Hostel' }, { category: 'sightseeing', estimatedCost: Math.floor(budgetRange.budgetTotal * 0.6 / tripDays), name: 'Local Attractions' }] }))
+    };
+    
+    const moderatePlan = {
+      _tier: { label: "Standard Plan", tag: "MODERATE", budget: budgetRange.moderateTotal, hotelPref: "4-star", name: "4-Star Hotel" },
+      days: mockDays.map(d => ({ ...d, activities: [{ category: 'hotel', estimatedCost: Math.floor(budgetRange.moderateTotal * 0.4 / tripDays), name: 'Premium 4-Star Hotel' }, { category: 'sightseeing', estimatedCost: Math.floor(budgetRange.moderateTotal * 0.6 / tripDays), name: 'Guided Tours & Dining' }] }))
+    };
+    
+    const luxuryPlan = {
+      _tier: { label: "Luxury Plan", tag: "PREMIUM", budget: budgetRange.luxuryTotal, hotelPref: "luxury", name: "5-Star Resort" },
+      days: mockDays.map(d => ({ ...d, activities: [{ category: 'hotel', estimatedCost: Math.floor(budgetRange.luxuryTotal * 0.5 / tripDays), name: '5-Star Luxury Resort' }, { category: 'sightseeing', estimatedCost: Math.floor(budgetRange.luxuryTotal * 0.5 / tripDays), name: 'Private Tours & Fine Dining' }] }))
+    };
+
+    setPlans([cheapPlan, moderatePlan, luxuryPlan]);
+  };
 
   const generateWithData = async (dataToUse: any) => {
     setIsGenerating(true);
@@ -156,10 +210,10 @@ export const useTripPlanner = () => {
                       preferences: {
                         origin: tripData.origin,
                         destination: tripData.destination,
-                        travelStyle: tripData.travelStyle,
-                        transportPreference: tripData.transportPreference,
-                        hotelCategory: tripData.hotelCategory,
-                        foodPreference: tripData.foodPreference
+                        travelStyle: (tripData as any).travelStyle || "Balanced",
+                        transportPreference: (tripData as any).transportPreference || "Mixed",
+                        hotelCategory: (tripData as any).hotelCategory || "3-star",
+                        foodPreference: (tripData as any).foodPreference || "Any"
                       }
                     };
 
@@ -222,6 +276,7 @@ export const useTripPlanner = () => {
     optimisticItinerary,
     updateOptimisticItinerary,
     generateWithData,
+    generateBudgetPlans,
     activeTripId
   };
 };
