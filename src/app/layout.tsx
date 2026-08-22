@@ -11,12 +11,14 @@ import { auth } from '@clerk/nextjs/server'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Trip Planner - AI Travel Companion",
   description: "Plan your perfect trip with AI",
+  manifest: '/manifest.json',
 };
 
 export default async function RootLayout({

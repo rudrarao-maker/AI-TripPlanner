@@ -8,6 +8,20 @@
       "when": 1786866814079,
       "tag": "0000_adorable_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786954423611,
+      "tag": "0001_wooden_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786955553818,
+      "tag": "0002_flowery_cloak",
+      "breakpoints": true
     }
   ]
 }

@@ -28,6 +28,13 @@ An intelligent, full-stack travel companion application designed to take the has
 ## ✨ Features & Functionalities
 
 - **AI-Powered Itinerary Generation:** Instantly create day-by-day travel plans based on preferences, budget, and travel style.
+- **Multi-Destination Routing:** Seamlessly plan complex, multi-city trips with optimized travel routes and inter-city transport suggestions.
+- **Progressive Web App (PWA):** Install the app on your mobile or desktop device and enjoy offline access to your itineraries.
+- **Real-Time Collaboration:** Plan trips with friends and family using live, Google Docs-style cursors and synchronized updates via WebSockets.
+- **Live Price Comparison & Booking:** Direct integration with booking platforms to compare live hotel, flight, and activity prices in real-time.
+- **Multi-Currency Smart Budgeting:** Instantly toggle between global currencies with live exchange rates and receive AI-generated local financial tips.
+- **Inclusive Travel Planning:** Customize your trips based on dietary requirements, accessibility needs (e.g., wheelchair access), and preferred pacing.
+- **AI Photo Journal & Scrapbook:** Automatically compile your trip memories into a stunning, shareable photo journal.
 - **Interactive Dashboards:** Dedicated experiences for both Users and Administrators.
 - **Comprehensive Expense Tracking:** Log and monitor trip expenses by category.
 - **Real-Time Interactive Maps:** Visualize your journey and activities on a dynamic map.

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { useEffect, useRef, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Coordinates } from "@/types";
@@ -28,6 +28,7 @@ interface LeafletMapProps {
   markers?: LocationMarker[];
   className?: string;
   activeMarkerId?: string;
+  showUserLocation?: boolean;
 }
 
 // Component to handle map updates when props change
@@ -52,8 +53,52 @@ export default function LeafletMap({
   markers = [],
   className = "",
   activeMarkerId,
+  showUserLocation = false,
 }: LeafletMapProps) {
   const positions = markers.map((m) => [m.position.lat, m.position.lng] as [number, number]);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (showUserLocation && "geolocation" in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => setUserLoc([pos.coords.latitude, pos.coords.longitude]),
+        (err) => console.error("Geolocation error:", err),
+        { enableHighAccuracy: true }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [showUserLocation]);
+
+  useEffect(() => {
+    if (positions.length < 2) {
+      setRouteCoordinates(positions);
+      return;
+    }
+
+    const fetchRoute = async () => {
+      try {
+        // OSRM expects coordinates in lng,lat format separated by semicolons
+        const coordinatesString = positions.map(p => `${p[1]},${p[0]}`).join(";");
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson`);
+        if (!res.ok) throw new Error("Failed to fetch route");
+        const data = await res.json();
+        
+        if (data.routes && data.routes[0]) {
+          // OSRM returns GeoJSON coordinates as [lng, lat], Leaflet expects [lat, lng]
+          const coords = data.routes[0].geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]] as [number, number]);
+          setRouteCoordinates(coords);
+        } else {
+          setRouteCoordinates(positions);
+        }
+      } catch (e) {
+        console.error("OSRM Routing error falling back to straight lines:", e);
+        setRouteCoordinates(positions);
+      }
+    };
+
+    fetchRoute();
+  }, [JSON.stringify(positions)]);
 
   return (
     <div className={`w-full h-full rounded-2xl overflow-hidden ${className}`}>
@@ -67,8 +112,8 @@ export default function LeafletMap({
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         
-        {positions.length > 1 && (
-          <Polyline positions={positions} color="#6366f1" weight={4} opacity={0.7} dashArray="10, 10" />
+        {routeCoordinates.length > 1 && (
+          <Polyline positions={routeCoordinates} color="#6366f1" weight={5} opacity={0.8} />
         )}
 
         {markers.map((marker) => (
@@ -88,6 +133,16 @@ export default function LeafletMap({
             </Popup>
           </Marker>
         ))}
+
+        {userLoc && (
+          <CircleMarker 
+            center={userLoc} 
+            radius={8} 
+            pathOptions={{ color: 'white', fillColor: '#3b82f6', fillOpacity: 1, weight: 2 }}
+          >
+            <Popup>You are here</Popup>
+          </CircleMarker>
+        )}
 
         <MapUpdater activeMarkerId={activeMarkerId} markers={markers} />
       </MapContainer>

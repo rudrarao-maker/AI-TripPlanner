@@ -1,44 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, Sparkles, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { PipelineStep } from "@/hooks/useTripPlanner";
 
-const LOADING_STEPS = [
-  "Understanding preferences",
-  "Searching destinations",
-  "Finding hotels",
-  "Checking weather",
-  "Finding transport",
-  "Calculating budget",
-  "Optimizing itinerary",
-  "Generating recommendations",
-  "Finalizing itinerary"
-];
-
-export function AILoadingScreen({ formData }: { formData: any }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    // Total generation usually takes 10-15 seconds.
-    // We have 9 steps, so advance one step roughly every 1.5 seconds.
-    const stepInterval = setInterval(() => {
-      setCurrentStep((prev) => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
-    }, 1500);
-
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 98) return 98; // Cap at 98 until actually finished
-        return prev + 1;
-      });
-    }, 150);
-
-    return () => {
-      clearInterval(stepInterval);
-      clearInterval(progressInterval);
-    };
-  }, []);
+export function AILoadingScreen({ formData, pipelineSteps }: { formData: any, pipelineSteps?: PipelineStep[] }) {
+  
+  // Calculate progress based on steps
+  const totalSteps = pipelineSteps?.length || 1;
+  const completedSteps = pipelineSteps?.filter(s => s.status === "done").length || 0;
+  const progress = Math.min(98, Math.floor((completedSteps / totalSteps) * 100));
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
@@ -59,32 +30,40 @@ export function AILoadingScreen({ formData }: { formData: any }) {
               AI is crafting your perfect trip
             </h2>
             <p className="text-sm text-muted-foreground">
-              Processing data for {formData?.destinations[0] || "your destination"}...
+              Processing data for {formData?.destinations?.[0] || "your destination"}...
             </p>
           </div>
 
           <div className="space-y-4 mb-8">
-            {LOADING_STEPS.slice(0, currentStep + 2).map((step, index) => {
-              const isCompleted = index < currentStep;
-              const isCurrent = index === currentStep;
+            {pipelineSteps?.map((step, index) => {
+              const isCompleted = step.status === "done";
+              const isCurrent = step.status === "running";
+              const isError = step.status === "error";
 
               return (
                 <motion.div
-                  key={step}
+                  key={step.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   className={`flex items-center gap-3 ${
-                    isCompleted ? "text-primary" : isCurrent ? "text-foreground font-medium" : "text-muted-foreground/50"
+                    isCompleted ? "text-primary" : isCurrent ? "text-foreground font-medium" : isError ? "text-red-500" : "text-muted-foreground/50"
                   }`}
                 >
                   {isCompleted ? (
                     <CheckCircle2 className="h-5 w-5" />
                   ) : isCurrent ? (
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  ) : isError ? (
+                    <XCircle className="h-5 w-5" />
                   ) : (
                     <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
                   )}
-                  <span className="text-sm">{step}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm">{step.label}</span>
+                    {step.message && isCurrent && (
+                      <span className="text-xs text-muted-foreground mt-0.5">{step.message}</span>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
@@ -95,11 +74,11 @@ export function AILoadingScreen({ formData }: { formData: any }) {
               className="bg-primary h-full rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ ease: "linear", duration: 0.2 }}
+              transition={{ ease: "easeOut", duration: 0.5 }}
             />
           </div>
           <div className="text-right text-xs text-muted-foreground font-medium">
-            {Math.floor(progress)}% Complete
+            {progress}% Complete
           </div>
         </Card>
       </div>

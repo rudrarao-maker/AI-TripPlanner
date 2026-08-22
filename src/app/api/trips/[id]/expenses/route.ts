@@ -6,10 +6,11 @@ import { eq, and, desc } from "drizzle-orm";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
+    const params = await props.params;
     if (!userId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const tripExpenses = await db.query.expenses.findMany({
@@ -34,10 +35,11 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  props: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId: currentUserId } = auth();
+    const { userId: currentUserId } = await auth();
+    const params = await props.params;
     if (!currentUserId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     // Validate the trip exists and user has access (simplified for now)

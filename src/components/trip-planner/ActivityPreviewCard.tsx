@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import { MapPin, ArrowLeft, ExternalLink, Star, Clock, IndianRupee, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateHotelBookingLink, generateRestaurantBookingLink, generateActivityBookingLink } from "@/lib/booking-providers";
+import Image from "next/image";
 
 interface ActivityPreviewCardProps {
   activity: {
@@ -49,13 +51,12 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
     >
       {/* Image Section */}
       <div className="relative h-48 w-full overflow-hidden bg-muted flex-shrink-0">
-        <img
+        <Image
           src={imageUrl}
           alt={activity.name}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=800&auto=format&fit=crop`;
-          }}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 33vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
@@ -113,22 +114,38 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
         )}
 
         {/* Action buttons */}
-        <div className="mt-auto flex items-center gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-1.5"
-            onClick={onClose}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to Map
-          </Button>
+        <div className="mt-auto flex flex-col gap-2 pt-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5"
+              onClick={onClose}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Back
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5"
+              onClick={() => window.open(mapsUrl, "_blank")}
+            >
+              <MapPin className="h-3.5 w-3.5" /> Map
+            </Button>
+          </div>
           <Button
             variant="gradient"
             size="sm"
-            className="flex-1 gap-1.5"
-            onClick={() => window.open(mapsUrl, "_blank")}
+            className="w-full gap-1.5"
+            onClick={() => {
+              let url = mapsUrl;
+              if (activity.category === 'hotel') url = generateHotelBookingLink(activity.location);
+              else if (activity.category === 'food') url = generateRestaurantBookingLink(activity.name, activity.location);
+              else url = generateActivityBookingLink(activity.name, activity.location);
+              window.open(url, "_blank");
+            }}
           >
-            <ExternalLink className="h-3.5 w-3.5" /> Get Directions
+            <ExternalLink className="h-3.5 w-3.5" /> {activity.category === 'hotel' ? 'Book Hotel' : activity.category === 'food' ? 'Book Table' : 'Book Tickets'}
           </Button>
         </div>
       </div>

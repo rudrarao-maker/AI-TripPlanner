@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     const result = await streamText({
-      model: google("gemini-3.1-pro-preview"),
+      model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash"),
       prompt: validation.data.prompt,
     });
 

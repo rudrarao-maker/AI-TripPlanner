@@ -16,6 +16,7 @@ export const users = pgTable("User", {
   stripeSubscriptionId: text("stripeSubscriptionId"),
   subscriptionStatus: text("subscriptionStatus").default("inactive"), // inactive, active, past_due, canceled
   planType: text("planType").default("free"), // free, pro, premium
+  preferencesProfile: jsonb("preferencesProfile"), // e.g. { "museums": -2, "food": +5 }
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -35,9 +36,13 @@ export const trips = pgTable("Trip", {
   transportPreference: text("transportPreference").notNull(),
   hotelCategory: text("hotelCategory").notNull(),
   foodPreference: text("foodPreference").notNull(),
+  pace: text("pace").default("balanced"),
+  interests: text("interests").array(),
+  dietary: text("dietary").array(),
   status: text("status").default("planned"),
   coverImage: text("coverImage"),
   isPublic: boolean("isPublic").default(false),
+  isMultiDestination: boolean("isMultiDestination").default(false),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -45,13 +50,36 @@ export const trips = pgTable("Trip", {
   isPublicIdx: index("isPublic_idx").on(table.isPublic),
 }));
 
+export const tripDestinations = pgTable("TripDestination", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  country: text("country"),
+  state: text("state"),
+  order: integer("order").notNull(),
+  numberOfDays: integer("numberOfDays").notNull(),
+  startDate: timestamp("startDate", { withTimezone: true }),
+  endDate: timestamp("endDate", { withTimezone: true }),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
+  customPreferences: jsonb("customPreferences"),
+  transportToNext: jsonb("transportToNext"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  tripIdIdx: index("tripDest_tripId_idx").on(table.tripId),
+  orderIdx: index("tripDest_order_idx").on(table.tripId, table.order),
+}));
+
 export const tripDays = pgTable("TripDay", {
   id: uuid("id").primaryKey().defaultRandom(),
   tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }).notNull(),
+  tripDestinationId: uuid("tripDestinationId").references(() => tripDestinations.id, { onDelete: "set null" }),
   dayNumber: integer("dayNumber").notNull(),
   date: timestamp("date", { withTimezone: true }).notNull(),
 }, (table) => ({
   tripIdIdx: index("tripId_idx").on(table.tripId),
+  tripDestIdIdx: index("tripDay_destId_idx").on(table.tripDestinationId),
 }));
 
 export const activities = pgTable("Activity", {
@@ -65,6 +93,13 @@ export const activities = pgTable("Activity", {
   estimatedCost: numeric("estimatedCost", { precision: 10, scale: 2 }).default('0'),
   currency: text("currency").default("INR"),
   category: text("category").notNull(),
+  placeId: uuid("placeId"),
+  startTime: text("startTime"),
+  endTime: text("endTime"),
+  travelTimeMinutes: integer("travelTimeMinutes"),
+  transportation: text("transportation"),
+  priority: text("priority").default("recommended"),
+  bookingRequired: boolean("bookingRequired").default(false),
   imageUrl: text("imageUrl"),
   travelTime: text("travelTime"),
   lockStatus: text("lockStatus").default("unlocked"),
@@ -279,6 +314,7 @@ export const tripsRelations = relations(trips, ({ one, many }) => ({
     references: [users.id],
   }),
   tripDays: many(tripDays),
+  tripDestinations: many(tripDestinations),
   collaborators: many(tripCollaborators),
   expenses: many(expenses),
   savedPlaces: many(savedPlaces),
@@ -287,10 +323,22 @@ export const tripsRelations = relations(trips, ({ one, many }) => ({
   reviews: many(reviews),
 }));
 
+export const tripDestinationsRelations = relations(tripDestinations, ({ one, many }) => ({
+  trip: one(trips, {
+    fields: [tripDestinations.tripId],
+    references: [trips.id],
+  }),
+  tripDays: many(tripDays),
+}));
+
 export const tripDaysRelations = relations(tripDays, ({ one, many }) => ({
   trip: one(trips, {
     fields: [tripDays.tripId],
     references: [trips.id],
+  }),
+  tripDestination: one(tripDestinations, {
+    fields: [tripDays.tripDestinationId],
+    references: [tripDestinations.id],
   }),
   activities: many(activities),
 }));
@@ -299,6 +347,10 @@ export const activitiesRelations = relations(activities, ({ one, many }) => ({
   tripDay: one(tripDays, {
     fields: [activities.tripDayId],
     references: [tripDays.id],
+  }),
+  place: one(places, {
+    fields: [activities.placeId],
+    references: [places.id],
   }),
   comments: many(comments),
 }));
@@ -426,3 +478,60 @@ export const knowledgeBase = pgTable("KnowledgeBase", {
   metadata: jsonb("metadata"), // e.g. { source: "guide", location: "Paris" }
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const places = pgTable("Place", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  destination: text("destination").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
+  address: text("address"),
+  openingHours: jsonb("openingHours"),
+  estimatedVisitDuration: integer("estimatedVisitDuration"), // minutes
+  estimatedCost: numeric("estimatedCost", { precision: 10, scale: 2 }),
+  rating: numeric("rating", { precision: 2, scale: 1 }),
+  imageUrl: text("imageUrl"),
+  source: text("source"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const aiExecutions = pgTable("AIExecution", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }),
+  model: text("model"),
+  promptVersion: text("promptVersion"),
+  inputTokens: integer("inputTokens"),
+  outputTokens: integer("outputTokens"),
+  executionTime: integer("executionTime"), // ms
+  status: text("status").default("success"),
+  error: text("error"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const tripRevisions = pgTable("TripRevision", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }).notNull(),
+  version: integer("version").notNull(),
+  itineraryData: jsonb("itineraryData").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const placesRelations = relations(places, ({ many }) => ({
+  activities: many(activities),
+}));
+
+export const aiExecutionsRelations = relations(aiExecutions, ({ one }) => ({
+  trip: one(trips, {
+    fields: [aiExecutions.tripId],
+    references: [trips.id],
+  }),
+}));
+
+export const tripRevisionsRelations = relations(tripRevisions, ({ one }) => ({
+  trip: one(trips, {
+    fields: [tripRevisions.tripId],
+    references: [trips.id],
+  }),
+}));

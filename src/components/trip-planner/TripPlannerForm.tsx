@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Plane, Hotel, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { findDestinationInfo, formatBudgetRange, areCitiesInSameState, type DestinationInfo } from "@/lib/destinationData";
+import { DestinationBuilder } from "./DestinationBuilder";
 
 export function TripPlannerForm({
   step,
@@ -109,27 +110,58 @@ export function TripPlannerForm({
           >
             <h2 className="text-3xl font-bold mb-6 text-center">Trip Details</h2>
             <div className="space-y-6 max-w-xl mx-auto">
-              {/* Destination */}
-              <div className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
-                  <Input
-                    className="pl-14 py-6 text-lg rounded-xl glass shadow-sm border-primary/20"
-                    placeholder="Where to? (Destination)"
-                    value={formData.destinations[0]}
-                    onChange={(e) => {
-                      const newDests = [...formData.destinations];
-                      newDests[0] = e.target.value;
-                      updateForm("destinations", newDests);
-                    }}
-                    autoFocus
-                  />
-                </div>
+              {/* Trip Mode Selector */}
+              <div className="flex bg-accent/30 p-1 rounded-xl mb-4 border border-border/50">
+                <button
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
+                    formData.tripMode === "single" 
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => updateForm("tripMode", "single")}
+                >
+                  Single Destination
+                </button>
+                <button
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
+                    formData.tripMode === "multi" 
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => updateForm("tripMode", "multi")}
+                >
+                  Multiple Destinations
+                </button>
               </div>
+
+              {/* Destination Input / Builder */}
+              {formData.tripMode === "multi" ? (
+                <DestinationBuilder 
+                  entries={formData.destinationEntries}
+                  onChange={(newEntries) => updateForm("destinationEntries", newEntries)}
+                />
+              ) : (
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6" />
+                    <Input
+                      className="pl-14 py-6 text-lg rounded-xl glass shadow-sm border-primary/20"
+                      placeholder="Where to? (Destination)"
+                      value={formData.destinations[0]}
+                      onChange={(e) => {
+                        const newDests = [...formData.destinations];
+                        newDests[0] = e.target.value;
+                        updateForm("destinations", newDests);
+                      }}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Budget Suggestion Pill */}
               <AnimatePresence mode="wait">
-                {destinationInfo && budgetRange && (
+                {formData.tripMode === "single" && destinationInfo && budgetRange && (
                   <motion.div
                     key={destinationInfo.name}
                     initial={{ opacity: 0, y: -10, height: 0 }}
@@ -168,7 +200,7 @@ export function TripPlannerForm({
 
               {/* Passport / Visa Advisory — only for international trips */}
               <AnimatePresence mode="wait">
-                {destinationInfo?.isInternational && (
+                {formData.tripMode === "single" && destinationInfo?.isInternational && (
                   <motion.div
                     key={`passport-${destinationInfo.name}`}
                     initial={{ opacity: 0, y: -10, height: 0 }}
@@ -292,7 +324,7 @@ export function TripPlannerForm({
 
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className={`space-y-2 ${formData.tripMode === "multi" ? "col-span-2" : ""}`}>
                   <label className="text-sm font-medium text-muted-foreground">Start Date</label>
                   <div className="relative">
                     <CalendarIcon className="absolute left-3 top-4 text-muted-foreground h-4 w-4 pointer-events-none" />
@@ -307,34 +339,47 @@ export function TripPlannerForm({
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">End Date</label>
-                  <div className="relative">
-                    <CalendarIcon className="absolute left-3 top-4 text-muted-foreground h-4 w-4 pointer-events-none" />
-                    <Input
-                      type="date"
-                      className="pl-9 py-6 text-sm rounded-xl glass border-primary/20"
-                      value={formData.dates.split("to")[1]?.trim() || ""}
-                      onChange={(e) => {
-                        const startDate = formData.dates.split("to")[0]?.trim() || "";
-                        updateForm("dates", `${startDate} to ${e.target.value}`);
-                      }}
-                    />
+                {formData.tripMode === "single" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">End Date</label>
+                    <div className="relative">
+                      <CalendarIcon className="absolute left-3 top-4 text-muted-foreground h-4 w-4 pointer-events-none" />
+                      <Input
+                        type="date"
+                        className="pl-9 py-6 text-sm rounded-xl glass border-primary/20"
+                        value={formData.dates.split("to")[1]?.trim() || ""}
+                        onChange={(e) => {
+                          const startDate = formData.dates.split("to")[0]?.trim() || "";
+                          updateForm("dates", `${startDate} to ${e.target.value}`);
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Number of Days</label>
-                  <Input 
-                    type="number" 
-                    className="py-6 text-sm rounded-xl glass border-primary/20" 
-                    placeholder="e.g. 7" 
-                    value={formData.days}
-                    onChange={(e) => updateForm("days", e.target.value)}
-                  />
-                </div>
+                {formData.tripMode === "single" ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Number of Days</label>
+                    <Input 
+                      type="number" 
+                      className="py-6 text-sm rounded-xl glass border-primary/20" 
+                      placeholder="e.g. 7" 
+                      value={formData.days}
+                      onChange={(e) => updateForm("days", e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Total Destinations</label>
+                    <Input 
+                      disabled 
+                      className="py-6 text-sm rounded-xl glass border-primary/20 bg-muted/50" 
+                      value={formData.destinationEntries.length}
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Users className="h-4 w-4" /> Total Travelers
@@ -451,6 +496,25 @@ export function TripPlannerForm({
             </div>
 
             <div className="mt-12 space-y-8">
+              {/* Pace Preference */}
+              <div>
+                <h3 className="text-xl font-bold mb-4 text-center">Trip Pace</h3>
+                <div className="flex justify-center gap-3 max-w-md mx-auto bg-primary/5 p-1 rounded-2xl border border-primary/20">
+                  {["Relaxed", "Balanced", "Fast-Paced"].map((pace) => (
+                    <button
+                      key={pace}
+                      onClick={() => updateForm("pace", pace)}
+                      className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
+                        formData.pace === pace
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {pace}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {/* Dietary Preferences */}
               <div>
                 <h3 className="text-xl font-bold mb-4 text-center">Dietary Requirements</h3>

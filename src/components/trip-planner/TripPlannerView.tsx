@@ -22,7 +22,8 @@ import {
   Globe,
   Wand2,
   Info,
-  Lock
+  Lock,
+  Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -75,6 +76,7 @@ export function TripPlannerView({
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [isPublic, setIsPublic] = useState(activeItinerary.isPublic || false);
   const [isTogglingPublic, setIsTogglingPublic] = useState(false);
+  const [isCompanionMode, setIsCompanionMode] = useState(false);
   const regenerateDayMutation = useRegenerateDay();
 
   const handleRegenerateDay = async (dayNumber: number) => {
@@ -265,6 +267,24 @@ export function TripPlannerView({
                 </button>
               </div>
               <div className="flex items-center gap-2">
+                {itinerary?.id && !itinerary.id.startsWith("temp-") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/trips/${itinerary.id}/journal`)}
+                    className="hidden sm:flex border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400"
+                  >
+                    <Camera className="h-4 w-4 mr-2" /> Photo Journal
+                  </Button>
+                )}
+                <Button 
+                  variant={isCompanionMode ? "default" : "outline"} 
+                  className={`hidden sm:flex ${isCompanionMode ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  onClick={() => setIsCompanionMode(!isCompanionMode)}
+                >
+                  <MapPin className="h-4 w-4 mr-2" /> 
+                  {isCompanionMode ? "Companion ON" : "Live Companion"}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -758,11 +778,30 @@ export function TripPlannerView({
                           center={mapMarkers.length > 0 ? mapMarkers[0].position : destCoords}
                           markers={mapMarkers}
                           activeMarkerId={selectedActivity?._id}
+                          showUserLocation={isCompanionMode}
                         />
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
+                {isCompanionMode && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 shadow-sm"
+                  >
+                    <h3 className="font-bold text-sm text-green-800 dark:text-green-300 flex items-center mb-1">
+                      <span className="relative flex h-2 w-2 mr-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      Live Tracking Active
+                    </h3>
+                    <p className="text-xs text-green-700 dark:text-green-400">
+                      Your location is now being tracked on the map to help you navigate your itinerary.
+                    </p>
+                  </motion.div>
+                )}
               </div>
 
               {/* Budget Optimizer & Travel Tools */}
@@ -773,6 +812,7 @@ export function TripPlannerView({
                   120000
                 }
                 itineraryDays={activeItinerary?.days || []}
+                tripSummary={activeItinerary?.tripSummary}
               />
 
               <TravelTools

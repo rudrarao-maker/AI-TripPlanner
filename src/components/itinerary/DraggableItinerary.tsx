@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "@/hooks/useSocket";
 import { optimizeRoute } from "@/lib/routeOptimizer";
 import {
@@ -21,10 +22,10 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, Clock, MapPin, Wand2, Car } from "lucide-react";
+import { GripVertical, Clock, MapPin, Wand2, Car, ThumbsUp } from "lucide-react";
 
 // Placeholder for Sortable Activity Item
-function SortableActivity({ activity, nextTravelTime }: { activity: any; nextTravelTime?: number }) {
+function SortableActivity({ activity, nextTravelTime, votes, onVote }: { activity: any; nextTravelTime?: number; votes: number; onVote: (id: string) => void }) {
   const {
     attributes,
     listeners,
@@ -39,28 +40,58 @@ function SortableActivity({ activity, nextTravelTime }: { activity: any; nextTra
   };
 
   return (
-    <div>
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className="p-4 mb-3 flex items-center gap-4 bg-background border-primary/10 shadow-sm"
+    <div ref={setNodeRef} style={{ ...style, zIndex: 1, position: 'relative' }}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        boxShadow: activity.isAIUpdated ? "0 0 0 2px rgba(var(--primary), 0.5)" : "none",
+        backgroundColor: activity.isAIUpdated ? "rgba(var(--primary), 0.05)" : undefined 
+      }}
+      transition={{ duration: 0.4, type: "spring", bounce: 0.2 }}
     >
-      <div {...attributes} {...listeners} className="cursor-grab hover:text-primary transition-colors">
-        <GripVertical className="h-5 w-5 text-muted-foreground" />
-      </div>
-      
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <h4 className="font-semibold">{activity.name}</h4>
-          <span className="text-sm font-medium text-primary flex items-center gap-1">
-            <Clock className="h-3 w-3" /> {activity.time || "Flexible"}
-          </span>
+      <Card
+        className="p-4 mb-3 flex items-center gap-4 bg-background border-primary/10 shadow-sm transition-all hover:shadow-md"
+      >
+        <div {...attributes} {...listeners} className="cursor-grab hover:text-primary transition-colors">
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
-        <p className="text-sm text-muted-foreground flex items-center gap-1">
-          <MapPin className="h-3 w-3" /> {activity.location}
-        </p>
-      </div>
-    </Card>
+        
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <h4 className="font-semibold flex items-center gap-2">
+              {activity.name}
+              {activity.isAIUpdated && (
+                <motion.span 
+                  initial={{ scale: 0 }} 
+                  animate={{ scale: 1 }} 
+                  className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full"
+                >
+                  ✨ Updated
+                </motion.span>
+              )}
+            </h4>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={(e) => { e.stopPropagation(); onVote(activity.id); }} 
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-accent/50 transition-colors"
+              >
+                <ThumbsUp className={`h-3 w-3 ${votes > 0 ? "text-primary" : "text-muted-foreground"}`} />
+                <span className={votes > 0 ? "text-primary font-bold" : "text-muted-foreground"}>{votes > 0 ? votes : ""}</span>
+              </button>
+              <span className="text-sm font-medium text-primary flex items-center gap-1">
+                <Clock className="h-3 w-3" /> {activity.time || "Flexible"}
+              </span>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <MapPin className="h-3 w-3" /> {activity.location}
+          </p>
+        </div>
+      </Card>
+    </motion.div>
     {nextTravelTime !== undefined && nextTravelTime > 0 && (
       <div className="flex justify-center -my-3 z-10 relative">
         <div className="bg-background px-2 py-0.5 rounded-full text-[10px] text-muted-foreground flex items-center gap-1 border border-border shadow-sm">
@@ -76,6 +107,7 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
   const [activities, setActivities] = useState(initialActivities || []);
   const [travelTimes, setTravelTimes] = useState<number[]>([]);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [activityVotes, setActivityVotes] = useState<Record<string, number>>({});
   const { emit, subscribe, collaborators, socketId } = useSocket(tripId);
   const [activeEditor, setActiveEditor] = useState<string | null>(null);
 
@@ -88,12 +120,40 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
     const unsubDrag = subscribe("activity_dragging", ({ user }: { user: string }) => {
       setActiveEditor(user);
     });
+    
+    const unsubVote = subscribe("activity_voted", ({ activityId, newVotes }: { activityId: string, newVotes: number }) => {
+      setActivityVotes(prev => ({ ...prev, [activityId]: newVotes }));
+    });
 
     return () => {
       unsubscribe();
       unsubDrag();
+      unsubVote();
     };
   }, [subscribe]);
+
+  const handleVote = async (activityId: string) => {
+    setActivityVotes(prev => {
+      const current = prev[activityId] || 0;
+      const newVotes = current + 1;
+      emit("activity_voted", { activityId, newVotes });
+      return { ...prev, [activityId]: newVotes };
+    });
+    
+    // Also log this in the user's preference profile to learn their tastes over time
+    try {
+      const activity = activities.find(a => a.id === activityId);
+      if (activity?.category) {
+        await fetch('/api/user/preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: activity.category, action: 'upvote' })
+        });
+      }
+    } catch (e) {
+      console.error("Failed to update user preference profile", e);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -178,14 +238,18 @@ export function DraggableItinerary({ initialActivities, tripId }: { initialActiv
           items={activities.map(a => a.id)}
           strategy={verticalListSortingStrategy}
         >
-        <div className="space-y-1">
-          {activities.map((activity, index) => (
-            <SortableActivity 
-              key={activity.id} 
-              activity={activity} 
-              nextTravelTime={travelTimes[index]}
-            />
-          ))}
+        <div className="space-y-1 [content-visibility:auto]">
+          <AnimatePresence>
+            {activities.map((activity, index) => (
+              <SortableActivity 
+                key={activity.id} 
+                activity={activity} 
+                nextTravelTime={travelTimes[index]}
+                votes={activityVotes[activity.id] || 0}
+                onVote={handleVote}
+              />
+            ))}
+          </AnimatePresence>
         </div>
         </SortableContext>
       </DndContext>

@@ -14,6 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { MOCK_ITINERARIES } from "@/lib/mockItineraries";
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import api from "@/lib/api";
+import { toast } from "react-hot-toast";
+import { Card3D } from "@/components/ui/3d-card";
 import { motion } from "framer-motion";
 
 const TRENDING_DESTINATIONS = [
@@ -72,6 +76,38 @@ const CURATED_LISTS = [
 
 export default function ExplorePage() {
   const router = useRouter();
+  const [publicTrips, setPublicTrips] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const { data } = await api.get("/trips/public");
+        setPublicTrips(data.data || []);
+      } catch (err) {
+        console.error("Error fetching public trips:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrips();
+  }, []);
+
+  const handleClone = async (e: any, tripId: string) => {
+    e.stopPropagation();
+    toast.loading("Cloning trip...", { id: "clone-trip" });
+    try {
+      const { data } = await api.post(`/trips/${tripId}/clone`);
+      if (data.success) {
+        toast.success("Trip cloned successfully!", { id: "clone-trip" });
+        router.push(`/trip-planner?id=${data.data.id}`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      toast.error("Failed to clone trip. Please log in.", { id: "clone-trip" });
+    }
+  };
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
@@ -112,22 +148,23 @@ export default function ExplorePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {CURATED_LISTS.map((list) => (
-              <Card
-                key={list.id}
-                className="glass-card hover:bg-muted/50 cursor-pointer border-border/50"
-              >
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div
-                    className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl ${list.color}`}
-                  >
-                    {list.icon}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold leading-tight">{list.title}</h3>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
+              <Card3D key={list.id} className="h-full">
+                <Card
+                  className="glass-card hover:bg-muted/50 cursor-pointer border-border/50 h-full border-0 shadow-none bg-transparent"
+                >
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div
+                      className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl ${list.color}`}
+                    >
+                      {list.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold leading-tight">{list.title}</h3>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              </Card3D>
             ))}
           </div>
         </section>
@@ -141,51 +178,75 @@ export default function ExplorePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {MOCK_ITINERARIES.map((itinerary, index) => (
-              <motion.div
-                key={itinerary.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => router.push(`/itinerary-details/${itinerary.id}`)}
-              >
-                <Card className="glass-card overflow-hidden group cursor-pointer border-border/50 h-full flex flex-col">
-                  <div className="relative h-48 overflow-hidden">
-                    <div className="absolute top-3 left-3 z-20 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                      {itinerary.durationDays} Days
-                    </div>
-                    <img
-                      src={itinerary.coverImage}
-                      alt={itinerary.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  <CardContent className="p-5 flex flex-col flex-1">
-                    <div className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
-                      <MapPin className="h-3 w-3" /> {itinerary.destination}
-                    </div>
-                    <h3 className="text-xl font-bold mb-2 leading-tight group-hover:text-primary transition-colors">
-                      {itinerary.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
-                      {itinerary.description}
-                    </p>
-
-                    <div className="mt-auto pt-4 border-t flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs bg-muted px-2 py-1 rounded-md font-medium">
-                          {itinerary.tags[0]}
-                        </span>
+            {loading ? (
+              <div className="col-span-3 text-center py-12 text-muted-foreground">Loading community trips...</div>
+            ) : publicTrips.length === 0 ? (
+              <div className="col-span-3 text-center py-12 text-muted-foreground border border-dashed rounded-2xl">No public trips found yet. Be the first to share one!</div>
+            ) : (
+              publicTrips.map((itinerary, index) => (
+                <motion.div
+                  key={itinerary.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => router.push(`/shared/trip/${itinerary.id}`)}
+                >
+                  <Card3D className="h-full">
+                    <Card className="glass-card overflow-hidden group cursor-pointer border-0 shadow-none bg-transparent h-full flex flex-col relative">
+                      <div className="absolute top-3 right-3 z-30">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="bg-background/80 backdrop-blur shadow-sm hover:bg-background"
+                          onClick={(e) => handleClone(e, itinerary.id)}
+                        >
+                          Clone Trip
+                        </Button>
                       </div>
-                      <span className="text-sm font-bold">
-                        {itinerary.estimatedCost}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                      <div className="relative h-48 overflow-hidden bg-muted rounded-t-xl">
+                        <div className="absolute top-3 left-3 z-20 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                          {itinerary.durationDays || 7} Days
+                        </div>
+                        {itinerary.coverImage ? (
+                          <img
+                            src={itinerary.coverImage}
+                            alt={itinerary.title}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                            <Map className="h-12 w-12 text-primary/30" />
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-5 flex flex-col flex-1">
+                        <div className="flex items-center gap-1 text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
+                          <MapPin className="h-3 w-3" /> {itinerary.destination}
+                        </div>
+                        <h3 className="text-xl font-bold mb-2 leading-tight group-hover:text-primary transition-colors">
+                          {itinerary.title}
+                        </h3>
+                        <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                          {itinerary.description || `A ${itinerary.travelStyle || 'planned'} trip to ${itinerary.destination}`}
+                        </p>
+
+                        <div className="mt-auto pt-4 border-t border-border/50 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-muted px-2 py-1 rounded-md font-medium">
+                              {itinerary.travelStyle || "Adventure"}
+                            </span>
+                          </div>
+                          <span className="text-sm font-bold text-primary">
+                            {itinerary.budget ? `₹${itinerary.budget.toLocaleString()}` : 'Budget Flexible'}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Card3D>
+                </motion.div>
+              ))
+            )}
           </div>
         </section>
 

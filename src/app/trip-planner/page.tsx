@@ -48,6 +48,7 @@ import { TripPlannerForm } from "@/components/trip-planner/TripPlannerForm";
 const PlanComparison = dynamic(() => import("@/components/trip-planner/PlanComparison").then((mod) => mod.PlanComparison), { ssr: false });
 const TripPlannerView = dynamic(() => import("@/components/trip-planner/TripPlannerView").then((mod) => mod.TripPlannerView), { ssr: false });
 import { AILoadingScreen } from "@/components/trip-planner/AILoadingScreen";
+import { downloadTripAsPDF, generateICS } from "@/lib/export";
 import { TRAVEL_STYLES } from "@/lib/constants";
 import { exportTripToPdf } from "@/lib/pdfExport";
 import SpeechRecognition, {
@@ -110,11 +111,13 @@ function TripPlannerContent() {
   const {
     isGenerating,
     setIsGenerating,
+    pipelineSteps,
     plans,
     setPlans,
     itinerary,
     setItinerary,
     optimisticItinerary,
+    updateOptimisticItinerary,
     generateWithData
   } = useTripPlanner();
 
@@ -142,7 +145,9 @@ function TripPlannerContent() {
 
   // Form State
   const [formData, setFormData] = useState({
+    tripMode: "single", // 'single' or 'multi'
     destinations: [""],
+    destinationEntries: [] as any[], // for multi-dest
     departureCity: "",
     dates: "",
     days: "",
@@ -276,18 +281,10 @@ function TripPlannerContent() {
     }
   };
 
-  // Rich PDF Export
   const handleDownloadPdf = async () => {
     toast.loading("Generating PDF...", { id: "pdf-export" });
     try {
-      await exportTripToPdf({
-        destination: formData.destinations.join(" → ") || "Trip",
-        dates: formData.dates || "7 Days",
-        budget: `₹${(parseInt(formData.budget) || 120000).toLocaleString()}`,
-        travelers: `${formData.adults} Adults, ${formData.children} Children`,
-        travelStyle: formData.style || "Adventure",
-        days: itinerary?.days || [],
-      });
+      await downloadTripAsPDF("trip-planner-view", `Trip-${formData.destinations.join("-") || "Itinerary"}`);
       toast.success("PDF downloaded!", { id: "pdf-export" });
     } catch (error) {
       toast.error("Failed to export PDF", { id: "pdf-export" });
@@ -325,7 +322,16 @@ function TripPlannerContent() {
   };
 
   const handleCalendarSync = () => {
-    toast.success("Itinerary synced to Google Calendar!");
+    if (!itinerary) {
+      toast.error("No itinerary to sync.");
+      return;
+    }
+    try {
+      generateICS(itinerary, `Trip-${formData.destinations.join("-") || "Itinerary"}`);
+      toast.success("Itinerary synced to calendar!");
+    } catch (e) {
+      toast.error("Failed to generate calendar file.");
+    }
   };
 
   // ------------------
@@ -333,7 +339,7 @@ function TripPlannerContent() {
   // ------------------
 
   if (isGenerating) {
-    return <AILoadingScreen formData={formData} />;
+    return <AILoadingScreen formData={formData} pipelineSteps={pipelineSteps} />;
   }
 
   const selectedPlan = selectedPlanIndex !== null ? plans[selectedPlanIndex] : null;
@@ -377,6 +383,7 @@ function TripPlannerContent() {
         setIsChatOpen={setIsChatOpen}
         setActiveItemHover={setActiveItemHover}
         searchParams={searchParams}
+        updateOptimisticItinerary={updateOptimisticItinerary}
       />
     );
   }

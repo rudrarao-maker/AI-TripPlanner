@@ -9,15 +9,48 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const EXCHANGE_RATES: Record<string, number> = {
+  INR: 1,
+  USD: 0.012,
+  EUR: 0.011,
+  GBP: 0.0095,
+  AUD: 0.018,
+  JPY: 1.8,
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: "₹",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  AUD: "A$",
+  JPY: "¥",
+};
 
 export function BudgetOptimizer({
   budget,
   itineraryDays = [],
+  tripSummary,
 }: {
   budget: number;
   itineraryDays?: any[];
+  tripSummary?: any;
 }) {
   const [currency, setCurrency] = useState("INR");
+  const rate = EXCHANGE_RATES[currency] || 1;
+  const symbol = CURRENCY_SYMBOLS[currency] || "₹";
+
+  const convert = (amount: number) => {
+    return (amount * rate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  };
 
   const totalHotelCost = itineraryDays.reduce((sum: number, d: any) => {
     const hotelCost =
@@ -60,15 +93,27 @@ export function BudgetOptimizer({
       <CardContent className="p-5 space-y-6">
         <div className="flex justify-between items-center bg-card rounded-xl p-4 border border-border/50 shadow-sm">
           <div>
-            <p className="text-sm text-muted-foreground">Target Budget</p>
-            <p className="text-2xl font-bold">₹{budget.toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground flex items-center justify-between">
+              Target Budget
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger className="h-6 text-xs w-20 border-none bg-primary/5 ml-2">
+                  <SelectValue placeholder="Currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(EXCHANGE_RATES).map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </p>
+            <p className="text-2xl font-bold">{symbol}{convert(budget)}</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Est. Total</p>
             <p
               className={`text-2xl font-bold ${isOverBudget ? "text-red-500" : "text-green-500"}`}
             >
-              ₹{totalEstimated.toLocaleString()}
+              {symbol}{convert(totalEstimated)}
             </p>
           </div>
         </div>
@@ -79,7 +124,7 @@ export function BudgetOptimizer({
               🏨 Accommodation
             </span>
             <span className="font-medium">
-              ₹{totalHotelCost.toLocaleString()}
+              {symbol}{convert(totalHotelCost)}
             </span>
           </div>
           <div className="flex justify-between items-center text-sm">
@@ -87,14 +132,14 @@ export function BudgetOptimizer({
               🎯 Activities & Food
             </span>
             <span className="font-medium">
-              ₹{totalActivityCost.toLocaleString()}
+              {symbol}{convert(totalActivityCost)}
             </span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground flex items-center gap-2">
               ✈️ Transport (Est.)
             </span>
-            <span className="font-medium">₹15,000</span>
+            <span className="font-medium">{symbol}{convert(15000)}</span>
           </div>
         </div>
 
@@ -115,11 +160,23 @@ export function BudgetOptimizer({
             </p>
             <p className="text-xs mt-1 opacity-90">
               {isOverBudget
-                ? `The AI estimates you will spend ₹${savings.toLocaleString()} more than your target. Consider downgrading the hotel on Day 2 to save ₹4,500.`
-                : `You have ₹${savings.toLocaleString()} left over. You could upgrade to a premium dining experience on Day 3!`}
+                ? `The AI estimates you will spend ${symbol}${convert(savings)} more than your target.`
+                : `You have ${symbol}${convert(savings)} left over. You could upgrade to a premium dining experience!`}
             </p>
           </div>
         </div>
+
+        {/* Financial Tips */}
+        {tripSummary?.financialAdvice && (
+          <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Local Financial Tips</p>
+            <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+              {tripSummary.financialAdvice.map((tip: string, idx: number) => (
+                <li key={idx}>{tip}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {isOverBudget && (
           <Button

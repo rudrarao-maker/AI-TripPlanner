@@ -14,6 +14,9 @@ import { Features } from "@/components/home/Features";
 import { Testimonials } from "@/components/home/Testimonials";
 import { Pricing } from "@/components/home/Pricing";
 import { FAQ } from "@/components/home/FAQ";
+import { CobeGlobe } from "@/components/ui/cobe-globe";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { SafeSpline } from "@/components/ui/safe-spline";
 
 // Lazy load the heavy 3D background component
 const Scroll3DBackground = lazy(() => import("@/components/home/Scroll3DBackground").then(module => ({ default: module.Scroll3DBackground })));
@@ -31,11 +34,19 @@ export default function LandingPage() {
       {/* 1. HERO SECTION */}
       {/* ============================================ */}
       <section className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4">
+        {/* Spline 3D Scene Background */}
+        <div className="absolute inset-0 z-0 pointer-events-auto opacity-60">
+          <SafeSpline 
+            scene="https://prod.spline.design/q0gE0gN-NxtWjEIn/scene.splinecode" 
+            fallback={<div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/5 -z-10" />}
+          />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-          className="text-center max-w-4xl mx-auto flex flex-col items-center"
+          className="text-center max-w-4xl mx-auto flex flex-col items-center relative z-10 pointer-events-none"
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary mb-8 text-sm font-medium backdrop-blur-md">
             <Sparkles className="h-4 w-4" /> The Future of Travel
@@ -51,7 +62,7 @@ export default function LandingPage() {
             finds hidden gems, and manages your bookings seamlessly.
           </p>
 
-          <div className="w-full max-w-3xl glass p-4 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
+          <div className="w-full max-w-3xl glass p-4 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl pointer-events-auto">
             <HeroSearchBar />
           </div>
         </motion.div>
@@ -118,6 +129,32 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             ))}
+          </div>
+
+          {/* Interactive Globe Section */}
+          <div className="mt-24 pt-16 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-3xl font-bold tracking-tight mb-4 text-foreground">
+                Connect your journey.
+              </h3>
+              <p className="text-muted-foreground text-lg mb-8 font-light max-w-md">
+                Spin the globe and see where fellow travelers are exploring right now. Our AI routing engine calculates the most efficient path across oceans.
+              </p>
+              <div className="flex gap-4">
+                <div className="glass p-4 rounded-2xl flex-1 text-center">
+                  <div className="text-3xl font-bold text-primary mb-1">150+</div>
+                  <div className="text-sm text-muted-foreground">Countries</div>
+                </div>
+                <div className="glass p-4 rounded-2xl flex-1 text-center">
+                  <div className="text-3xl font-bold text-primary mb-1">10k+</div>
+                  <div className="text-sm text-muted-foreground">Routes Optimized</div>
+                </div>
+              </div>
+            </div>
+            <div className="relative pointer-events-auto flex items-center justify-center">
+              <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
+              <CobeGlobe />
+            </div>
           </div>
         </div>
       </section>
