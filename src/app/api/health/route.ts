@@ -49,9 +49,9 @@ async function checkExternalAPI(name: string, url: string): Promise<ServiceCheck
     const start = Date.now();
     const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(5000) });
     return {
-      status: res.ok ? "healthy" : "degraded",
+      status: res.status < 500 ? "healthy" : "degraded",
       latencyMs: Date.now() - start,
-      details: `HTTP ${res.status}`,
+      details: res.ok ? "OK" : `HTTP ${res.status}`,
     };
   } catch (error: any) {
     return { status: "unhealthy", error: error.message };

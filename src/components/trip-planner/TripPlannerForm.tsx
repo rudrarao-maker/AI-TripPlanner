@@ -358,7 +358,7 @@ export function TripPlannerForm({
                 )}
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {formData.tripMode === "single" ? (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Number of Days</label>
@@ -380,16 +380,6 @@ export function TripPlannerForm({
                     />
                   </div>
                 )}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" /> Total Travelers
-                  </label>
-                  <Input 
-                    disabled 
-                    className="py-6 text-sm rounded-xl glass border-primary/20 bg-muted/50" 
-                    value={formData.adults + formData.children + formData.seniors} 
-                  />
-                </div>
               </div>
             </div>
           </motion.div>

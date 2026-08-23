@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { fetchUsersForAdmin, bulkUpdateUsers, bulkDeleteUsers } from "@/app/actions/admin-users";
+import { fetchUsersForAdmin, bulkUpdateUsers, bulkDeleteUsers, exportUsersData } from "@/app/actions/admin-users";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, MoreVertical, Shield, ShieldOff, ShieldAlert, Trash2, CheckCircle, RefreshCw, Eye } from "lucide-react";
+import { Search, MoreVertical, Shield, ShieldOff, ShieldAlert, Trash2, CheckCircle, RefreshCw, Eye, Download, FileText, FileSpreadsheet, FileIcon } from "lucide-react";
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { UserProfileModal } from "./UserProfileModal";
 import toast from "react-hot-toast";
@@ -22,6 +25,56 @@ export function UserTable() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [viewingUser, setViewingUser] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (format: "csv" | "excel" | "pdf") => {
+    setIsExporting(true);
+    try {
+      const data = await exportUsersData({ role: roleFilter, status: statusFilter });
+      if (data.length === 0) {
+        toast.error("No data found for the selected filters.");
+        return;
+      }
+      const formattedData = data.map(u => ({
+        ID: u.id, Name: u.name, Email: u.email, Role: u.role, Status: u.status,
+        Verified: u.verified ? "Yes" : "No", Joined: new Date(u.createdAt).toLocaleString()
+      }));
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `users_export_${timestamp}`;
+
+      if (format === "csv") {
+        const csv = Papa.unparse(formattedData);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filename}.csv`;
+        link.click();
+      } else if (format === "excel") {
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+      } else if (format === "pdf") {
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("Users Export", 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+        let y = 40;
+        formattedData.forEach((row, i) => {
+          if (y > 270) { doc.addPage(); y = 20; }
+          doc.text(`${i+1}. ${row.Name} (${row.Email}) - [${row.Role}] - [${row.Status}]`, 14, y);
+          y += 10;
+        });
+        doc.save(`${filename}.pdf`);
+      }
+      toast.success(`Exported ${data.length} users as ${format.toUpperCase()}`);
+    } catch (error) {
+      toast.error("Export failed.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -99,6 +152,26 @@ export function UserTable() {
           <option value="active">Active</option>
           <option value="restricted">Restricted</option>
         </select>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="h-10 gap-2 min-w-32" disabled={isExporting}>
+              {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Export Data
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => handleExport('csv')} className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4" /> Export as CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('excel')} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="h-4 w-4 text-emerald-500" /> Export as Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2 cursor-pointer">
+              <FileIcon className="h-4 w-4 text-destructive" /> Export as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Bulk Actions */}

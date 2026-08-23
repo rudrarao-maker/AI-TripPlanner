@@ -105,27 +105,7 @@ export function Footer() {
                   Destinations
                 </Link>
               </li>
-              <li>
-                <Link href="/hotels"
-                  className="hover:text-primary transition-colors"
-                >
-                  Hotels
-                </Link>
-              </li>
-              <li>
-                <Link href="/restaurants"
-                  className="hover:text-primary transition-colors"
-                >
-                  Restaurants
-                </Link>
-              </li>
-              <li>
-                <Link href="/things-to-do"
-                  className="hover:text-primary transition-colors"
-                >
-                  Things To Do
-                </Link>
-              </li>
+
               <li>
                 <Link href="/travel-guides"
                   className="hover:text-primary transition-colors"

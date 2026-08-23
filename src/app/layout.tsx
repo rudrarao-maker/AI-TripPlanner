@@ -12,6 +12,7 @@ import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import Script from "next/script";
+import { SplashScreen } from "@/components/ui/splash-screen";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -56,6 +57,7 @@ export default async function RootLayout({
           >
             <PostHogProvider>
               <UserAnalyticsProvider>
+                <SplashScreen />
                 <PostHogPageView />
                 <QueryProvider>
                   <MainLayout isAdmin={isAdmin}>{children}</MainLayout>

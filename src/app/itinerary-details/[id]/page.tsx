@@ -2,7 +2,7 @@
 import { useRouter, useParams } from 'next/navigation';
 import { useGetTrip } from "@/hooks/useTrips";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, CreditCard, ChevronLeft, Loader2, Share2, Globe2 } from "lucide-react";
+import { MapPin, Calendar, CreditCard, ChevronLeft, Loader2, Share2, Globe2, BookmarkPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,6 +47,26 @@ export default function ItineraryDetailsPage() {
       console.error(err);
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  const handleSaveTrip = async () => {
+    try {
+      const { toast } = await import("react-hot-toast");
+      const loadingToast = toast.loading("Saving trip to your profile...");
+      const res = await fetch(`/api/trips/${id}/clone`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Trip saved successfully!", { id: loadingToast });
+        router.push(`/itinerary-details/${data.data.id}`);
+      } else {
+        toast.error(data.error || "Failed to save trip", { id: loadingToast });
+      }
+    } catch (err) {
+      const { toast } = await import("react-hot-toast");
+      toast.error("Something went wrong");
     }
   };
 
@@ -124,7 +144,16 @@ export default function ItineraryDetailsPage() {
             </div>
           </motion.div>
         </div>
-        <div className="absolute bottom-6 right-6 md:right-12 z-20">
+        <div className="absolute bottom-6 right-6 md:right-12 z-20 flex items-center gap-3">
+          {userId && (!itinerary.userId || itinerary.userId !== userId) && (
+            <Button
+              onClick={handleSaveTrip}
+              variant="default"
+              className="gap-2 shadow-lg"
+            >
+              <BookmarkPlus className="h-4 w-4" /> Save Trip
+            </Button>
+          )}
           <ExportPDFButton elementId="itinerary-pdf-content" />
         </div>
       </div>
