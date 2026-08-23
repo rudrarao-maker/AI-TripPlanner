@@ -34,12 +34,11 @@ export default function LandingPage() {
       {/* 1. HERO SECTION */}
       {/* ============================================ */}
       <section className="relative z-10 min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-4">
-        {/* Spline 3D Scene Background */}
-        <div className="absolute inset-0 z-0 pointer-events-auto opacity-60">
-          <SafeSpline 
-            scene="https://prod.spline.design/q0gE0gN-NxtWjEIn/scene.splinecode" 
-            fallback={<div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/5 -z-10" />}
-          />
+        {/* Globe Background for reliable rendering on mobile */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-40 md:opacity-60 overflow-hidden flex items-center justify-center">
+          <div className="w-[150%] max-w-[1200px] h-[150%] flex items-center justify-center">
+            <CobeGlobe />
+          </div>
         </div>
 
         <motion.div
