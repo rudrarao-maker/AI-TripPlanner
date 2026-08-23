@@ -32,8 +32,8 @@ export function BulkImport() {
     const errors = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
-    let name = row.name || row.Name || row.firstName || "";
-    let email = (row.email || row.Email || "").trim();
+    const name = row.name || row.Name || row.firstName || "";
+    const email = (row.email || row.Email || "").trim();
     let role = (row.role || row.Role || "user").toLowerCase();
     
     if (role !== "admin" && role !== "user") role = "user";

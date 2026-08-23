@@ -29,7 +29,7 @@ export async function fetchUsersForAdmin(params: { search?: string, role?: strin
   await requireAdmin();
   const { search, role, status, page, limit } = params;
 
-  let queryConditions = [];
+  const queryConditions = [];
   
   if (search) {
     queryConditions.push(
@@ -39,8 +39,8 @@ export async function fetchUsersForAdmin(params: { search?: string, role?: strin
       )
     );
   }
-  if (role && role !== "all") queryConditions.push(eq(users.role, role));
-  if (status && status !== "all") queryConditions.push(eq(users.status, status));
+  if (role && role !== "all") queryConditions.push(eq(users.role, role as any));
+  if (status && status !== "all") queryConditions.push(eq(users.status, status as any));
 
   const offset = (page - 1) * limit;
   const conditions = queryConditions.length > 0 ? and(...queryConditions) : undefined;
@@ -201,10 +201,10 @@ export async function batchImportUsers(usersData: any[]) {
 export async function exportUsersData(filters: { dateRange?: { from: Date, to: Date }, role?: string, status?: string }) {
   await requireAdmin();
   
-  let queryConditions = [];
+  const queryConditions = [];
   
-  if (filters.role && filters.role !== "all") queryConditions.push(eq(users.role, filters.role));
-  if (filters.status && filters.status !== "all") queryConditions.push(eq(users.status, filters.status));
+  if (filters.role && filters.role !== "all") queryConditions.push(eq(users.role, filters.role as any));
+  if (filters.status && filters.status !== "all") queryConditions.push(eq(users.status, filters.status as any));
   if (filters.dateRange?.from) queryConditions.push(gte(users.createdAt, filters.dateRange.from));
   if (filters.dateRange?.to) queryConditions.push(lte(users.createdAt, filters.dateRange.to));
   

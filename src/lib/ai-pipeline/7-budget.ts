@@ -7,7 +7,7 @@ export class BudgetPlanner {
   static plan(state: PipelineState): PipelineState {
     if (!state.optimizedItinerary) return state;
 
-    let itinerary = JSON.parse(JSON.stringify(state.optimizedItinerary)) as FinalItinerary;
+    const itinerary = JSON.parse(JSON.stringify(state.optimizedItinerary)) as FinalItinerary;
     const { budget } = state.preferences;
 
     let { total, totalAcc, totalTrans, totalFood, totalAct, totalMisc } = this.calculateTotals(itinerary);

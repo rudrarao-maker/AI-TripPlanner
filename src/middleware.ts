@@ -7,6 +7,8 @@ const isProtectedRoute = createRouteMatcher([
   "/expense-tracker(.*)",
   "/wishlist(.*)",
   "/trip-planner(.*)",
+  "/api/trips/save(.*)",
+  "/api/trips/generate(.*)",
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);

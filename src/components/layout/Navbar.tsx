@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Logo } from "../common/Logo";
 import { Button } from "../ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useAuth, useUser, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
@@ -97,6 +98,7 @@ export function Navbar({ dbIsAdmin = false }: { dbIsAdmin?: boolean }) {
 
         {/* Right Side Actions */}
         <div className="hidden lg:flex items-center gap-3">
+          <ThemeToggle />
           {isSignedIn ? (
             <UserButton
               appearance={{

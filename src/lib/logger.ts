@@ -64,9 +64,41 @@ export const logger = {
     }
   },
 
-  error(message: string, context?: LogContext) {
+  async error(message: string, context?: LogContext) {
     if (shouldLog("error")) {
       console.error(formatLog("error", message, context));
+    }
+
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (webhookUrl) {
+      try {
+        const payload = {
+          embeds: [
+            {
+              title: "🚨 Critical Backend Error",
+              description: message,
+              color: 16711680, // Red
+              fields: context
+                ? [
+                    {
+                      name: "Context",
+                      value: `\`\`\`json\n${JSON.stringify(context, null, 2).substring(0, 1000)}\n\`\`\``,
+                    },
+                  ]
+                : [],
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+      } catch (e) {
+        // fail silently to not break app
+      }
     }
   },
 

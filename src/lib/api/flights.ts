@@ -24,7 +24,7 @@ export async function getPriceForecast(origin: string, destination: string, date
 
   // Generate some mock trend data for the last 14 days
   const trendData = [];
-  let basePrice = 600 + Math.random() * 200;
+  const basePrice = 600 + Math.random() * 200;
   for (let i = 14; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);

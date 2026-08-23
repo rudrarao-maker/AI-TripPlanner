@@ -6,7 +6,7 @@ export class ScheduleOptimizer {
     if (!state.itineraryDraft) return state;
 
     const draft = state.itineraryDraft as FinalItinerary;
-    let conflicts = 0;
+    const conflicts = 0;
     let routeImprovements = 0;
 
     const transportPref = state.preferences.transportPreference || "DRIVE";
@@ -76,7 +76,7 @@ export class ScheduleOptimizer {
       const newActivities = [];
 
       for (let i = 0; i < day.activities.length; i++) {
-        let act = day.activities[i];
+        const act = day.activities[i];
         const knownPlace = state.rankedPlaces.find(p => p.id === act.placeId || p.name === act.title);
         
         // --- Meal Time Enforcements ---

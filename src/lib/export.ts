@@ -63,7 +63,7 @@ export async function downloadTripAsPDF(elementId: string, filename: string) {
 }
 
 export function generateICS(tripData: any, filename: string) {
-  let icsLines = [
+  const icsLines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//AI TripPlanner//EN",

@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
   apiVersion: '2023-10-16' as any,
 });
 
@@ -23,13 +23,12 @@ export async function POST(req: Request) {
 
     let event: Stripe.Event;
 
-    // Verify webhook signature if secret is provided, otherwise just construct the event
-    // For local dev without webhook secret, we might skip signature validation, but it's dangerous in prod
+    // Verify webhook signature (CRITICAL for production security)
     if (webhookSecret) {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } else {
-      console.warn("⚠️ No STRIPE_WEBHOOK_SECRET found, parsing event without verification. DO NOT DO THIS IN PRODUCTION.");
-      event = JSON.parse(body) as Stripe.Event;
+      console.error("🚨 CRITICAL: STRIPE_WEBHOOK_SECRET is missing. Rejecting webhook.");
+      return NextResponse.json({ error: 'Webhook secret is not configured' }, { status: 400 });
     }
 
     const session = event.data.object as Stripe.Checkout.Session;
@@ -62,7 +61,7 @@ export async function POST(req: Request) {
         // We look up the user by stripeCustomerId.
         await db.update(users)
           .set({
-            subscriptionStatus: subscription.status,
+            subscriptionStatus: subscription.status as any,
             updatedAt: new Date(),
           })
           .where(eq(users.stripeCustomerId, subscription.customer as string));

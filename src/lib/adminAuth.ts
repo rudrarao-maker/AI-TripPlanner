@@ -31,7 +31,7 @@ export function withAdminAuth(handler: AdminHandler, actionName: string) {
         where: eq(users.clerkId, userId),
       });
 
-      if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
+      if (!user || (user.role !== "admin" && user.role !== "owner")) {
         logger.warn("Admin access denied", { userId, role: user?.role, action: actionName });
         return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
       }

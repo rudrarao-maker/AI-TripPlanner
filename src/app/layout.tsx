@@ -15,6 +15,8 @@ import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 export const metadata: Metadata = {
   title: "Trip Planner - AI Travel Companion",
   description: "Plan your perfect trip with AI",
@@ -34,7 +36,7 @@ export default async function RootLayout({
       const userRecord = await db.query.users.findFirst({
         where: eq(users.clerkId, userId),
       });
-      if (userRecord && (userRecord.role === "admin" || userRecord.role === "super_admin")) {
+      if (userRecord && (userRecord.role === "admin" || userRecord.role === "owner")) {
         isAdmin = true;
       }
     } catch (e) {
@@ -44,16 +46,23 @@ export default async function RootLayout({
 
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
-          <PostHogProvider>
-            <UserAnalyticsProvider>
-              <PostHogPageView />
-              <QueryProvider>
-                <MainLayout isAdmin={isAdmin}>{children}</MainLayout>
-              </QueryProvider>
-            </UserAnalyticsProvider>
-          </PostHogProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <PostHogProvider>
+              <UserAnalyticsProvider>
+                <PostHogPageView />
+                <QueryProvider>
+                  <MainLayout isAdmin={isAdmin}>{children}</MainLayout>
+                </QueryProvider>
+              </UserAnalyticsProvider>
+            </PostHogProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

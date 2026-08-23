@@ -1,12 +1,5 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-
-// Check if Upstash Redis is configured
-const isRedisConfigured = 
-  process.env.UPSTASH_REDIS_REST_URL && 
-  process.env.UPSTASH_REDIS_REST_URL !== "https://dummy-upstash.upstash.io";
-
-const redis = isRedisConfigured ? Redis.fromEnv() : null;
+import { redis } from "./redis";
 
 // ─── Pre-configured rate limiters by tier ─────────────────────────
 

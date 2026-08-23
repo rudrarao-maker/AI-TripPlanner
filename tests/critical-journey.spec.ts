@@ -29,7 +29,10 @@ test.describe('Critical User Journey: Sign Up, Login, Creation, Payment, Logout'
     
     // Wait for AI generation (could take time)
     await expect(page.getByTestId('itinerary-view')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByTestId('activity-card')).toHaveCountGreaterThan(0);
+    const tripCards = page.getByTestId('trip-card');
+    await expect(async () => {
+      expect(await tripCards.count()).toBeGreaterThan(0);
+    }).toPass();
 
     // 3. Trip Correction / Modification
     const firstActivity = page.getByTestId('activity-card').first();

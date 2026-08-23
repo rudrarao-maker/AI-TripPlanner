@@ -1,6 +1,16 @@
-import { pgTable, uuid, text, boolean, timestamp, integer, numeric, doublePrecision, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, boolean, timestamp, integer, numeric, doublePrecision, index, jsonb, pgEnum } from "drizzle-orm/pg-core";
 import { vector } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+
+export const roleEnum = pgEnum("role", ["user", "admin", "owner", "editor", "viewer"]);
+export const subscriptionStatusEnum = pgEnum("subscription_status", ["inactive", "active", "past_due", "canceled"]);
+export const planTypeEnum = pgEnum("plan_type", ["free", "pro", "premium"]);
+export const tripStatusEnum = pgEnum("trip_status", ["planned", "active", "completed", "archived"]);
+export const lockStatusEnum = pgEnum("lock_status", ["unlocked", "locked"]);
+export const reviewStatusEnum = pgEnum("review_status", ["pending", "approved", "rejected"]);
+export const notificationStatusEnum = pgEnum("notification_status", ["unread", "read"]);
+export const bookingStatusEnum = pgEnum("booking_status", ["pending", "confirmed", "cancelled", "refunded"]);
 
 export const users = pgTable("User", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -8,22 +18,23 @@ export const users = pgTable("User", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   avatar: text("avatar"),
-  role: text("role").default("user"),
+  role: roleEnum("role").default("user"),
   provider: text("provider").default("clerk"),
   verified: boolean("verified").default(true),
   status: text("status").default("active"),
   stripeCustomerId: text("stripeCustomerId"),
   stripeSubscriptionId: text("stripeSubscriptionId"),
-  subscriptionStatus: text("subscriptionStatus").default("inactive"), // inactive, active, past_due, canceled
-  planType: text("planType").default("free"), // free, pro, premium
+  subscriptionStatus: subscriptionStatusEnum("subscriptionStatus").default("inactive"), // inactive, active, past_due, canceled
+  planType: planTypeEnum("planType").default("free"), // free, pro, premium
   preferencesProfile: jsonb("preferencesProfile"), // e.g. { "museums": -2, "food": +5 }
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 });
 
 export const trips = pgTable("Trip", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("userId").notNull(),
+  userId: uuid("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
   title: text("title").notNull(),
   origin: text("origin").notNull(),
   destination: text("destination").notNull(),
@@ -39,12 +50,13 @@ export const trips = pgTable("Trip", {
   pace: text("pace").default("balanced"),
   interests: text("interests").array(),
   dietary: text("dietary").array(),
-  status: text("status").default("planned"),
+  status: tripStatusEnum("status").default("planned"),
   coverImage: text("coverImage"),
   isPublic: boolean("isPublic").default(false),
   isMultiDestination: boolean("isMultiDestination").default(false),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   userIdIdx: index("userId_idx").on(table.userId),
   isPublicIdx: index("isPublic_idx").on(table.isPublic),
@@ -66,6 +78,7 @@ export const tripDestinations = pgTable("TripDestination", {
   transportToNext: jsonb("transportToNext"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   tripIdIdx: index("tripDest_tripId_idx").on(table.tripId),
   orderIdx: index("tripDest_order_idx").on(table.tripId, table.order),
@@ -77,6 +90,7 @@ export const tripDays = pgTable("TripDay", {
   tripDestinationId: uuid("tripDestinationId").references(() => tripDestinations.id, { onDelete: "set null" }),
   dayNumber: integer("dayNumber").notNull(),
   date: timestamp("date", { withTimezone: true }).notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   tripIdIdx: index("tripId_idx").on(table.tripId),
   tripDestIdIdx: index("tripDay_destId_idx").on(table.tripDestinationId),
@@ -102,7 +116,7 @@ export const activities = pgTable("Activity", {
   bookingRequired: boolean("bookingRequired").default(false),
   imageUrl: text("imageUrl"),
   travelTime: text("travelTime"),
-  lockStatus: text("lockStatus").default("unlocked"),
+  lockStatus: lockStatusEnum("lockStatus").default("unlocked"),
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
   rating: doublePrecision("rating"),
@@ -112,6 +126,7 @@ export const activities = pgTable("Activity", {
   orderIndex: integer("orderIndex").default(0),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   tripDayIdIdx: index("tripDayId_idx").on(table.tripDayId),
 }));
@@ -185,13 +200,14 @@ export const bookings = pgTable("Booking", {
   tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
   type: text("type").notNull(), // flight, hotel, train, etc.
-  status: text("status").default("pending"), // pending, confirmed, cancelled, refunded
+  status: bookingStatusEnum("status").default("pending"),
   provider: text("provider"),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   currency: text("currency").default("INR"),
   referenceId: text("referenceId"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   userIdIdx: index("booking_userId_idx").on(table.userId),
   tripIdIdx: index("booking_tripId_idx").on(table.tripId),
@@ -211,6 +227,7 @@ export const destinations = pgTable("Destination", {
   status: text("status").default("active"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   countryIdx: index("dest_country_idx").on(table.country),
   statusIdx: index("dest_status_idx").on(table.status),
@@ -229,6 +246,7 @@ export const hotels = pgTable("Hotel", {
   bookingLink: text("bookingLink"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
   destIdIdx: index("hotel_destId_idx").on(table.destinationId),
 }));
@@ -267,7 +285,7 @@ export const reviews = pgTable("Review", {
   tripId: uuid("tripId").references(() => trips.id, { onDelete: "cascade" }),
   rating: integer("rating").notNull(),
   content: text("content"),
-  status: text("status").default("pending"), // pending, approved, rejected
+  status: reviewStatusEnum("status").default("pending"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("review_userId_idx").on(table.userId),
@@ -288,7 +306,7 @@ export const notifications = pgTable("Notification", {
   userId: uuid("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
   type: text("type").notNull(),
   message: text("message").notNull(),
-  status: text("status").default("unread"), // unread, read
+  status: notificationStatusEnum("status").default("unread"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("notif_userId_idx").on(table.userId),

@@ -37,15 +37,15 @@ async function main() {
   });
 
   if (existing) {
-    if (existing.role === "admin" || existing.role === "super_admin") {
+    if (existing.role === "admin" || existing.role === ("super_admin" as any)) {
       console.log(`✅ Admin already exists: ${existing.email} (role: ${existing.role})`);
     } else {
       // Upgrade to admin
       await db
         .update(schema.users)
-        .set({ role: "super_admin" })
+        .set({ role: "admin" })
         .where(eq(schema.users.id, existing.id));
-      console.log(`⬆️  Upgraded ${existing.email} to super_admin`);
+      console.log(`⬆️  Upgraded ${existing.email} to admin`);
     }
   } else {
     // Create new admin
@@ -55,7 +55,7 @@ async function main() {
         email: adminEmail,
         name: adminName,
         clerkId: adminClerkId || undefined,
-        role: "super_admin",
+        role: "admin",
         status: "active",
         verified: true,
         provider: "seed",

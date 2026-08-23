@@ -88,3 +88,19 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): { succe
     errors: result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
   };
 }
+// ─── Activity Update ───────────────────────────────────────────
+export const ActivityUpdateSchema = z.object({
+  id: z.string().uuid().optional(),
+  tripDayId: z.string().uuid(),
+  time: z.string().optional(),
+  name: z.string().min(1).max(300),
+  location: z.string().min(1).max(500),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(50).optional(),
+  estimatedCost: z.union([z.number(), z.string()]).transform((v) => Number(v)).default(0),
+  currency: z.string().max(10).optional(),
+});
+
+export const TripUpdateSchema = z.object({
+  activities: z.array(ActivityUpdateSchema).optional(),
+});

@@ -21,6 +21,7 @@ import { MultiItineraryGenerator } from "@/lib/ai-pipeline/multi-destination/6-m
 import { MultiBudgetPlanner } from "@/lib/ai-pipeline/multi-destination/7-multi-budget";
 import { MultiRefiner } from "@/lib/ai-pipeline/multi-destination/8-multi-refiner";
 import { ratelimit } from "@/lib/ratelimit";
+import { logger } from "@/lib/logger";
 
 export const maxDuration = 120; // Multi-dest may need more time
 
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
             await runSingleDestPipeline(input, sendUpdate);
           }
         } catch (error: any) {
-          console.error("Pipeline Error:", error);
+          logger.error("Pipeline Error", { error: error.message, input });
           const errPayload = JSON.stringify({
             step: "error",
             status: "error",
@@ -86,8 +87,8 @@ export async function POST(req: Request) {
         "Connection": "keep-alive",
       },
     });
-  } catch (error) {
-    console.error("Global route error:", error);
+  } catch (error: any) {
+    logger.error("Global route error", { error: error.message });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

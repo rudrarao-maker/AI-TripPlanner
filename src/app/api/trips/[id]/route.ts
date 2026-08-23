@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { trips, tripDays, activities } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { validateInput, TripUpdateSchema } from "@/lib/validation";
 
 export async function GET(
   req: Request,
@@ -54,14 +55,31 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const body = await req.json();
 
-    if (body.activities) {
-      for (const act of body.activities) {
+    // Verify trip ownership to prevent Broken Access Control
+    const trip = await db.query.trips.findFirst({
+      where: and(eq(trips.id, id), eq(trips.userId, userId)),
+    });
+
+    if (!trip) {
+      return NextResponse.json({ error: "Forbidden or Not Found" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const validation = validateInput(TripUpdateSchema, body);
+    
+    if (!validation.success) {
+      return NextResponse.json({ error: "Invalid input", details: validation.errors }, { status: 400 });
+    }
+
+    const data = validation.data;
+
+    if (data.activities) {
+      for (const act of data.activities) {
         if (act.id) {
-           await db.update(activities).set(act).where(eq(activities.id, act.id));
+           await db.update(activities).set(act as any).where(eq(activities.id, act.id));
         } else {
-           await db.insert(activities).values(act);
+           await db.insert(activities).values(act as any);
         }
       }
     }

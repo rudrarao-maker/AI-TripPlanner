@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { expenses, expenseSplits, trips, users } from "@/db/schema";
+import { safeUserSelect } from "@/db/utils";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function GET(
@@ -16,10 +17,10 @@ export async function GET(
     const tripExpenses = await db.query.expenses.findMany({
       where: eq(expenses.tripId, params.id),
       with: {
-        user: true, // who paid
+        user: { columns: safeUserSelect }, // who paid
         splits: {
           with: {
-            user: true // who owes
+            user: { columns: safeUserSelect } // who owes
           }
         }
       },
@@ -78,8 +79,8 @@ export async function POST(
     const expenseWithUser = await db.query.expenses.findFirst({
       where: eq(expenses.id, newExpenseId),
       with: { 
-        user: true,
-        splits: { with: { user: true } }
+        user: { columns: safeUserSelect },
+        splits: { with: { user: { columns: safeUserSelect } } }
       }
     });
 

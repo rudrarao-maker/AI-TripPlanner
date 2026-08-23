@@ -1,27 +1,34 @@
 /**
- * Place cache layer using the existing `places` PostgreSQL table.
+ * Place cache layer using Upstash Redis (Edge) + PostgreSQL.
  *
- * Before hitting the Google Places API, we check if we already have
- * fresh data for a destination. If the data is less than 7 days old,
- * we return it directly and skip the API call entirely.
- *
- * After fetching new data from Google/Overpass, we upsert into the
- * places table so future requests are instant.
+ * Before hitting the Google Places API, we check Redis for instant responses.
+ * If Redis misses, we check PostgreSQL (fresh data < 7 days).
+ * After fetching new data, we cache it in both Redis and PostgreSQL.
  */
 
 import { db } from "@/db";
 import { places } from "@/db/schema";
 import { eq, and, gte } from "drizzle-orm";
 import { Place } from "./ai-pipeline/types";
+import { redis } from "./redis";
 
 const CACHE_TTL_DAYS = 7;
+const REDIS_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
-/**
- * Returns cached places for a destination if they exist and are fresh.
- * Returns null if cache miss or data is stale.
- */
 export async function getCachedPlaces(destination: string): Promise<Place[] | null> {
+  const cacheKey = `places:${destination.toLowerCase()}`;
+
   try {
+    // 1. Try Redis Edge Cache First (Fastest)
+    if (redis) {
+      const redisCached = await redis.get<Place[]>(cacheKey);
+      if (redisCached && redisCached.length >= 5) {
+        console.log(`[PlaceCache] Redis cache hit for ${destination}`);
+        return redisCached;
+      }
+    }
+
+    // 2. Fallback to PostgreSQL
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - CACHE_TTL_DAYS);
 
@@ -36,19 +43,18 @@ export async function getCachedPlaces(destination: string): Promise<Place[] | nu
       );
 
     if (!cached || cached.length < 5) {
-      // Too few results to be useful — treat as cache miss
       return null;
     }
 
     // Map DB rows back to pipeline Place objects
-    return cached.map((row) => ({
+    const mappedPlaces: Place[] = cached.map((row) => ({
       id: row.id,
       name: row.name,
       destination: row.destination,
       category: row.category,
       description: row.description || undefined,
-      lat: row.lat || undefined,
-      lng: row.lng || undefined,
+      lat: row.lat !== null ? row.lat : undefined,
+      lng: row.lng !== null ? row.lng : undefined,
       address: row.address || undefined,
       openingHours: (row.openingHours as Record<string, string>) || undefined,
       estimatedVisitDuration: row.estimatedVisitDuration || undefined,
@@ -57,23 +63,33 @@ export async function getCachedPlaces(destination: string): Promise<Place[] | nu
       imageUrl: row.imageUrl || undefined,
       source: row.source || undefined,
     }));
+
+    // Backfill Redis
+    if (redis) {
+      await redis.setex(cacheKey, REDIS_TTL_SECONDS, mappedPlaces).catch(console.error);
+    }
+
+    console.log(`[PlaceCache] PostgreSQL cache hit for ${destination}`);
+    return mappedPlaces;
   } catch (error) {
     console.error("Place cache read error:", error);
     return null;
   }
 }
 
-/**
- * Saves discovered places to the DB for future cache hits.
- * Uses upsert-like behavior: inserts only places that don't
- * already exist (by name + destination combo) to avoid duplicates.
- */
 export async function cachePlaces(discoveredPlaces: Place[]): Promise<void> {
   if (!discoveredPlaces || discoveredPlaces.length === 0) return;
 
   try {
-    // Fetch existing place names for this destination to deduplicate
     const destination = discoveredPlaces[0].destination;
+    const cacheKey = `places:${destination.toLowerCase()}`;
+
+    // 1. Write to Redis immediately
+    if (redis) {
+      await redis.setex(cacheKey, REDIS_TTL_SECONDS, discoveredPlaces).catch(console.error);
+    }
+
+    // 2. Background write to PostgreSQL
     const existing = await db
       .select({ name: places.name })
       .from(places)
@@ -81,35 +97,31 @@ export async function cachePlaces(discoveredPlaces: Place[]): Promise<void> {
 
     const existingNames = new Set(existing.map((r) => r.name.toLowerCase()));
 
-    // Filter to only truly new places
     const newPlaces = discoveredPlaces.filter(
       (p) => !existingNames.has(p.name.toLowerCase())
     );
 
-    if (newPlaces.length === 0) return;
-
-    // Batch insert (Drizzle handles this efficiently)
-    await db.insert(places).values(
-      newPlaces.map((p) => ({
-        name: p.name,
-        destination: p.destination,
-        category: p.category,
-        description: p.description || null,
-        lat: p.lat || null,
-        lng: p.lng || null,
-        address: p.address || null,
-        openingHours: p.openingHours || null,
-        estimatedVisitDuration: p.estimatedVisitDuration || null,
-        estimatedCost: p.estimatedCost?.toString() || null,
-        rating: p.rating?.toString() || null,
-        imageUrl: p.imageUrl || null,
-        source: p.source || null,
-      }))
-    );
-
-    console.log(`[PlaceCache] Cached ${newPlaces.length} new places for ${destination}`);
+    if (newPlaces.length > 0) {
+      await db.insert(places).values(
+        newPlaces.map((p) => ({
+          name: p.name,
+          destination: p.destination,
+          category: p.category,
+          description: p.description || null,
+          lat: p.lat || null,
+          lng: p.lng || null,
+          address: p.address || null,
+          openingHours: p.openingHours || null,
+          estimatedVisitDuration: p.estimatedVisitDuration || null,
+          estimatedCost: p.estimatedCost?.toString() || null,
+          rating: p.rating?.toString() || null,
+          imageUrl: p.imageUrl || null,
+          source: p.source || null,
+        }))
+      );
+      console.log(`[PlaceCache] Cached ${newPlaces.length} new places to PostgreSQL for ${destination}`);
+    }
   } catch (error) {
-    // Caching failure should never break the pipeline
     console.error("Place cache write error:", error);
   }
 }

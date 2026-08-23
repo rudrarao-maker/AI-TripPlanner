@@ -65,7 +65,7 @@ export async function POST(
           tripDayId: newDay.id,
           time: act.time,
           name: act.name,
-          location: act.location,
+          coordinates: act.location,
           description: act.description,
           duration: act.duration,
           estimatedCost: act.estimatedCost,
@@ -81,7 +81,7 @@ export async function POST(
           bestTimeToVisit: act.bestTimeToVisit,
           orderIndex: act.orderIndex,
         }));
-        await db.insert(activities).values(activitiesToInsert);
+        await db.insert(activities).values(activitiesToInsert as any);
       }
     }
 
