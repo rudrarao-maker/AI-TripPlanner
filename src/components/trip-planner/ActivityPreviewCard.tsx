@@ -3,7 +3,9 @@ import { motion } from "framer-motion";
 import { MapPin, ArrowLeft, ExternalLink, Star, Clock, IndianRupee, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateHotelBookingLink, generateRestaurantBookingLink, generateActivityBookingLink } from "@/lib/booking-providers";
+import { autoBookTable } from "@/lib/api/reservations";
 import Image from "next/image";
+import { useState } from "react";
 
 interface ActivityPreviewCardProps {
   activity: {
@@ -33,6 +35,8 @@ const CATEGORY_CONFIG: Record<string, { emoji: string; label: string; color: str
 
 export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardProps) {
   const categoryInfo = CATEGORY_CONFIG[activity.category || "other"] || CATEGORY_CONFIG.other;
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState<{success: boolean, message: string} | null>(null);
 
   // Generate Unsplash image URL based on the place name
   const imageQuery = encodeURIComponent(`${activity.title || activity.name || "Activity"} ${activity.location || activity.address || "Local area"} travel`);
@@ -136,22 +140,47 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
               <MapPin className="h-3.5 w-3.5" /> Map
             </Button>
           </div>
-          <Button
-            variant="gradient"
-            size="sm"
-            className="w-full gap-1.5"
-            onClick={() => {
-              let url = mapsUrl;
-              const loc = activity.location || activity.address || "Local area";
-              const nam = activity.title || activity.name || "Activity";
-              if (activity.category === 'hotel') url = generateHotelBookingLink(loc);
-              else if (activity.category === 'food') url = generateRestaurantBookingLink(nam, loc);
-              else url = generateActivityBookingLink(nam, loc);
-              window.open(url, "_blank");
-            }}
-          >
-            <ExternalLink className="h-3.5 w-3.5" /> {activity.category === 'hotel' ? 'Book Hotel' : activity.category === 'food' ? 'Book Table' : 'Book Tickets'}
-          </Button>
+          
+          {bookingStatus && (
+            <div className={`p-2 text-xs rounded-md ${bookingStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {bookingStatus.message}
+            </div>
+          )}
+
+          {activity.category === 'food' ? (
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+              disabled={isBooking || bookingStatus?.success}
+              onClick={async () => {
+                setIsBooking(true);
+                const name = activity.title || activity.name || "Restaurant";
+                const res = await autoBookTable(name, "2024-12-01", activity.startTime || "19:00", 2, {});
+                setBookingStatus(res);
+                setIsBooking(false);
+              }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> 
+              {isBooking ? 'Auto Booking...' : bookingStatus?.success ? 'Booked!' : 'Auto Book Table'}
+            </Button>
+          ) : (
+            <Button
+              variant="gradient"
+              size="sm"
+              className="w-full gap-1.5"
+              onClick={() => {
+                let url = mapsUrl;
+                const loc = activity.location || activity.address || "Local area";
+                const nam = activity.title || activity.name || "Activity";
+                if (activity.category === 'hotel') url = generateHotelBookingLink(loc);
+                else url = generateActivityBookingLink(nam, loc);
+                window.open(url, "_blank");
+              }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> {activity.category === 'hotel' ? 'Book Hotel' : 'Book Tickets'}
+            </Button>
+          )}
         </div>
       </div>
     </motion.div>

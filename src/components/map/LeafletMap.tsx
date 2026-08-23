@@ -5,6 +5,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMap 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Coordinates } from "@/types";
+import "leaflet-draw/dist/leaflet.draw.css";
+import "leaflet-draw";
 
 // Fix for default Leaflet icons in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -47,6 +49,47 @@ function MapUpdater({ activeMarkerId, markers }: { activeMarkerId?: string; mark
   return null;
 }
 
+// DrawControl to hook into Leaflet Draw
+function DrawControl({ onDrawCreated }: { onDrawCreated: (layer: any) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // @ts-ignore - Leaflet Draw typings can be tricky
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    // @ts-ignore
+    const drawControl = new L.Control.Draw({
+      edit: {
+        featureGroup: drawnItems
+      },
+      draw: {
+        polygon: {} as any,
+        polyline: false,
+        rectangle: {} as any,
+        circle: {} as any,
+        marker: false,
+        circlemarker: false,
+      }
+    });
+
+    map.addControl(drawControl);
+
+    map.on(L.Draw.Event.CREATED, function (event: any) {
+      const layer = event.layer;
+      drawnItems.addLayer(layer);
+      onDrawCreated(layer);
+    });
+
+    return () => {
+      map.removeControl(drawControl);
+      map.removeLayer(drawnItems);
+    };
+  }, [map, onDrawCreated]);
+
+  return null;
+}
+
 export default function LeafletMap({
   center,
   zoom = 12,
@@ -58,6 +101,12 @@ export default function LeafletMap({
   const positions = markers.map((m) => [m.position.lat, m.position.lng] as [number, number]);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
+  const [showIsochrone, setShowIsochrone] = useState(false);
+
+  const handleDrawCreated = (layer: any) => {
+    console.log("Drawn area:", layer.toGeoJSON());
+    // In a real implementation, we would send this GeoJSON to our AI to find activities inside
+  };
 
   useEffect(() => {
     if (showUserLocation && "geolocation" in navigator) {
@@ -144,8 +193,28 @@ export default function LeafletMap({
           </CircleMarker>
         )}
 
+        <DrawControl onDrawCreated={handleDrawCreated} />
+        
+        {/* Mock Isochrone Layer (15 min walk from center) */}
+        {showIsochrone && (
+          <CircleMarker
+            center={[center.lat, center.lng]}
+            radius={150} // 150 pixels approximation
+            pathOptions={{ color: 'rgba(34, 197, 94, 0.4)', fillColor: 'rgba(34, 197, 94, 0.2)', fillOpacity: 0.5, weight: 1 }}
+          />
+        )}
+
         <MapUpdater activeMarkerId={activeMarkerId} markers={markers} />
       </MapContainer>
+      
+      {/* Isochrone Toggle Button */}
+      <button 
+        onClick={() => setShowIsochrone(!showIsochrone)}
+        className="absolute bottom-4 left-4 z-[400] bg-white px-4 py-2 rounded-full shadow-lg font-medium text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors text-black"
+      >
+        <span className="w-3 h-3 rounded-full bg-green-500"></span>
+        {showIsochrone ? "Hide 15m Walk Zone" : "Show 15m Walk Zone"}
+      </button>
     </div>
   );
 }
