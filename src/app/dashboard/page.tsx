@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -22,6 +23,7 @@ import { useGetTrips } from "@/hooks/useTrips";
 import dynamic from "next/dynamic";
 
 // New Components
+import { TiltCard } from "@/components/ui/tilt-card";
 import { SavedTrips } from "@/components/dashboard/SavedTrips";
 import { RecentSearches } from "@/components/dashboard/RecentSearches";
 import { AISuggestions } from "@/components/dashboard/AISuggestions";
@@ -92,17 +94,17 @@ export default function DashboardHome() {
             </div>
 
             {upcomingTrip ? (
-              <Card className="overflow-hidden border-none shadow-lg group">
+              <TiltCard className="shadow-lg mb-8" maxTilt={3}>
                 <div
-                  className="relative h-64 w-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20"
+                  className="relative h-64 w-full bg-gradient-to-br from-primary/20 to-accent/20"
                   style={{
                     backgroundImage: `url(${upcomingTrip.coverImage})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 >
-                  <div className="absolute inset-0 bg-black/40 z-10" />
-                  <div className="absolute top-4 right-4 z-20 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white font-medium text-sm flex items-center gap-1.5">
+                  <div className="absolute inset-0 bg-black/50 z-10" />
+                  <div className="absolute top-4 right-4 z-20 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white font-medium text-sm flex items-center gap-1.5" style={{ transform: "translateZ(30px)" }}>
                     <Clock className="h-4 w-4" />{" "}
                     {Math.ceil(
                       (new Date(upcomingTrip.startDate).getTime() -
@@ -112,12 +114,12 @@ export default function DashboardHome() {
                     days left
                   </div>
 
-                  <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
+                  <div className="absolute bottom-0 left-0 right-0 p-6 z-20" style={{ transform: "translateZ(40px)" }}>
                     <div className="flex items-center gap-2 text-white/90 font-medium mb-2">
                       <MapPin className="h-5 w-5 text-accent" />
                       <span>{upcomingTrip.destination}</span>
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-2">
+                    <h3 className="text-3xl font-bold text-white mb-2 drop-shadow-md">
                       {upcomingTrip.title}
                     </h3>
                     <div className="flex items-center gap-2 text-white/80 text-sm">
@@ -130,7 +132,7 @@ export default function DashboardHome() {
                   </div>
                 </div>
 
-                <CardContent className="p-6 bg-card glass">
+                <div className="p-6 bg-card border-x border-b border-border rounded-b-2xl" style={{ transform: "translateZ(20px)" }}>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="col-span-2 p-4 rounded-xl bg-muted/50">
                       <p className="text-sm text-muted-foreground font-medium mb-2 flex items-center gap-2">
@@ -162,8 +164,8 @@ export default function DashboardHome() {
                       <span className="text-sm font-medium">View Flight</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </TiltCard>
             ) : (
               <Card className="glass py-12 flex flex-col items-center justify-center text-center border-white/10">
                 <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center text-3xl mb-4">
@@ -254,25 +256,42 @@ export default function DashboardHome() {
                   No previous trips found.
                 </div>
               ) : (
-                pastTrips.map((trip) => (
-                  <div
-                    key={trip.id}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors border border-transparent hover:border-white/10"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
-                        🌍
+                <motion.div 
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                      opacity: 1,
+                      transition: { staggerChildren: 0.1 }
+                    }
+                  }}
+                  className="space-y-2"
+                >
+                  {pastTrips.map((trip) => (
+                    <motion.div
+                      key={trip.id}
+                      variants={{
+                        hidden: { opacity: 0, x: -20 },
+                        visible: { opacity: 1, x: 0, transition: { ease: [0.16, 1, 0.3, 1] } }
+                      }}
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors border border-transparent hover:border-white/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
+                          🌍
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{trip.destination}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(trip.startDate)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{trip.destination}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(trip.startDate)}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                ))
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </motion.div>
+                  ))}
+                </motion.div>
               )}
             </CardContent>
           </Card>

@@ -40,18 +40,19 @@ export function SplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black transition-opacity duration-1000 ease-in-out ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black transition-opacity duration-700 ${
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
+      style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
     >
-      <div className="w-full max-w-md animate-pulse duration-2000">
+      <div className="w-full max-w-md">
         <CobeGlobe />
       </div>
       <h1 className="mt-8 text-4xl font-bold tracking-tighter text-white">
         Trip Planner <span className="text-primary">AI</span>
       </h1>
       <p className="mt-4 text-zinc-400">
-        Your next adventure awaits...
+        Loading your workspace
       </p>
     </div>
   );

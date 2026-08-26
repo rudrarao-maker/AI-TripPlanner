@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Zap, Shield, Brain, CreditCard, Sparkles, Map } from "lucide-react";
+import { Zap, Shield, Brain, CreditCard, Compass, Map } from "lucide-react";
+
+const MOTION_EASE = [0.16, 1, 0.3, 1] as const;
 
 const FEATURES = [
   {
@@ -25,7 +27,7 @@ const FEATURES = [
     description: "Visualize your entire journey with integrated, interactive maps showing daily routes and travel times."
   },
   {
-    icon: <Sparkles className="h-6 w-6" />,
+    icon: <Compass className="h-6 w-6" />,
     title: "Hidden Gems",
     description: "Go beyond tourist traps. Discover local secrets, authentic eateries, and exclusive premium experiences."
   },
@@ -38,17 +40,18 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section className="relative z-10 py-32 bg-background/50 backdrop-blur-2xl border-y border-white/5">
+    <section className="relative z-10 py-32 bg-background/50 backdrop-blur-2xl border-y border-border">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.5, ease: MOTION_EASE }}
           className="text-center max-w-3xl mx-auto mb-20"
         >
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">Designed for the Modern Traveler</h2>
-          <p className="text-muted-foreground text-lg font-light">
-            Everything you need to plan, book, and experience the perfect trip, consolidated into one premium platform.
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">Built for how you actually travel</h2>
+          <p className="text-muted-foreground text-lg">
+            Plan, book, and manage your entire trip from one place.
           </p>
         </motion.div>
 
@@ -56,17 +59,17 @@ export function Features() {
           {FEATURES.map((feature, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass p-8 rounded-3xl border border-white/10 hover:bg-white/5 transition-all duration-300 group"
+              transition={{ delay: i * 0.08, duration: 0.4, ease: MOTION_EASE }}
+              className="bg-card p-8 rounded-2xl border border-border hover:border-primary/20 transition-colors duration-200 group"
             >
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground leading-relaxed font-light">
+              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

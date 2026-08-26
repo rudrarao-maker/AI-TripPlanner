@@ -9,7 +9,7 @@
   --popover: #ffffff;
   --popover-foreground: #09090b;
   
-  /* Vibrant Primary (Indigo) & Accent (Purple) */
+  /* Primary (Indigo) */
   --primary: #4f46e5;
   --primary-foreground: #ffffff;
   
@@ -19,7 +19,8 @@
   --muted: #f4f4f5;
   --muted-foreground: #71717a;
   
-  --accent: #8b5cf6;
+  /* Accent (Teal — travel-appropriate, not generic purple) */
+  --accent: #0d9488;
   --accent-foreground: #ffffff;
   
   --destructive: #ef4444;
@@ -29,7 +30,17 @@
   --input: #e4e4e7;
   --ring: #4f46e5;
   
+  /* ── Design Tokens ── */
+  
+  /* Border Radius — 3 values only */
   --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  
+  /* Easing Curves */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 @theme inline {
@@ -62,11 +73,15 @@ body {
   color: var(--foreground);
 }
 
-/* Re-adding essential UI utilities */
+/* Glass utility — disciplined version, no glow */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+:is(.dark) .glass {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.08);
 }

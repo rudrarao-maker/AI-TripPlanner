@@ -5,6 +5,8 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const MOTION_EASE = [0.16, 1, 0.3, 1] as const;
+
 const PLANS = [
   {
     name: "Explorer",
@@ -53,16 +55,17 @@ const PLANS = [
 
 export function Pricing() {
   return (
-    <section className="relative z-10 py-32 bg-background/30 backdrop-blur-xl border-y border-white/5">
+    <section className="relative z-10 py-32 bg-background/30 backdrop-blur-xl border-y border-border">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.5, ease: MOTION_EASE }}
           className="text-center mb-20"
         >
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Simple, Transparent Pricing</h2>
-          <p className="text-muted-foreground text-lg font-light">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Simple, Transparent Pricing</h2>
+          <p className="text-muted-foreground text-lg">
             Choose the plan that fits your travel style.
           </p>
         </motion.div>
@@ -71,13 +74,13 @@ export function Pricing() {
           {PLANS.map((plan, idx) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.15 }}
-              className={`relative glass p-8 rounded-[2rem] border ${
-                plan.popular ? "border-primary shadow-2xl shadow-primary/20 bg-primary/5" : "border-white/10 hover:border-white/20"
-              } transition-all duration-300 flex flex-col`}
+              transition={{ delay: idx * 0.1, duration: 0.4, ease: MOTION_EASE }}
+              className={`relative bg-card p-8 rounded-2xl border ${
+                plan.popular ? "border-primary shadow-lg" : "border-border hover:border-primary/20"
+              } transition-colors duration-200 flex flex-col`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold tracking-wide">
@@ -87,7 +90,7 @@ export function Pricing() {
               
               <div className="mb-8">
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <p className="text-muted-foreground text-sm font-light h-10">{plan.description}</p>
+                <p className="text-muted-foreground text-sm h-10">{plan.description}</p>
               </div>
 
               <div className="mb-8">
@@ -97,7 +100,7 @@ export function Pricing() {
 
               <ul className="space-y-4 mb-8 flex-1">
                 {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm font-light">
+                  <li key={i} className="flex items-center gap-3 text-sm">
                     <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
                       <Check className="h-3 w-3" />
                     </div>

@@ -20,7 +20,7 @@ export function Logo({
     <Link href="/" className={cn("flex items-center gap-2 group", className)}>
       <div
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-primary/20 transition-transform group-hover:scale-105 group-hover:rotate-6",
+          "flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-sm transition-transform group-hover:scale-[1.02]",
           iconClassName,
         )}
       >

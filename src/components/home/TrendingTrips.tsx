@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+const MOTION_EASE = [0.16, 1, 0.3, 1] as const;
+
 const TRENDING_TRIPS = [
   { id: "1", name: "Tokyo Neon Nights", country: "Japan", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=1994", rating: "4.9", tags: ["City", "Food", "Culture"] },
   { id: "2", name: "Amalfi Coast Drive", country: "Italy", image: "https://images.unsplash.com/photo-1533682805518-48d1f5a8bb3c?auto=format&fit=crop&q=80&w=2070", rating: "4.8", tags: ["Coastal", "Romance", "Views"] },
@@ -23,12 +25,12 @@ export function TrendingTrips() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent mb-6 text-sm font-medium backdrop-blur-md">
               <TrendingUp className="h-4 w-4" /> Trending Now
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Most Loved Itineraries</h2>
-            <p className="text-muted-foreground text-lg font-light max-w-2xl">
-              Discover the trips that everyone is talking about. Handpicked AI-generated experiences with the highest ratings.
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Most Loved Itineraries</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              The highest-rated AI-generated trips from the past month.
             </p>
           </div>
-          <Button variant="outline" className="rounded-full backdrop-blur-md border-white/10 hover:bg-white/5" asChild>
+          <Button variant="outline" className="rounded-full border-border" asChild>
             <Link href="/explore">
               Explore All <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
@@ -39,18 +41,18 @@ export function TrendingTrips() {
           {TRENDING_TRIPS.map((trip, idx) => (
             <motion.div
               key={trip.id}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.15, duration: 0.6 }}
+              transition={{ delay: idx * 0.1, duration: 0.4, ease: MOTION_EASE }}
               className="group relative cursor-pointer"
               onClick={() => router.push(`/trip-planner?destination=${trip.name}`)}
             >
-              <div className="relative h-[450px] w-full rounded-3xl overflow-hidden glass border border-white/5 shadow-xl">
+              <div className="relative h-[450px] w-full rounded-2xl overflow-hidden border border-border shadow-md hover:shadow-lg transition-shadow duration-300">
                 <img
                   src={trip.image}
                   alt={trip.name}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
                 
@@ -66,13 +68,13 @@ export function TrendingTrips() {
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> {trip.rating}
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 p-6 z-20 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                  <h3 className="text-2xl font-bold text-white mb-2 font-heading">{trip.name}</h3>
+                <div className="absolute bottom-0 left-0 right-0 p-6 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
+                  <h3 className="text-2xl font-bold text-white mb-2">{trip.name}</h3>
                   <div className="flex items-center justify-between text-white/80">
-                    <div className="flex items-center gap-2 text-sm font-light">
+                    <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4" /> {trip.country}
                     </div>
-                    <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-500" />
+                    <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
                   </div>
                 </div>
               </div>

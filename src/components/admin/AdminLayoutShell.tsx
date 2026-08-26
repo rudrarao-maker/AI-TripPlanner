@@ -23,6 +23,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
+import { MobileBottomNav } from "./MobileBottomNav";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview", icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -39,7 +40,6 @@ const ADMIN_LINKS = [
 
 export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { signOut } = useClerk();
 
@@ -56,22 +56,9 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {isMobileSidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMobileSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside className={`w-72 fixed inset-y-0 left-0 z-50 flex flex-col glass border-r border-white/5 backdrop-blur-2xl bg-background/95 pt-0 transition-transform duration-300 lg:translate-x-0 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+    <div className="min-h-screen bg-background flex pb-20 lg:pb-0">
+      {/* Sidebar - Desktop Only */}
+      <aside className="w-72 fixed inset-y-0 left-0 z-50 flex-col glass border-r border-white/5 backdrop-blur-2xl bg-background/95 pt-0 hidden lg:flex">
         <div className="p-6 pt-8 flex-1 overflow-y-auto">
           <div className="flex items-center justify-between mb-8 px-2">
             <Link href="/admin" className="flex items-center gap-3">
@@ -83,9 +70,7 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
                 <p className="text-xs text-muted-foreground">Enterprise Panel</p>
               </div>
             </Link>
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileSidebarOpen(false)}>
-              <X className="h-5 w-5" />
-            </Button>
+
           </div>
 
           <nav className="space-y-1" role="navigation" aria-label="Admin Navigation">
@@ -95,7 +80,6 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  onClick={() => setIsMobileSidebarOpen(false)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     isActive
                       ? "bg-primary/10 text-primary shadow-sm"
@@ -126,11 +110,7 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
         {/* Top Header */}
         <header className="h-16 border-b border-white/5 bg-background/40 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setIsMobileSidebarOpen(true)}>
-              <Menu className="h-5 w-5" />
-            </Button>
-            
-            <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2">
                {/* Breadcrumbs */}
                <span className="text-sm font-medium text-muted-foreground capitalize">
                  {pathname === "/admin" ? "Overview" : pathname.split("/").pop()?.replace(/-/g, ' ')}
@@ -201,6 +181,9 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }

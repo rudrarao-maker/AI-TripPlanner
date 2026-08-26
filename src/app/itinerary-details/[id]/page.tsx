@@ -15,6 +15,10 @@ const ExportPDFButton = dynamic(() => import("@/components/itinerary/ExportPDFBu
 const BudgetTracker = dynamic(() => import("@/components/budget/BudgetTracker").then((mod) => mod.BudgetTracker), { ssr: false });
 const SmartPackingList = dynamic(() => import("@/components/recommendations/SmartPackingList").then((mod) => mod.SmartPackingList), { ssr: false });
 const WeatherWidget = dynamic(() => import("@/components/weather/WeatherWidget").then((mod) => mod.WeatherWidget), { ssr: false, loading: () => <div className="h-[300px] w-full bg-muted animate-pulse rounded-2xl" /> });
+const JourneyView3D = dynamic(() => import("@/components/itinerary/JourneyView3D").then((mod) => mod.JourneyView3D), { ssr: false, loading: () => <div className="h-[450px] w-full bg-muted animate-pulse rounded-2xl" /> });
+
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Cuboid, Map as MapIcon } from "lucide-react";
 
 export default function ItineraryDetailsPage() {
   const params = useParams();
@@ -25,6 +29,7 @@ export default function ItineraryDetailsPage() {
   const { data: itinerary, isLoading } = useGetTrip(id);
   const [isPublic, setIsPublic] = useState((itinerary as any)?.isPublic || false);
   const [isToggling, setIsToggling] = useState(false);
+  const [visualizerView, setVisualizerView] = useState("map");
 
   // Sync state when itinerary loads
   useEffect(() => {
@@ -219,9 +224,26 @@ export default function ItineraryDetailsPage() {
                           />
                         </div>
 
-                        {/* Interactive Route Map for the Day */}
-                        <div className="h-[450px] w-full rounded-2xl overflow-hidden hidden lg:block">
-                          <InteractiveRouteMap activities={mappedActivities} />
+                        {/* Interactive Visualization Panel */}
+                        <div className="flex flex-col gap-4 hidden lg:block w-full">
+                          <div className="flex justify-end">
+                            <SegmentedControl 
+                              options={[
+                                { label: "Map", value: "map", icon: <MapIcon className="w-4 h-4" /> },
+                                { label: "3D Journey", value: "journey", icon: <Cuboid className="w-4 h-4" /> }
+                              ]}
+                              value={visualizerView}
+                              onChange={setVisualizerView}
+                              className="w-[280px]"
+                            />
+                          </div>
+                          <div className="h-[450px] w-full rounded-2xl overflow-hidden shadow-md">
+                            {visualizerView === "map" ? (
+                              <InteractiveRouteMap activities={mappedActivities} />
+                            ) : (
+                              <JourneyView3D activities={mappedActivities} />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
