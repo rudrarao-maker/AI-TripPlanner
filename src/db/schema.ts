@@ -11,6 +11,7 @@ export const lockStatusEnum = pgEnum("lock_status", ["unlocked", "locked"]);
 export const reviewStatusEnum = pgEnum("review_status", ["pending", "approved", "rejected"]);
 export const notificationStatusEnum = pgEnum("notification_status", ["unread", "read"]);
 export const bookingStatusEnum = pgEnum("booking_status", ["pending", "confirmed", "cancelled", "refunded"]);
+export const expertReviewStatusEnum = pgEnum("expert_review_status", ["none", "pending", "completed"]);
 
 export const users = pgTable("User", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -54,6 +55,9 @@ export const trips = pgTable("Trip", {
   coverImage: text("coverImage"),
   isPublic: boolean("isPublic").default(false),
   isMultiDestination: boolean("isMultiDestination").default(false),
+  isTemplate: boolean("isTemplate").default(false),
+  expertReviewRequested: boolean("expertReviewRequested").default(false),
+  expertReviewStatus: expertReviewStatusEnum("expertReviewStatus").default("none"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deletedAt", { withTimezone: true }),

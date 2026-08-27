@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Plane } from "lucide-react";
+import Image from 'next/image';
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -20,11 +20,17 @@ export function Logo({
     <Link href="/" className={cn("flex items-center gap-2 group", className)}>
       <div
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-sm transition-transform group-hover:scale-[1.02]",
-          iconClassName,
+          "relative flex items-center justify-center transition-transform group-hover:scale-[1.02] overflow-hidden rounded-md",
+          iconClassName || "h-10 w-10 md:h-12 md:w-12"
         )}
       >
-        <Plane className="h-6 w-6 -rotate-45 fill-white/20" />
+        {/* We use next/image to render the new logo */}
+        <Image
+          src="/logo.jpg"
+          alt="Trip Craft AI Logo"
+          fill
+          className="object-contain mix-blend-multiply dark:mix-blend-screen"
+        />
       </div>
       {withText && (
         <span

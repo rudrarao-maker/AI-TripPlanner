@@ -16,6 +16,7 @@ const BudgetTracker = dynamic(() => import("@/components/budget/BudgetTracker").
 const SmartPackingList = dynamic(() => import("@/components/recommendations/SmartPackingList").then((mod) => mod.SmartPackingList), { ssr: false });
 const WeatherWidget = dynamic(() => import("@/components/weather/WeatherWidget").then((mod) => mod.WeatherWidget), { ssr: false, loading: () => <div className="h-[300px] w-full bg-muted animate-pulse rounded-2xl" /> });
 const JourneyView3D = dynamic(() => import("@/components/itinerary/JourneyView3D").then((mod) => mod.JourneyView3D), { ssr: false, loading: () => <div className="h-[450px] w-full bg-muted animate-pulse rounded-2xl" /> });
+const MobileItineraryDay = dynamic(() => import("@/components/itinerary/MobileItineraryDay").then((mod) => mod.MobileItineraryDay), { ssr: false });
 
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Cuboid, Map as MapIcon } from "lucide-react";
@@ -30,6 +31,7 @@ export default function ItineraryDetailsPage() {
   const [isPublic, setIsPublic] = useState((itinerary as any)?.isPublic || false);
   const [isToggling, setIsToggling] = useState(false);
   const [visualizerView, setVisualizerView] = useState("map");
+  const [expandedDay, setExpandedDay] = useState<number>(0); // First day expanded by default
 
   // Sync state when itinerary loads
   useEffect(() => {
@@ -107,15 +109,15 @@ export default function ItineraryDetailsPage() {
 
   return (
     <div className="min-h-screen pb-20 bg-muted/20">
-      {/* Hero Section */}
-      <div className="relative h-[50vh] min-h-[400px] w-full">
+      {/* Hero Section — smaller on mobile */}
+      <div className="relative h-[35vh] md:h-[50vh] min-h-[280px] md:min-h-[400px] w-full">
         <div className="absolute inset-0 bg-black/40 z-10" />
         <img
           src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2000&auto=format&fit=crop"
           alt={itinerary.title || "Trip"}
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute top-24 left-4 md:left-8 z-20">
+        <div className="absolute top-20 md:top-24 left-4 md:left-8 z-20">
           <Button
             variant="outline"
             size="icon"
@@ -125,31 +127,32 @@ export default function ItineraryDetailsPage() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 z-20 container mx-auto text-white">
+        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-12 z-20 container mx-auto text-white">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center gap-2 text-white/90 font-medium mb-3 uppercase tracking-wider text-sm">
-              <MapPin className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2 text-white/90 font-medium mb-2 md:mb-3 uppercase tracking-wider text-xs md:text-sm">
+              <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
               <span>{itinerary.destination}</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
+            <h1 className="text-2xl sm:text-3xl md:text-6xl font-bold mb-3 md:mb-4 drop-shadow-lg line-clamp-2">
               {itinerary.title || `${itinerary.destination} Getaway`}
             </h1>
-            <div className="flex flex-wrap items-center gap-6 text-sm md:text-base font-medium text-white/90">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" /> {durationDays} Days
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-xs md:text-base font-medium text-white/90">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <Calendar className="h-4 w-4 md:h-5 md:w-5" /> {durationDays} Days
               </div>
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" /> Est.{" "}
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <CreditCard className="h-4 w-4 md:h-5 md:w-5" /> Est.{" "}
                 ₹{Number(itinerary.budget).toLocaleString()}
               </div>
             </div>
           </motion.div>
         </div>
-        <div className="absolute bottom-6 right-6 md:right-12 z-20 flex items-center gap-3">
+        {/* Action buttons — moved to inline on mobile */}
+        <div className="absolute bottom-4 md:bottom-6 right-4 md:right-12 z-20 hidden md:flex items-center gap-3">
           {userId && (!itinerary.userId || itinerary.userId !== userId) && (
             <Button
               onClick={handleSaveTrip}
@@ -163,22 +166,74 @@ export default function ItineraryDetailsPage() {
         </div>
       </div>
 
-      <div id="itinerary-pdf-content" className="container mx-auto px-4 md:px-6 py-12 max-w-7xl flex flex-col xl:flex-row gap-12">
+      {/* Mobile Action Bar */}
+      <div className="flex md:hidden gap-2 px-4 py-3 border-b border-border bg-background">
+        {userId && (!itinerary.userId || itinerary.userId !== userId) && (
+          <Button
+            onClick={handleSaveTrip}
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-1.5 rounded-xl text-xs"
+          >
+            <BookmarkPlus className="h-3.5 w-3.5" /> Save
+          </Button>
+        )}
+        <ExportPDFButton elementId="itinerary-pdf-content" />
+        <Button
+          size="sm"
+          className="flex-1 rounded-xl text-xs font-bold"
+          onClick={handleUseItinerary}
+        >
+          Use This Trip
+        </Button>
+      </div>
+
+      <div id="itinerary-pdf-content" className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-7xl flex flex-col xl:flex-row gap-8 md:gap-12">
         {/* Main Content */}
-        <div className="flex-1 space-y-12 w-full">
+        <div className="flex-1 space-y-8 md:space-y-12 w-full">
           <section>
-            <h2 className="text-2xl font-bold mb-4">About this trip</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">About this trip</h2>
+            <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
               Explore {itinerary.destination} with a curated plan for {durationDays} days. 
               Features {itinerary.travelStyle} style traveling and {itinerary.hotelCategory} accommodation.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-8">Day-by-Day Itinerary</h2>
-            <div className="space-y-12">
+            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-8">Day-by-Day Itinerary</h2>
+            
+            {/* ===== MOBILE: Accordion View ===== */}
+            <div className="md:hidden space-y-3">
               {tripDays.map((day: any, dayIndex: number) => {
-                // Seed lat/lng from destination name for consistent mock coordinates
+                const mappedActivities = (day.activities || []).map((act: any, i: number) => ({
+                  id: act.id || `${day.id}-${i}`,
+                  name: act.name,
+                  time: act.time,
+                  location: act.location,
+                  description: act.description,
+                  category: act.category || "activity",
+                  estimatedCost: act.estimatedCost,
+                  imageUrl: act.imageUrl,
+                }));
+
+                return (
+                  <MobileItineraryDay
+                    key={day.id || dayIndex}
+                    dayNumber={day.dayNumber}
+                    date={day.date}
+                    activities={mappedActivities}
+                    isExpanded={expandedDay === dayIndex}
+                    onToggle={() =>
+                      setExpandedDay(expandedDay === dayIndex ? -1 : dayIndex)
+                    }
+                  />
+                );
+              })}
+            </div>
+
+            {/* ===== DESKTOP: Full expanded view with maps ===== */}
+            <div className="hidden md:block space-y-12">
+              {tripDays.map((day: any, dayIndex: number) => {
                 const destHash = (itinerary.destination || "Paris").split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
                 const baseLat = ((destHash % 180) - 90) * 0.5 + 25;
                 const baseLng = ((destHash * 7) % 360) - 180 + 75;
@@ -254,8 +309,8 @@ export default function ItineraryDetailsPage() {
           </section>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-full xl:w-[400px] shrink-0 space-y-6">
+        {/* Sidebar — hidden on mobile (key actions moved to mobile action bar) */}
+        <div className="hidden xl:block w-[400px] shrink-0 space-y-6">
           <div className="sticky top-24 space-y-6">
             <WeatherWidget lat={baseLat} lng={baseLng} location={itinerary.destination} />
             <SmartPackingList destination={itinerary.destination} />
@@ -293,10 +348,31 @@ export default function ItineraryDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile: Expandable info sections (Weather, Packing) */}
+      <div className="xl:hidden container mx-auto px-4 py-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <WeatherWidget lat={baseLat} lng={baseLng} location={itinerary.destination} />
+          <SmartPackingList destination={itinerary.destination} />
+        </div>
+
+        {userId === itinerary.userId && (
+          <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <Globe2 className="h-4 w-4 text-primary" />
+                Public Trip
+              </div>
+              <span className="text-xs text-muted-foreground">Allow others to see and clone</span>
+            </div>
+            <Checkbox checked={isPublic} onCheckedChange={handleTogglePublic} disabled={isToggling} className="h-6 w-6 rounded-md" />
+          </div>
+        )}
+      </div>
       
-      {/* V2 Budget Tracker Section */}
-      <div className="container mx-auto px-4 md:px-6 py-12 max-w-7xl border-t border-border mt-12">
-        <h2 className="text-3xl font-bold mb-8">Trip Budget & Expenses</h2>
+      {/* Budget Tracker Section */}
+      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-7xl border-t border-border mt-6 md:mt-12">
+        <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Trip Budget & Expenses</h2>
         <BudgetTracker 
           tripId={itinerary.id}
           totalBudget={Number(itinerary.budget) || 120000} 

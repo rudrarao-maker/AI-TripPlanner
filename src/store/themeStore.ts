@@ -8,14 +8,19 @@ interface ThemeStore {
 }
 
 export const useThemeStore = create<ThemeStore>((set) => ({
-  theme: "light",
+  theme: "system",
   setTheme: (theme) => {
-    // Force light mode always
-    set({ theme: "light" });
+    set({ theme });
     if (typeof window !== "undefined") {
       const root = window.document.documentElement;
-      root.classList.remove("dark");
-      root.classList.add("light");
+      root.classList.remove("dark", "light");
+
+      if (theme === "system") {
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.classList.add(systemDark ? "dark" : "light");
+      } else {
+        root.classList.add(theme);
+      }
     }
   },
 }));
