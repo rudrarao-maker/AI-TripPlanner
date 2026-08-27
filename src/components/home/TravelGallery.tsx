@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 import { GALLERY_IMAGES } from "@/lib/constants";
 
 export function TravelGallery() {
@@ -56,11 +57,12 @@ export function TravelGallery() {
               className="break-inside-avoid group relative overflow-hidden rounded-2xl cursor-pointer"
               onClick={() => openLightbox(index)}
             >
-              <img
+              <Image
                 src={img.src}
                 alt={img.alt}
-                className="w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="lazy"
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
               />
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
@@ -120,11 +122,14 @@ export function TravelGallery() {
               className="max-w-5xl max-h-[85vh] px-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={GALLERY_IMAGES[lightboxIndex].src}
-                alt={GALLERY_IMAGES[lightboxIndex].alt}
-                className="max-h-[80vh] w-auto mx-auto rounded-2xl object-contain shadow-2xl"
-              />
+              <div className="relative w-full h-[80vh]">
+                <Image
+                  src={GALLERY_IMAGES[lightboxIndex].src}
+                  alt={GALLERY_IMAGES[lightboxIndex].alt}
+                  fill
+                  className="mx-auto rounded-2xl object-contain shadow-2xl"
+                />
+              </div>
               <div className="text-center mt-4">
                 <p className="text-white font-semibold text-lg">
                   {GALLERY_IMAGES[lightboxIndex].alt}

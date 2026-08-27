@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useRouter, useParams } from 'next/navigation';
 import { useGetTrip } from "@/hooks/useTrips";
 import { Button } from "@/components/ui/button";
@@ -112,10 +113,12 @@ export default function ItineraryDetailsPage() {
       {/* Hero Section — smaller on mobile */}
       <div className="relative h-[35vh] md:h-[50vh] min-h-[280px] md:min-h-[400px] w-full">
         <div className="absolute inset-0 bg-black/40 z-10" />
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2000&auto=format&fit=crop"
           alt={itinerary.title || "Trip"}
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          priority
+          className="object-cover"
         />
         <div className="absolute top-20 md:top-24 left-4 md:left-8 z-20">
           <Button

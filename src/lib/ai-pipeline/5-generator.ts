@@ -1,5 +1,5 @@
 import { PipelineState, FinalItinerarySchema } from "./types";
-import { generateObject } from "ai";
+import { generateObject, streamObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const google = createGoogleGenerativeAI({
@@ -7,7 +7,7 @@ const google = createGoogleGenerativeAI({
 });
 
 export class ItineraryGenerator {
-  static async generate(state: PipelineState): Promise<PipelineState> {
+  static async generate(state: PipelineState, onChunk?: (partial: any) => void): Promise<PipelineState> {
     const { preferences, context, rankedPlaces } = state;
     
     // Calculate exact number of days
@@ -51,16 +51,24 @@ export class ItineraryGenerator {
 
     while (attempts < maxAttempts) {
       try {
-        const result = await generateObject({
+        const result = await streamObject({
           model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
           schema: FinalItinerarySchema,
           prompt,
           system: "You are an expert AI travel agent generating highly detailed, geographically sound JSON itineraries.",
         });
 
+        if (onChunk) {
+          for await (const partialObject of result.partialObjectStream) {
+            onChunk(partialObject);
+          }
+        }
+
+        const finalObject = await result.object;
+
         return {
           ...state,
-          itineraryDraft: result.object,
+          itineraryDraft: finalObject as any,
         };
       } catch (error) {
         attempts++;

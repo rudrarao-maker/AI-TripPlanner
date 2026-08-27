@@ -42,14 +42,34 @@ export async function POST(req: Request) {
     const input = await req.json();
     const isMultiDest = input.isMultiDestination === true;
     
-    // Fetch user preferences profile
+    // Fetch user records to check limits and preferences
     try {
       const userRecords = await db.select().from(users).where(eq(users.clerkId, userId));
-      if (userRecords.length > 0 && userRecords[0].preferencesProfile) {
-        input.userProfileWeights = userRecords[0].preferencesProfile;
+      if (userRecords.length > 0) {
+        const user = userRecords[0];
+        
+        // Subscription & Credit check
+        const isPro = user.planType === 'pro' || user.subscriptionStatus === 'active';
+        const credits = user.tripCredits ?? 0;
+        
+        if (!isPro && credits <= 0) {
+          return NextResponse.json({ 
+            error: "You have run out of free trips! Upgrade to Pro for unlimited trips.",
+            requiresUpgrade: true 
+          }, { status: 403 });
+        }
+        
+        // Deduct credit if on free plan
+        if (!isPro && credits > 0) {
+          await db.update(users).set({ tripCredits: credits - 1 }).where(eq(users.id, user.id));
+        }
+
+        if (user.preferencesProfile) {
+          input.userProfileWeights = user.preferencesProfile;
+        }
       }
     } catch (e) {
-      console.error("Failed to fetch user preferences:", e);
+      console.error("Failed to fetch user data:", e);
     }
 
     const encoder = new TextEncoder();
@@ -125,7 +145,9 @@ async function runSingleDestPipeline(
   sendUpdate("ranking", "done");
 
   sendUpdate("generator", "running", "Building your initial itinerary...");
-  state = await ItineraryGenerator.generate(state);
+  state = await ItineraryGenerator.generate(state, (partial) => {
+    sendUpdate("generator_stream", "streaming", JSON.stringify(partial));
+  });
   sendUpdate("generator", "done");
 
   sendUpdate("optimizer", "running", "Optimizing travel routes...");

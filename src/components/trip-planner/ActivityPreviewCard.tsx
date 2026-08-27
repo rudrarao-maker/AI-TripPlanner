@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { generateHotelBookingLink, generateRestaurantBookingLink, generateActivityBookingLink } from "@/lib/booking-providers";
 import { autoBookTable } from "@/lib/api/reservations";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ActivityPreviewCardProps {
   activity: {
@@ -37,15 +37,41 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
   const categoryInfo = CATEGORY_CONFIG[activity.category || "other"] || CATEGORY_CONFIG.other;
   const [isBooking, setIsBooking] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<{success: boolean, message: string} | null>(null);
+  
+  // Real-world data state
+  const [placeData, setPlaceData] = useState<any>(null);
+  const [isLoadingPlace, setIsLoadingPlace] = useState(true);
 
-  // Generate Unsplash image URL based on the place name
+  useEffect(() => {
+    async function fetchPlaceDetails() {
+      setIsLoadingPlace(true);
+      try {
+        const query = encodeURIComponent(`${activity.title || activity.name || ""} ${activity.location || activity.address || ""}`);
+        const res = await fetch(`/api/places/details?query=${query}`);
+        const data = await res.json();
+        if (data.success && data.data) {
+          setPlaceData(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch place details:", err);
+      } finally {
+        setIsLoadingPlace(false);
+      }
+    }
+    fetchPlaceDetails();
+  }, [activity]);
+
+  // Generate Unsplash image URL as fallback
   const imageQuery = encodeURIComponent(`${activity.title || activity.name || "Activity"} ${activity.location || activity.address || "Local area"} travel`);
-  const imageUrl = `https://source.unsplash.com/800x600/?${imageQuery}`;
+  const fallbackImageUrl = `https://source.unsplash.com/800x600/?${imageQuery}`;
+  
+  const displayImage = placeData?.photoUrl || fallbackImageUrl;
+  const displayRating = placeData?.rating || activity.rating;
 
   // Google Maps link
-  const mapsUrl = activity.coordinates
+  const mapsUrl = placeData?.googleMapsUrl || (activity.coordinates
     ? `https://www.google.com/maps/@${activity.coordinates.lat},${activity.coordinates.lng},17z`
-    : `https://www.google.com/maps/search/${encodeURIComponent((activity.title || activity.name || "Activity") + " " + (activity.location || "Local area"))}`;
+    : `https://www.google.com/maps/search/${encodeURIComponent((activity.title || activity.name || "Activity") + " " + (activity.location || "Local area"))}`);
 
   return (
     <motion.div
@@ -59,7 +85,7 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
       {/* Image Section */}
       <div className="relative h-48 w-full overflow-hidden bg-muted flex-shrink-0">
         <Image
-          src={imageUrl}
+          src={displayImage}
           alt={activity.title || activity.name || "Activity image"}
           fill
           className="object-cover"
@@ -87,7 +113,7 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
             {activity.title || activity.name || "Activity"}
           </h3>
           <p className="text-white/80 text-sm flex items-center gap-1 mt-1">
-            <MapPin className="h-3 w-3" /> {activity.location || "Local area"}
+            <MapPin className="h-3 w-3" /> {placeData?.address || activity.location || "Local area"}
           </p>
         </div>
       </div>
@@ -106,9 +132,15 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
               <IndianRupee className="h-3.5 w-3.5" /> {Number(activity.estimatedCost).toLocaleString("en-IN")}
             </span>
           )}
-          {activity.rating && (
+          {displayRating && (
             <span className="flex items-center gap-1 text-sm text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
-              <Star className="h-3.5 w-3.5 fill-amber-500" /> {activity.rating}
+              <Star className="h-3.5 w-3.5 fill-amber-500" /> {displayRating}
+              {placeData?.userRatingsTotal && <span className="text-xs opacity-70 ml-1">({placeData.userRatingsTotal})</span>}
+            </span>
+          )}
+          {placeData && placeData.openNow !== undefined && (
+            <span className={`flex items-center gap-1 text-sm px-2 py-1 rounded-lg font-medium ${placeData.openNow ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+              <Clock className="h-3.5 w-3.5" /> {placeData.openNow ? 'Open Now' : 'Closed'}
             </span>
           )}
         </div>
@@ -139,6 +171,16 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
             >
               <MapPin className="h-3.5 w-3.5" /> Map
             </Button>
+            {placeData?.website && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => window.open(placeData.website, "_blank")}
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Website
+              </Button>
+            )}
           </div>
           
           {bookingStatus && (

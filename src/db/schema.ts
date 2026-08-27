@@ -27,6 +27,7 @@ export const users = pgTable("User", {
   stripeSubscriptionId: text("stripeSubscriptionId"),
   subscriptionStatus: subscriptionStatusEnum("subscriptionStatus").default("inactive"), // inactive, active, past_due, canceled
   planType: planTypeEnum("planType").default("free"), // free, pro, premium
+  tripCredits: integer("tripCredits").default(3), // Users start with 3 free trips
   preferencesProfile: jsonb("preferencesProfile"), // e.g. { "museums": -2, "food": +5 }
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),

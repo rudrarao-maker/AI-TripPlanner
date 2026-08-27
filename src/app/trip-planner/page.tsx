@@ -115,6 +115,7 @@ function TripPlannerContent() {
     plans,
     setPlans,
     itinerary,
+    partialItinerary,
     setItinerary,
     optimisticItinerary,
     updateOptimisticItinerary,
@@ -339,12 +340,12 @@ function TripPlannerContent() {
   // RENDER HELPERS
   // ------------------
 
-  if (isGenerating) {
+  if (isGenerating && !partialItinerary) {
     return <AILoadingScreen formData={formData} pipelineSteps={pipelineSteps} />;
   }
 
   const selectedPlan = selectedPlanIndex !== null ? plans[selectedPlanIndex] : null;
-  const activeItinerary = selectedPlan || optimisticItinerary;
+  const activeItinerary = partialItinerary || selectedPlan || optimisticItinerary;
 
   if (plans.length > 0 && selectedPlanIndex === null) {
     return (

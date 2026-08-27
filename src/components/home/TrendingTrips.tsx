@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, ArrowRight, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const MOTION_EASE = [0.16, 1, 0.3, 1] as const;
@@ -78,10 +79,12 @@ export function TrendingTrips() {
                 onClick={() => router.push(`/trip-planner?template=${trip.id}`)}
               >
                 <div className="relative h-[400px] md:h-[450px] w-full rounded-2xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300">
-                  <img
+                  <Image
                     src={trip.image}
                     alt={trip.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
+                    fill
+                    sizes="(max-width: 768px) 85vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
                   

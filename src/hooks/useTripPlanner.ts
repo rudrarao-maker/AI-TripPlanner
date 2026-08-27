@@ -13,6 +13,7 @@ export type PipelineStep = {
 export const useTripPlanner = () => {
   const [plans, setPlans] = useState<any[]>([]);
   const [finalItinerary, setFinalItinerary] = useState<any>(null);
+  const [partialItinerary, setPartialItinerary] = useState<any>(null);
   const [activeTripId, setActiveTripId] = useState<string | undefined>();
   const [isGenerating, setIsGenerating] = useState(false);
   const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([
@@ -92,6 +93,7 @@ export const useTripPlanner = () => {
   const generateWithData = async (dataToUse: any) => {
     setIsGenerating(true);
     setFinalItinerary(null);
+    setPartialItinerary(null);
     setActiveTripId(undefined);
     
     const isMulti = dataToUse.tripMode === "multi";
@@ -153,6 +155,10 @@ export const useTripPlanner = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || "Please upgrade your plan to generate more trips.");
+        }
         throw new Error("Failed to start generation");
       }
 
@@ -178,7 +184,12 @@ export const useTripPlanner = () => {
               try {
                 const data = JSON.parse(dataStr);
                 
-                if (data.step === "complete") {
+                if (data.step === "generator_stream") {
+                  try {
+                    const partialPayload = JSON.parse(data.message);
+                    setPartialItinerary(partialPayload);
+                  } catch (e) {}
+                } else if (data.step === "complete") {
                   try {
                     const payload = JSON.parse(data.message);
                     setFinalItinerary(payload.itinerary);
@@ -257,6 +268,14 @@ export const useTripPlanner = () => {
     } catch (err: any) {
       console.log("Plan generation failed:", err.message);
       toast.error(err.message || "Failed to generate plans. Please try again.");
+      
+      // If it's a 403 upgrade message, maybe redirect or just let them click pricing
+      if (err.message.includes("Upgrade to Pro")) {
+        setTimeout(() => {
+          window.location.href = "/pricing";
+        }, 1500);
+      }
+      
       setIsGenerating(false);
     }
   };
@@ -272,6 +291,7 @@ export const useTripPlanner = () => {
     plans,
     setPlans,
     itinerary,
+    partialItinerary,
     setItinerary: setFinalItinerary,
     optimisticItinerary,
     updateOptimisticItinerary,

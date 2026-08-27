@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
+import Image from "next/image";
 
 const MOTION_EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -62,10 +63,12 @@ export function Testimonials() {
                 &ldquo;{testimonial.content}&rdquo;
               </p>
               <div className="flex items-center gap-4 mt-auto">
-                <img
+                <Image
                   src={testimonial.image}
                   alt={testimonial.name}
-                  className="w-12 h-12 rounded-full object-cover border border-border"
+                  width={48}
+                  height={48}
+                  className="rounded-full object-cover border border-border"
                 />
                 <div>
                   <h4 className="font-semibold">{testimonial.name}</h4>
