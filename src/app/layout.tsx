@@ -35,6 +35,12 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Trip Planner",
+    startupImage: [
+      {
+        url: '/icon.png',
+        media: '(device-width: 768px) and (device-height: 1024px)'
+      }
+    ]
   },
   formatDetection: {
     telephone: false,

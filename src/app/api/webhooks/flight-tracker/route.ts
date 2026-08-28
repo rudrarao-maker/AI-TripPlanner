@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { autoRescheduleDay } from "@/lib/ai-pipeline/auto-rebook";
+import { logAuditAction } from "@/lib/audit-logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,9 +18,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await logAuditAction({
+      action: "WEBHOOK_RECEIVED",
+      metadata: { source: "flight-tracker", flightNumber, delayMinutes }
+    });
+
     console.log(`[Webhook] Flight ${flightNumber} delayed by ${delayMinutes} mins. Initiating auto-rebook...`);
 
     const rescheduledData = await autoRescheduleDay(currentActivities, delayMinutes, flightNumber);
+
+    await logAuditAction({
+      action: "AUTO_REBOOK_SUCCESS",
+      metadata: { flightNumber, rescheduledCount: rescheduledData.activities.length }
+    });
 
     return NextResponse.json({ success: true, data: rescheduledData });
   } catch (error: any) {

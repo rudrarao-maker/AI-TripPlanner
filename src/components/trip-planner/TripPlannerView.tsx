@@ -49,6 +49,7 @@ import { SocialImporter } from "@/components/itinerary/SocialImporter";
 import { findDestinationInfo } from "@/lib/destinationData";
 import { useRegenerateDay } from "@/hooks/useTrips";
 import { toast } from "react-hot-toast";
+import posthog from "posthog-js";
 
 export function TripPlannerView({
   activeItinerary,
@@ -67,7 +68,6 @@ export function TripPlannerView({
   transportOptions,
   handleCalendarSync,
   handleSave,
-  handleShare,
   handleDownloadPdf,
   isChatOpen,
   setIsChatOpen,
@@ -75,6 +75,22 @@ export function TripPlannerView({
   searchParams
 }: any) {
   const router = useRouter();
+
+  // Try to load from localStorage if offline
+  const [activeItinerary, setActiveItinerary] = useState(() => {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      const cached = localStorage.getItem("cachedItinerary");
+      if (cached) return JSON.parse(cached);
+    }
+    return initialItinerary;
+  });
+
+  useEffect(() => {
+    if (activeItinerary) {
+      localStorage.setItem("cachedItinerary", JSON.stringify(activeItinerary));
+    }
+  }, [activeItinerary]);
+
   const [activeTab, setActiveTab] = useState<"itinerary" | "logistics" | "packing" | "expenses">("itinerary");
   const [recTab, setRecTab] = useState<"hotels" | "restaurants" | "attractions" | "transport">("hotels");
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
@@ -140,6 +156,7 @@ export function TripPlannerView({
           });
         }
         toast.success(`Day ${dayNumber} automatically rescheduled!`, { id: "flight-delay" });
+        posthog.capture('flight_delay_simulated', { flightNumber, delayMinutes });
       } else {
         toast.error("Webhook simulation failed.", { id: "flight-delay" });
       }
@@ -198,6 +215,7 @@ export function TripPlannerView({
         startTime: parsedData.startTime?.substring(11, 16) || '12:00',
       });
       toast.success(`Successfully added ${parsedData.provider} to Day 1!`);
+      posthog.capture('magic_receipt_imported', { provider: parsedData.provider, type: parsedData.type });
     }
   };
 
@@ -216,6 +234,7 @@ export function TripPlannerView({
         startTime: '15:00', // Default to afternoon for social spots
       });
       toast.success(`Successfully added ${parsedData.name} to Day 1!`);
+      posthog.capture('social_place_extracted', { category: parsedData.category });
     }
   };
 
@@ -417,7 +436,23 @@ export function TripPlannerView({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleShare}
+                  onClick={async () => {
+                    const shareData = {
+                      title: "My AI Trip Itinerary",
+                      text: `Check out my trip to ${formData.destinations[0]}!`,
+                      url: window.location.href,
+                    };
+                    if (navigator.share) {
+                      try {
+                        await navigator.share(shareData);
+                      } catch (err) {
+                        console.log("Error sharing", err);
+                      }
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast.success("Link copied to clipboard!");
+                    }
+                  }}
                   className="hidden sm:flex"
                 >
                   <Share2 className="h-4 w-4 mr-2" /> Share

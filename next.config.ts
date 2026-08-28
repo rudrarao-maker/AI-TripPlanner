@@ -8,6 +8,9 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   skipWaiting: true,
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
+  customWorkerSrc: "public",
+  customWorkerDest: "dest",
+  customWorkerPrefix: "custom-sw",
 });
 
 const nextConfig: NextConfig = {
