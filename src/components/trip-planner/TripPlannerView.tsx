@@ -44,6 +44,8 @@ import { NearbyPlaces } from "@/components/map/NearbyPlaces";
 import { ExpenseTracker } from "@/components/itinerary/ExpenseTracker";
 import { LiveCursors } from "@/components/itinerary/LiveCursors";
 import { ActivityPreviewCard } from "@/components/trip-planner/ActivityPreviewCard";
+import { ReceiptImporter } from "@/components/itinerary/ReceiptImporter";
+import { SocialImporter } from "@/components/itinerary/SocialImporter";
 import { findDestinationInfo } from "@/lib/destinationData";
 import { useRegenerateDay } from "@/hooks/useTrips";
 import { toast } from "react-hot-toast";
@@ -79,6 +81,7 @@ export function TripPlannerView({
   const [isPublic, setIsPublic] = useState(activeItinerary.isPublic || false);
   const [isTogglingPublic, setIsTogglingPublic] = useState(false);
   const [isCompanionMode, setIsCompanionMode] = useState(false);
+  const [isSimulatingDelay, setIsSimulatingDelay] = useState(false);
   const regenerateDayMutation = useRegenerateDay();
 
   const handleRegenerateDay = async (dayNumber: number) => {
@@ -106,6 +109,44 @@ export function TripPlannerView({
       toast.success(`Day ${dayNumber} regenerated!`, { id: "regen-day" });
     } catch (err) {
       toast.error("Failed to regenerate day", { id: "regen-day" });
+    }
+  };
+
+  const handleFlightDelaySimulation = async (dayNumber: number, flightNumber: string = "DL104", delayMinutes: number = 120) => {
+    try {
+      setIsSimulatingDelay(true);
+      toast.loading(`Simulating flight delay for ${flightNumber}...`, { id: "flight-delay" });
+      
+      const dayIndex = activeItinerary.days.findIndex((d: any) => d.dayNumber === dayNumber);
+      if (dayIndex < 0) throw new Error("Day not found");
+      
+      const currentActivities = activeItinerary.days[dayIndex].activities;
+
+      const res = await fetch("/api/webhooks/flight-tracker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ flightNumber, delayMinutes, currentActivities })
+      });
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        // Update the local state
+        activeItinerary.days[dayIndex].activities = data.data.activities;
+        
+        // Show AI alerts
+        if (data.data.alerts && data.data.alerts.length > 0) {
+          data.data.alerts.forEach((alert: string) => {
+             toast.error(`⚠️ AI Rebook: ${alert}`, { duration: 8000 });
+          });
+        }
+        toast.success(`Day ${dayNumber} automatically rescheduled!`, { id: "flight-delay" });
+      } else {
+        toast.error("Webhook simulation failed.", { id: "flight-delay" });
+      }
+    } catch (err) {
+      toast.error("Failed to simulate flight delay", { id: "flight-delay" });
+    } finally {
+      setIsSimulatingDelay(false);
     }
   };
 
@@ -139,6 +180,42 @@ export function TripPlannerView({
       toast.error("Something went wrong");
     } finally {
       setIsTogglingPublic(false);
+    }
+  };
+
+  const handleReceiptImport = (parsedData: any) => {
+    if (activeItinerary?.days && activeItinerary.days.length > 0) {
+      // Add to first day as a starting point
+      const day = activeItinerary.days[0];
+      if (!day.activities) day.activities = [];
+      day.activities.push({
+        title: `${parsedData.provider} ${parsedData.type === 'flight' ? 'Flight' : parsedData.type === 'hotel' ? 'Stay' : 'Booking'}`,
+        name: `${parsedData.provider} ${parsedData.type}`,
+        category: parsedData.type,
+        location: parsedData.location,
+        description: `Ref: ${parsedData.bookingReference || 'N/A'} - ${parsedData.description}`,
+        estimatedCost: parsedData.totalCost || 0,
+        startTime: parsedData.startTime?.substring(11, 16) || '12:00',
+      });
+      toast.success(`Successfully added ${parsedData.provider} to Day 1!`);
+    }
+  };
+
+  const handleSocialImport = (parsedData: any) => {
+    if (activeItinerary?.days && activeItinerary.days.length > 0) {
+      // Add to first day as a starting point, perhaps in the afternoon
+      const day = activeItinerary.days[0];
+      if (!day.activities) day.activities = [];
+      day.activities.push({
+        title: parsedData.name,
+        name: parsedData.name,
+        category: parsedData.category,
+        location: parsedData.location,
+        description: parsedData.description,
+        estimatedCost: parsedData.estimatedCost || 0,
+        startTime: '15:00', // Default to afternoon for social spots
+      });
+      toast.success(`Successfully added ${parsedData.name} to Day 1!`);
     }
   };
 
@@ -287,6 +364,8 @@ export function TripPlannerView({
                   <MapPin className="h-4 w-4 mr-2" /> 
                   {isCompanionMode ? "Companion ON" : "Live Companion"}
                 </Button>
+                <SocialImporter onImportSuccess={handleSocialImport} />
+                <ReceiptImporter onImportSuccess={handleReceiptImport} />
                 <Button
                   variant="outline"
                   size="sm"
@@ -480,6 +559,20 @@ export function TripPlannerView({
                               <Wand2 className="h-3 w-3 mr-2 text-primary" />
                             )}
                             Regenerate Day
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs bg-red-50 text-red-600 hover:bg-red-100 border-red-200 ml-2"
+                            onClick={() => handleFlightDelaySimulation(day.dayNumber)}
+                            disabled={isSimulatingDelay}
+                          >
+                            {isSimulatingDelay ? (
+                              <div className="h-3 w-3 mr-2 animate-spin rounded-full border-2 border-red-600 border-r-transparent" />
+                            ) : (
+                              <Plane className="h-3 w-3 mr-2 text-red-600" />
+                            )}
+                            Simulate Flight Delay Webhook
                           </Button>
                         </div>
                         <div className="p-0">

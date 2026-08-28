@@ -42,6 +42,10 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
   const [placeData, setPlaceData] = useState<any>(null);
   const [isLoadingPlace, setIsLoadingPlace] = useState(true);
 
+  // Live pricing state
+  const [livePriceData, setLivePriceData] = useState<any>(null);
+  const [isLoadingLivePrice, setIsLoadingLivePrice] = useState(false);
+
   useEffect(() => {
     async function fetchPlaceDetails() {
       setIsLoadingPlace(true);
@@ -58,7 +62,29 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
         setIsLoadingPlace(false);
       }
     }
+
+    async function fetchLivePricing() {
+      setIsLoadingLivePrice(true);
+      try {
+        const queryParams = new URLSearchParams({
+          name: activity.title || activity.name || "",
+          category: activity.category || "other",
+          location: activity.location || activity.address || ""
+        });
+        const res = await fetch(`/api/booking/live-price?${queryParams.toString()}`);
+        const data = await res.json();
+        if (data.success && data.data) {
+          setLivePriceData(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch live price:", err);
+      } finally {
+        setIsLoadingLivePrice(false);
+      }
+    }
+
     fetchPlaceDetails();
+    fetchLivePricing();
   }, [activity]);
 
   // Generate Unsplash image URL as fallback
@@ -127,9 +153,21 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
               <Clock className="h-3.5 w-3.5" /> {activity.startTime || activity.time}
             </span>
           )}
-          {activity.estimatedCost !== undefined && activity.estimatedCost > 0 && (
+          {isLoadingLivePrice ? (
+            <span className="flex items-center gap-1 text-sm font-semibold text-primary/70 bg-primary/5 px-2 py-1 rounded-lg animate-pulse">
+              <IndianRupee className="h-3.5 w-3.5" /> Fetching live price...
+            </span>
+          ) : livePriceData ? (
+            <span className="flex items-center gap-1 text-sm font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-lg">
+              <IndianRupee className="h-3.5 w-3.5" /> {Number(livePriceData.livePrice).toLocaleString("en-IN")}
+              <span className="text-[10px] uppercase ml-1 opacity-70 bg-green-200 dark:bg-green-800 px-1 rounded">
+                LIVE via {livePriceData.provider}
+              </span>
+            </span>
+          ) : activity.estimatedCost !== undefined && activity.estimatedCost > 0 && (
             <span className="flex items-center gap-1 text-sm font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg">
               <IndianRupee className="h-3.5 w-3.5" /> {Number(activity.estimatedCost).toLocaleString("en-IN")}
+              <span className="text-[10px] uppercase ml-1 opacity-70">EST.</span>
             </span>
           )}
           {displayRating && (
@@ -220,7 +258,9 @@ export function ActivityPreviewCard({ activity, onClose }: ActivityPreviewCardPr
                 window.open(url, "_blank");
               }}
             >
-              <ExternalLink className="h-3.5 w-3.5" /> {activity.category === 'hotel' ? 'Book Hotel' : 'Book Tickets'}
+              <ExternalLink className="h-3.5 w-3.5" /> 
+              {activity.category === 'hotel' ? 'Book Hotel' : 'Book Tickets'}
+              {livePriceData && ` via ${livePriceData.provider}`}
             </Button>
           )}
         </div>
