@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useAuth, useUser, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { Download } from "lucide-react";
 
 export function Navbar({ dbIsAdmin = false }: { dbIsAdmin?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -88,6 +89,11 @@ export function Navbar({ dbIsAdmin = false }: { dbIsAdmin?: boolean }) {
 
         {/* Desktop Right Side Actions */}
         <div className="hidden lg:flex items-center gap-3">
+          <Link href="/app">
+            <Button variant="outline" className="rounded-full gap-2 border-primary/20 text-primary hover:bg-primary/10">
+              <Download className="w-4 h-4" /> Get the App
+            </Button>
+          </Link>
           <ThemeToggle />
           {isSignedIn ? (
             <UserButton
@@ -111,6 +117,11 @@ export function Navbar({ dbIsAdmin = false }: { dbIsAdmin?: boolean }) {
 
         {/* Mobile Top Bar — simplified (bottom nav handles navigation) */}
         <div className="flex items-center gap-2 lg:hidden">
+          <Link href="/app">
+            <Button variant="outline" size="sm" className="rounded-full px-3 h-8 border-primary/20 text-primary">
+              <Download className="w-3.5 h-3.5 mr-1.5" /> App
+            </Button>
+          </Link>
           <ThemeToggle />
           {isSignedIn ? (
             <UserButton

@@ -275,13 +275,13 @@ export function AIChatSidebar({
             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
           />
 
-          {/* Sidebar */}
+          {/* Sidebar / Bottom Sheet */}
           <motion.div
-            initial={{ x: "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "100%", opacity: 0 }}
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-16 bottom-0 w-full md:w-[420px] bg-background border-l border-border shadow-2xl z-50 flex flex-col"
+            className="fixed inset-x-0 bottom-0 top-24 md:inset-auto md:right-0 md:top-16 md:bottom-0 w-full md:w-[420px] bg-background md:border-l border-t md:border-t-0 border-border rounded-t-3xl md:rounded-none shadow-2xl z-50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 border-b flex items-center justify-between bg-card">

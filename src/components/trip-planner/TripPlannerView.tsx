@@ -46,6 +46,7 @@ import { LiveCursors } from "@/components/itinerary/LiveCursors";
 import { ActivityPreviewCard } from "@/components/trip-planner/ActivityPreviewCard";
 import { ReceiptImporter } from "@/components/itinerary/ReceiptImporter";
 import { SocialImporter } from "@/components/itinerary/SocialImporter";
+import { TripPlannerMobileNav } from "@/components/trip-planner/TripPlannerMobileNav";
 import { findDestinationInfo } from "@/lib/destinationData";
 import { useRegenerateDay } from "@/hooks/useTrips";
 import { toast } from "react-hot-toast";
@@ -92,9 +93,18 @@ export function TripPlannerView({
   }, [activeItinerary]);
 
   const [activeTab, setActiveTab] = useState<"itinerary" | "logistics" | "packing" | "expenses">("itinerary");
+  const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("list");
   const [recTab, setRecTab] = useState<"hotels" | "restaurants" | "attractions" | "transport">("hotels");
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [isPublic, setIsPublic] = useState(activeItinerary.isPublic || false);
+
+  const handleMobileNav = (view: "list" | "map" | "chat") => {
+    if (view === "chat") {
+      setIsChatOpen(true);
+    } else {
+      setMobileViewMode(view);
+    }
+  };
   const [isTogglingPublic, setIsTogglingPublic] = useState(false);
   const [isCompanionMode, setIsCompanionMode] = useState(false);
   const [isSimulatingDelay, setIsSimulatingDelay] = useState(false);
@@ -332,11 +342,12 @@ export function TripPlannerView({
 
       <div
         id="itinerary-content"
-        className="container mx-auto px-4 -mt-10 relative z-30"
+        className="container mx-auto px-4 -mt-10 relative z-30 pb-24 lg:pb-0"
       >
+        <TripPlannerMobileNav activeView={mobileViewMode} onViewChange={handleMobileNav} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column: Itinerary & Logistics */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={cn("lg:col-span-2 space-y-6", mobileViewMode !== "list" && "hidden lg:block")}>
             <div className="flex items-center justify-between mb-2 flex-wrap gap-4">
               <div className="flex bg-muted p-1 rounded-lg">
                 <button
@@ -804,8 +815,8 @@ export function TripPlannerView({
           </div>
 
           {/* Right Column: Map & Recommendations */}
-          <div className="space-y-8">
-            <div className="sticky top-24 space-y-8">
+          <div className={cn("space-y-8", mobileViewMode !== "map" && "hidden lg:block")}>
+            <div className="lg:sticky lg:top-24 space-y-8">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
                   <MapLucide className="h-5 w-5 text-primary" />
@@ -819,7 +830,7 @@ export function TripPlannerView({
                     </button>
                   )}
                 </h2>
-                <div className="h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative bg-muted/20" style={{ perspective: "1200px" }}>
+                <div className="h-[calc(100dvh-200px)] lg:h-[400px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-sm relative bg-muted/20" style={{ perspective: "1200px" }}>
                   <AnimatePresence mode="wait">
                     {selectedActivity ? (
                       <ActivityPreviewCard
