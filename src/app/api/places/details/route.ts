@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { ratelimit } from "@/lib/ratelimit";
+import { generalApiLimit, applyRateLimit } from "@/lib/apiRateLimit";
 import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: Request) {
   try {
     const { userId } = await auth();
-    if (ratelimit && userId) {
-      const { success } = await ratelimit.limit(userId);
-      if (!success) {
-        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    if (userId) {
+      const rateLimitResult = await applyRateLimit(generalApiLimit, userId);
+      if (!rateLimitResult.allowed) {
+        return NextResponse.json({ error: "Rate limit exceeded" }, { 
+          status: 429, 
+          headers: rateLimitResult.headers 
+        });
       }
     }
 

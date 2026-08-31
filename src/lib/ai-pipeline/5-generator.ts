@@ -56,6 +56,14 @@ export class ItineraryGenerator {
           schema: FinalItinerarySchema,
           prompt,
           system: "You are an expert AI travel agent generating highly detailed, geographically sound JSON itineraries.",
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId: "generate-single-itinerary",
+            metadata: { 
+              destination: preferences.destination,
+              numDays: String(numDays)
+            }
+          }
         });
 
         if (onChunk) {

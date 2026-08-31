@@ -24,9 +24,19 @@ import {
   Wand2,
   Info,
   Lock,
-  Camera
+  Camera,
+  Calendar,
+  Clock,
+  RefreshCw,
+  Save,
+  CheckCircle,
+  FileText,
+  Layout,
+  Plus,
+  CalendarSync
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { downloadTripAsPDF, generateICS, syncWithGoogleCalendar } from "@/lib/export";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import dynamic from "next/dynamic";
 const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), { ssr: false });
@@ -39,7 +49,7 @@ import { PackingList } from "@/components/itinerary/PackingList";
 import { BudgetOptimizer } from "@/components/itinerary/BudgetOptimizer";
 import { TravelTools } from "@/components/itinerary/TravelTools";
 import { AIChatSidebar } from "@/components/itinerary/AIChatSidebar";
-import { WeatherWidget } from "@/components/weather/WeatherWidget";
+import { WeatherWidget } from "@/components/itinerary/WeatherWidget";
 import { NearbyPlaces } from "@/components/map/NearbyPlaces";
 import { ExpenseTracker } from "@/components/itinerary/ExpenseTracker";
 import { LiveCursors } from "@/components/itinerary/LiveCursors";
@@ -49,11 +59,14 @@ import { SocialImporter } from "@/components/itinerary/SocialImporter";
 import { TripPlannerMobileNav } from "@/components/trip-planner/TripPlannerMobileNav";
 import { findDestinationInfo } from "@/lib/destinationData";
 import { useRegenerateDay } from "@/hooks/useTrips";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import posthog from "posthog-js";
+import { cn } from "@/lib/utils";
+import localforage from "localforage";
 
 export function TripPlannerView({
-  activeItinerary,
+  activeItinerary: initialItinerary,
   formData,
   itinerary,
   plans,
@@ -77,18 +90,33 @@ export function TripPlannerView({
 }: any) {
   const router = useRouter();
 
-  // Try to load from localStorage if offline
-  const [activeItinerary, setActiveItinerary] = useState(() => {
-    if (typeof window !== 'undefined' && !navigator.onLine) {
-      const cached = localStorage.getItem("cachedItinerary");
-      if (cached) return JSON.parse(cached);
+  // Load from localforage on mount if available
+  const [activeItinerary, setActiveItinerary] = useState(initialItinerary);
+
+  useEffect(() => {
+    async function loadCached() {
+      if (typeof window !== 'undefined') {
+        try {
+          const cacheKey = initialItinerary?.id ? `trip_${initialItinerary.id}` : "cachedItinerary";
+          const cached: string | null = await localforage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.days && parsed.days.length > 0) {
+              setActiveItinerary(parsed);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load itinerary from localforage", e);
+        }
+      }
     }
-    return initialItinerary;
-  });
+    loadCached();
+  }, [initialItinerary?.id]);
 
   useEffect(() => {
     if (activeItinerary) {
-      localStorage.setItem("cachedItinerary", JSON.stringify(activeItinerary));
+      const cacheKey = activeItinerary.id ? `trip_${activeItinerary.id}` : "cachedItinerary";
+      localforage.setItem(cacheKey, JSON.stringify(activeItinerary)).catch(console.error);
     }
   }, [activeItinerary]);
 
@@ -404,6 +432,19 @@ export function TripPlannerView({
                 >
                   <CalendarDays className="h-4 w-4 mr-2" /> Sync Calendar
                 </Button>
+                <Button 
+                      variant="outline" 
+                      onClick={() => generateICS(itinerary, `Trip-${formData.destinations.join("-") || "Itinerary"}`)}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" /> Download Calendar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => syncWithGoogleCalendar(itinerary)}
+                      className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
+                    >
+                      <CalendarSync className="mr-2 h-4 w-4" /> Add to Google Calendar
+                    </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -708,6 +749,8 @@ export function TripPlannerView({
 
             {activeTab === "logistics" && (
               <div className="space-y-6">
+                <WeatherWidget destination={activeItinerary?.tripSummary?.destination || formData.destinations?.[0] || activeItinerary.destination} />
+                
                 {/* Transport Booking Widget */}
                 <Card className="glass-card overflow-hidden">
                   <CardHeader className="bg-muted/30 pb-4">

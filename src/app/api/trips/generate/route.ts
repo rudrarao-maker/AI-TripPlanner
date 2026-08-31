@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import crypto from "crypto";
 import { TripInputValidator } from "@/lib/ai-pipeline/1-validator";
 import { DestinationAnalyzer } from "@/lib/ai-pipeline/2-destination";
 import { PlaceDiscoveryService } from "@/lib/ai-pipeline/3-place-discovery";
@@ -20,8 +21,25 @@ import { MultiRanking } from "@/lib/ai-pipeline/multi-destination/5-multi-rankin
 import { MultiItineraryGenerator } from "@/lib/ai-pipeline/multi-destination/6-multi-generator";
 import { MultiBudgetPlanner } from "@/lib/ai-pipeline/multi-destination/7-multi-budget";
 import { MultiRefiner } from "@/lib/ai-pipeline/multi-destination/8-multi-refiner";
-import { ratelimit } from "@/lib/ratelimit";
+import { aiGenerateLimit, applyRateLimit } from "@/lib/apiRateLimit";
+import { redis } from "@/lib/redis";
 import { logger } from "@/lib/logger";
+
+function generateCacheKey(input: any) {
+  const cacheData = {
+    destination: input.destination,
+    destinations: input.destinations,
+    destinationEntries: input.destinationEntries,
+    dates: input.dates,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    travelStyle: input.travelStyle,
+    budget: input.budget,
+    companions: input.companions,
+    isMultiDestination: input.isMultiDestination,
+  };
+  return "trip:cache:" + crypto.createHash("sha256").update(JSON.stringify(cacheData)).digest("hex");
+}
 
 export const maxDuration = 120; // Multi-dest may need more time
 
@@ -32,11 +50,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (ratelimit) {
-      const { success } = await ratelimit.limit(userId);
-      if (!success) {
-        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
-      }
+    const rateLimitResult = await applyRateLimit(aiGenerateLimit, userId);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { 
+        status: 429, 
+        headers: rateLimitResult.headers 
+      });
     }
 
     const input = await req.json();
@@ -81,10 +100,22 @@ export async function POST(req: Request) {
         };
 
         try {
+          const cacheKey = generateCacheKey(input);
+          if (redis) {
+            sendUpdate("cache", "running", "Checking for identical cached trip...");
+            const cachedTrip = await redis.get(cacheKey);
+            if (cachedTrip) {
+              sendUpdate("cache", "done", "Loaded from cache!");
+              sendUpdate("complete", "success", typeof cachedTrip === "string" ? cachedTrip : JSON.stringify(cachedTrip));
+              controller.close();
+              return;
+            }
+          }
+
           if (isMultiDest) {
-            await runMultiDestPipeline(input, sendUpdate);
+            await runMultiDestPipeline(input, sendUpdate, cacheKey);
           } else {
-            await runSingleDestPipeline(input, sendUpdate);
+            await runSingleDestPipeline(input, sendUpdate, cacheKey);
           }
         } catch (error: any) {
           logger.error("Pipeline Error", { error: error.message, input });
@@ -116,7 +147,8 @@ export async function POST(req: Request) {
 // ===== Single-Destination Pipeline =====
 async function runSingleDestPipeline(
   input: any,
-  sendUpdate: (step: string, status: string, message?: string) => void
+  sendUpdate: (step: string, status: string, message?: string) => void,
+  cacheKey?: string
 ) {
   sendUpdate("validator", "running", "Understanding your trip...");
   let state: PipelineState = TripInputValidator.validate(input);
@@ -163,18 +195,26 @@ async function runSingleDestPipeline(
   sendUpdate("refiner", "done");
 
   // Send final payload using the same sendUpdate mechanism
-  sendUpdate("complete", "success", JSON.stringify({
+  const finalPayload = {
     isMultiDestination: false,
     itinerary: state.finalItinerary,
     budgetSummary: state.budgetSummary,
     warnings: state.warnings,
-  }));
+  };
+
+  if (redis && cacheKey) {
+    // Cache the result for 30 days
+    await redis.set(cacheKey, JSON.stringify(finalPayload), { ex: 60 * 60 * 24 * 30 });
+  }
+
+  sendUpdate("complete", "success", JSON.stringify(finalPayload));
 }
 
 // ===== Multi-Destination Pipeline =====
 async function runMultiDestPipeline(
   input: any,
-  sendUpdate: (step: string, status: string, message?: string) => void
+  sendUpdate: (step: string, status: string, message?: string) => void,
+  cacheKey?: string
 ) {
   const destCount = input.destinationEntries?.length || 0;
 
@@ -210,12 +250,19 @@ async function runMultiDestPipeline(
   state = await MultiRefiner.refine(state);
   sendUpdate("refiner", "done");
 
-  sendUpdate("complete", "success", JSON.stringify({
+  const finalPayload = {
     isMultiDestination: true,
     itinerary: state.multiDestItinerary,
     budgetSummary: state.budgetSummary,
     warnings: state.warnings,
     routeOptimizationSuggested: state.routeOptimizationSuggested,
     optimizedOrder: state.optimizedOrder,
-  }));
+  };
+
+  if (redis && cacheKey) {
+    // Cache the result for 30 days
+    await redis.set(cacheKey, JSON.stringify(finalPayload), { ex: 60 * 60 * 24 * 30 });
+  }
+
+  sendUpdate("complete", "success", JSON.stringify(finalPayload));
 }

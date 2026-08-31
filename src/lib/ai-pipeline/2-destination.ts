@@ -2,6 +2,7 @@ import { PipelineState } from "./types";
 import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
+import { retrieveSimilarContext } from "@/lib/rag";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -43,9 +44,22 @@ export class DestinationAnalyzer {
          console.error("Open-Meteo fetch failed:", e);
       }
 
+      // Retrieve verified knowledge base facts using RAG
+      let retrievedContext = "";
+      try {
+        const ragResults = await retrieveSimilarContext(`Travel tips, secrets, and info for ${destination}`, 3);
+        if (ragResults && ragResults.length > 0) {
+          retrievedContext = ragResults.map(r => r.content).join("\n\n");
+        }
+      } catch (e) {
+        console.error("RAG fetch failed:", e);
+      }
+
       const prompt = `Analyze the travel destination: ${destination} for a trip from ${startDate} to ${endDate}.
       Travelers: ${travelers}. Style: ${travelStyle}. Interests: ${interests?.join(", ")}.
-      ${openMeteoForecast ? `Incorporate this real forecast data into the weather summary: ${openMeteoForecast}. Also mention seasonal considerations.` : `Provide a brief overview, likely weather for these dates, seasonal considerations, and local transportation tips.`}`;
+      ${openMeteoForecast ? `Incorporate this real forecast data into the weather summary: ${openMeteoForecast}. Also mention seasonal considerations.` : `Provide a brief overview, likely weather for these dates, seasonal considerations, and local transportation tips.`}
+      
+      ${retrievedContext ? `IMPORTANT: Use the following verified facts from our knowledge base to inform your analysis (especially for transport and safety tips):\n${retrievedContext}` : ""}`;
       
       const result = await generateObject({
         model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),

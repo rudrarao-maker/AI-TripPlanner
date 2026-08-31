@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { Redis } = require('ioredis');
 
 const app = express();
 app.use(cors());
@@ -14,6 +16,20 @@ const io = new Server(server, {
     methods: ['GET', 'POST']
   }
 });
+
+// Setup Redis Adapter if REDIS_URL is provided for horizontal scaling
+if (process.env.REDIS_URL) {
+  const pubClient = new Redis(process.env.REDIS_URL);
+  const subClient = pubClient.duplicate();
+  io.adapter(createAdapter(pubClient, subClient));
+  
+  pubClient.on('error', (err) => console.error('Redis PubClient Error:', err));
+  subClient.on('error', (err) => console.error('Redis SubClient Error:', err));
+  
+  console.log('Socket.io configured with Redis Adapter for multi-instance scaling.');
+} else {
+  console.log('Running Socket.io without Redis (Single instance mode). Set REDIS_URL to scale.');
+}
 
 // Track users in rooms
 const rooms = new Map();

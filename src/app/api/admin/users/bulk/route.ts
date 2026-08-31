@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { inngest } from "@/inngest/client";
 
 export async function POST(req: Request) {
   try {
@@ -23,33 +24,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    const created = [];
-    const skipped = [];
-
-    // Process sequentially to avoid rate limiting
-    for (const u of users) {
-      try {
-        const newUser = await client.users.createUser({
-          emailAddress: [u.email],
-          firstName: u.name?.split(' ')[0] || '',
-          lastName: u.name?.split(' ').slice(1).join(' ') || '',
-          password: "Password123!",
-          publicMetadata: {
-            role: u.role || 'user'
-          }
-        });
-        created.push(newUser);
-      } catch (error: any) {
-        console.error(`Failed to create user ${u.email}:`, error.errors?.[0]?.message || error.message);
-        skipped.push({ email: u.email, reason: error.errors?.[0]?.message || error.message });
-      }
-    }
+    // Trigger background job via Inngest
+    await inngest.send({
+      name: "admin/bulk.import",
+      data: { users }
+    });
 
     return NextResponse.json({
       success: true,
+      message: "Bulk import started in the background. You will be notified when it completes.",
       data: {
-        created,
-        skipped
+        totalQueued: users.length,
       }
     });
 

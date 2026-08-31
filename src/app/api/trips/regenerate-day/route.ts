@@ -3,6 +3,7 @@ import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
+import { aiGenerateLimit, applyRateLimit } from "@/lib/apiRateLimit";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -30,6 +31,14 @@ export async function POST(req: Request) {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateLimitResult = await applyRateLimit(aiGenerateLimit, userId);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { 
+        status: 429, 
+        headers: rateLimitResult.headers 
+      });
     }
 
     const { dayNumber, existingPlan, preferences } = await req.json();

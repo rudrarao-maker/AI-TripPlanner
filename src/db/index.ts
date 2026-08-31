@@ -17,7 +17,7 @@ const globalForDb = globalThis as unknown as {
 const client = globalForDb.postgresClient ?? (connectionString
   ? postgres(connectionString, {
       prepare: false,
-      max: 10,                    // Maximum 10 connections in pool
+      max: process.env.NODE_ENV === 'production' ? 1 : 10, // Maximum 1 in prod for serverless scale
       idle_timeout: 20,           // Close idle connections after 20s
       connect_timeout: 10,        // Fail connection attempts after 10s
       max_lifetime: 60 * 30,      // Recycle connections every 30 minutes

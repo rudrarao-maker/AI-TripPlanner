@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Circle, Loader2 } from "lucide-react";
-import { AIAssistantOrb, AIOrbState } from "./AIAssistantOrb";
+import dynamic from "next/dynamic";
+import { type AIOrbState } from "./AIAssistantOrb";
+
+const AIAssistantOrb = dynamic(() => import("./AIAssistantOrb").then(mod => mod.AIAssistantOrb), {
+  ssr: false,
+  loading: () => <div className="w-40 h-40 rounded-full bg-primary/5 animate-pulse flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary/40" /></div>
+});
 
 const GENERATION_STEPS = [
   "Understanding preferences...",

@@ -1,11 +1,9 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { Resend } from 'resend'
+import { inngest } from '@/inngest/client'
 import { db } from '@/db'
 import { users } from '@/db/schema'
-
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_build');
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.CLERK_WEBHOOK_SECRET
@@ -70,14 +68,12 @@ export async function POST(req: Request) {
 
     if (email && process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_placeholder') {
       try {
-        await resend.emails.send({
-          from: 'TripCraft AI <welcome@yourdomain.com>',
-          to: [email],
-          subject: 'Welcome to TripCraft AI!',
-          html: `<p>Hi ${first_name || 'Traveler'},</p><p>Welcome to TripCraft AI! Start planning your dream trip today.</p>`,
-        })
+        await inngest.send({
+          name: "email/send-welcome",
+          data: { email, firstName: first_name }
+        });
       } catch (error) {
-        console.error('Failed to send welcome email:', error)
+        console.error('Failed to enqueue welcome email:', error)
       }
     }
   }

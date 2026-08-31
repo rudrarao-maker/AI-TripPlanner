@@ -1,6 +1,6 @@
 import { pgTable, uuid, text, boolean, timestamp, integer, numeric, doublePrecision, index, jsonb, pgEnum } from "drizzle-orm/pg-core";
 import { vector } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 
 export const roleEnum = pgEnum("role", ["user", "admin", "owner", "editor", "viewer"]);
@@ -63,8 +63,9 @@ export const trips = pgTable("Trip", {
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
-  userIdIdx: index("userId_idx").on(table.userId),
-  isPublicIdx: index("isPublic_idx").on(table.isPublic),
+  userIdIdx: index("userId_idx").on(table.userId).where(sql`${table.deletedAt} IS NULL`),
+  isPublicIdx: index("isPublic_idx").on(table.isPublic).where(sql`${table.deletedAt} IS NULL`),
+  destinationIdx: index("trip_destination_idx").on(table.destination),
 }));
 
 export const tripDestinations = pgTable("TripDestination", {
@@ -85,7 +86,7 @@ export const tripDestinations = pgTable("TripDestination", {
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
-  tripIdIdx: index("tripDest_tripId_idx").on(table.tripId),
+  tripIdIdx: index("tripDest_tripId_idx").on(table.tripId).where(sql`${table.deletedAt} IS NULL`),
   orderIdx: index("tripDest_order_idx").on(table.tripId, table.order),
 }));
 
@@ -133,7 +134,9 @@ export const activities = pgTable("Activity", {
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deletedAt", { withTimezone: true }),
 }, (table) => ({
-  tripDayIdIdx: index("tripDayId_idx").on(table.tripDayId),
+  tripDayIdIdx: index("tripDayId_idx").on(table.tripDayId).where(sql`${table.deletedAt} IS NULL`),
+  placeIdIdx: index("activity_placeId_idx").on(table.placeId),
+  categoryIdx: index("activity_category_idx").on(table.category),
 }));
 
 export const tripCollaborators = pgTable("TripCollaborator", {
@@ -500,7 +503,9 @@ export const knowledgeBase = pgTable("KnowledgeBase", {
   embedding: vector("embedding", { dimensions: 768 }), // Gemini text-embedding-004 is 768 dims
   metadata: jsonb("metadata"), // e.g. { source: "guide", location: "Paris" }
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  embeddingIndex: index("embeddingIndex").using("hnsw", table.embedding.op("vector_cosine_ops")),
+}));
 
 export const places = pgTable("Place", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -518,7 +523,10 @@ export const places = pgTable("Place", {
   imageUrl: text("imageUrl"),
   source: text("source"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  destinationIdx: index("place_dest_idx").on(table.destination),
+  categoryIdx: index("place_category_idx").on(table.category),
+}));
 
 export const aiExecutions = pgTable("AIExecution", {
   id: uuid("id").primaryKey().defaultRandom(),

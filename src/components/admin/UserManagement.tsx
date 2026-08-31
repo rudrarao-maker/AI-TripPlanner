@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
-import { UserTable } from "./users/UserTable";
-import { BulkImport } from "./users/BulkImport";
-import { BulkExport } from "./users/BulkExport";
+import dynamic from "next/dynamic";
+
+const UserTable = dynamic(() => import("./users/UserTable").then(mod => mod.UserTable), { ssr: false });
+const BulkImport = dynamic(() => import("./users/BulkImport").then(mod => mod.BulkImport), { ssr: false });
+const BulkExport = dynamic(() => import("./users/BulkExport").then(mod => mod.BulkExport), { ssr: false });
 import { Users, Upload, Download } from "lucide-react";
 import { motion } from "framer-motion";
 

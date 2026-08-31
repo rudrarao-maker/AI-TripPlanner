@@ -133,3 +133,55 @@ export function generateICS(tripData: any, filename: string) {
   link.click();
   document.body.removeChild(link);
 }
+
+export function syncWithGoogleCalendar(tripData: any) {
+  // We create a single multi-day event for the entire trip
+  const title = `Trip to ${tripData.destination || tripData.tripSummary?.route || "Unknown Destination"}`;
+  
+  // Find start and end dates
+  let startDateStr = "";
+  let endDateStr = "";
+  
+  if (tripData.days && tripData.days.length > 0) {
+    startDateStr = tripData.days[0].date;
+    endDateStr = tripData.days[tripData.days.length - 1].date;
+  } else if (tripData.destinations && tripData.destinations.length > 0) {
+    const firstDest = tripData.destinations[0];
+    const lastDest = tripData.destinations[tripData.destinations.length - 1];
+    startDateStr = firstDest.days[0].date;
+    endDateStr = lastDest.days[lastDest.days.length - 1].date;
+  }
+  
+  if (!startDateStr) {
+    console.error("Could not determine trip dates for calendar sync.");
+    return;
+  }
+
+  // Format dates for Google Calendar (YYYYMMDD)
+  const formatForGoogle = (dateString: string) => {
+    const d = new Date(dateString);
+    return d.toISOString().split("T")[0].replace(/-/g, "");
+  };
+
+  const start = formatForGoogle(startDateStr);
+  
+  // Google Calendar end dates for all-day events are exclusive, so add 1 day
+  const endD = new Date(endDateStr || startDateStr);
+  endD.setDate(endD.getDate() + 1);
+  const end = endD.toISOString().split("T")[0].replace(/-/g, "");
+
+  const details = `Planned with AI Trip Planner.\nCheck out your full itinerary here: ${window.location.href}`;
+
+  const url = new URL("https://calendar.google.com/calendar/render");
+  url.searchParams.append("action", "TEMPLATE");
+  url.searchParams.append("text", title);
+  url.searchParams.append("dates", `${start}/${end}`);
+  url.searchParams.append("details", details);
+  if (tripData.destination) {
+    url.searchParams.append("location", tripData.destination);
+  }
+
+  // Open in new tab
+  window.open(url.toString(), "_blank");
+}
+
