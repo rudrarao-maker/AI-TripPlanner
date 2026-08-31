@@ -1,8 +1,21 @@
-import { generateEmbedding, insertKnowledge, retrieveSimilarContext } from '@/lib/rag';
 import { db } from '@/db';
 import { embed } from 'ai';
 
-// Mock dependencies
+// Mock dependencies to avoid ESM import errors
+jest.mock('@ai-sdk/google', () => ({
+  createGoogleGenerativeAI: jest.fn(() => ({
+    textEmbeddingModel: jest.fn()
+  }))
+}));
+
+jest.mock('@/lib/redis', () => ({
+  redis: {
+    get: jest.fn().mockResolvedValue(null),
+    setex: jest.fn().mockResolvedValue('OK')
+  }
+}));
+
+import { generateEmbedding, insertKnowledge, retrieveSimilarContext } from '@/lib/rag';
 jest.mock('@/db', () => ({
   db: {
     insert: jest.fn().mockReturnThis(),
