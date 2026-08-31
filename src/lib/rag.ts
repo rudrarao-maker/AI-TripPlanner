@@ -28,7 +28,22 @@ export async function insertKnowledge(content: string, metadata: any = {}) {
   });
 }
 
+import { redis } from "@/lib/redis";
+
 export async function retrieveSimilarContext(query: string, limit: number = 3) {
+  const cacheKey = `rag:context:${query.replace(/[^a-zA-Z0-9]/g, '_')}:${limit}`;
+  
+  if (redis) {
+    try {
+      const cachedResults = await redis.get(cacheKey);
+      if (cachedResults) {
+        return cachedResults as any[];
+      }
+    } catch (e) {
+      console.warn("Redis cache read failed for RAG:", e);
+    }
+  }
+
   const queryEmbedding = await generateEmbedding(query);
   const similarity = sql<number>`1 - (${knowledgeBase.embedding} <=> ${queryEmbedding})`;
 
@@ -43,6 +58,15 @@ export async function retrieveSimilarContext(query: string, limit: number = 3) {
     .where(sql`${similarity} > 0.5`) // Minimum similarity threshold
     .orderBy(sql`${knowledgeBase.embedding} <=> ${queryEmbedding}`)
     .limit(limit);
+
+  if (redis && results.length > 0) {
+    try {
+      // Cache for 24 hours
+      await redis.setex(cacheKey, 86400, results);
+    } catch (e) {
+      console.warn("Redis cache write failed for RAG:", e);
+    }
+  }
 
   return results;
 }
