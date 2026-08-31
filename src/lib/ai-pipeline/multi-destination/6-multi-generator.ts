@@ -1,6 +1,7 @@
 import { MultiDestPipelineState, MultiDestItinerarySchema } from "../types";
 import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { retrieveSimilarContext } from "@/lib/rag";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -49,6 +50,10 @@ export class MultiItineraryGenerator {
       `${t.from} → ${t.to}: ${t.mode}, ~${t.estimatedDurationMinutes} mins, ~${t.estimatedCost} ${preferences.currency}`
     ).join("\n");
 
+    // Retrieve hyper-local hidden gems from RAG Knowledge Base
+    const localInsights = await retrieveSimilarContext(`hidden gems, local favorites, off-the-beaten-path in ${route}`, 5);
+    const insightsStr = localInsights.map(i => `- ${i.content}`).join("\n");
+
     const prompt = `You are a professional travel planning AI creating a multi-destination itinerary.
 
 TRIP OVERVIEW:
@@ -71,13 +76,17 @@ ${placesContext}
 CRITICAL RULES:
 1. The LAST day at each destination (except the final one) is a TRANSFER DAY.
    On transfer days: Morning checkout, travel, afternoon arrival and check-in at next city. Do NOT schedule full-day sightseeing on transfer days.
-2. Use ONLY the verified places listed above where possible.
-3. For each day, include realistic start/end times and travel time between activities.
-4. Budget should be split realistically across destinations.
-5. Include accommodation, food, activities, and local transport in each destination budget.
-6. Mark transfer days with isTransferDay: true.
-7. The route string should be: "${route}"
-8. All costs in ${preferences.currency}.`;
+2. PRIORITIZE HYPER-LOCAL HIDDEN GEMS: We have retrieved local expert knowledge for you. You MUST incorporate these insights into the itinerary over generic tourist traps if they fit the user's preferences.
+3. Use ONLY the verified places listed above where possible.
+4. For each day, include realistic start/end times and travel time between activities.
+5. Budget should be split realistically across destinations.
+6. Include accommodation, food, activities, and local transport in each destination budget.
+7. Mark transfer days with isTransferDay: true.
+8. The route string should be: "${route}"
+9. All costs in ${preferences.currency}.
+
+Expert Hyper-Local Insights (RAG Knowledge Base):
+${insightsStr || "No hyper-local insights available in knowledge base."}`;
 
     try {
       const result = await generateObject({

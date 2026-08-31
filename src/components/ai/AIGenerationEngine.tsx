@@ -24,12 +24,25 @@ const GENERATION_STEPS = [
 
 interface AIGenerationEngineProps {
   isGenerating: boolean;
+  hasImage?: boolean;
   onComplete?: () => void;
 }
 
-export function AIGenerationEngine({ isGenerating, onComplete }: AIGenerationEngineProps) {
+export function AIGenerationEngine({ isGenerating, hasImage, onComplete }: AIGenerationEngineProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [orbState, setOrbState] = useState<AIOrbState>("idle");
+
+  const steps = [
+    ...(hasImage ? ["Scanning uploaded image..."] : []),
+    "Understanding preferences...",
+    "Analyzing destination data...",
+    "Finding relevant places...",
+    "Optimizing travel route...",
+    "Building day-by-day itinerary...",
+    "Calculating estimated budget...",
+    "Checking local schedules...",
+    "Personalizing recommendations..."
+  ];
 
   useEffect(() => {
     if (!isGenerating) {
@@ -41,7 +54,7 @@ export function AIGenerationEngine({ isGenerating, onComplete }: AIGenerationEng
     setOrbState("thinking");
     
     // Simulate progression through steps for visual feedback
-    const totalSteps = GENERATION_STEPS.length;
+    const totalSteps = steps.length;
     let step = 0;
     
     // Switch orb to generating after thinking phase
@@ -86,7 +99,7 @@ export function AIGenerationEngine({ isGenerating, onComplete }: AIGenerationEng
 
       {/* Right side: The Checklist */}
       <div className="flex-1 w-full space-y-4">
-        {GENERATION_STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const isCompleted = index < currentStep;
           const isActive = index === currentStep;
           const isPending = index > currentStep;

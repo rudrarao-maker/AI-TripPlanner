@@ -44,8 +44,8 @@ export const useGetTrip = (id: string) => {
 
 export const useParsePrompt = () => {
   return useMutation({
-    mutationFn: async (prompt: string) => {
-      const response = await api.post("/trips/parse-prompt", { prompt });
+    mutationFn: async ({ prompt, imageBase64 }: { prompt?: string, imageBase64?: string }) => {
+      const response = await api.post("/trips/parse-prompt", { prompt, imageBase64 });
       return response.data.data;
     },
     onError: (error: any) => {

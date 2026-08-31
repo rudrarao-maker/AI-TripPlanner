@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import { Cpu, Mic, Navigation, Loader2 } from "lucide-react";
+import { Cpu, Mic, Navigation, Loader2, Image as ImageIcon, X } from "lucide-react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
@@ -19,7 +19,9 @@ export function HeroSearchBar() {
   const [isFocused, setIsFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -48,14 +50,36 @@ export function HeroSearchBar() {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSearch = (e?: React.FormEvent, preset?: string) => {
     if (e) e.preventDefault();
     const finalPrompt = preset || prompt;
-    if (!finalPrompt.trim()) return;
+    if (!finalPrompt.trim() && !selectedImage) return;
 
     setIsSubmitting(true);
+    
+    if (selectedImage) {
+      sessionStorage.setItem("pendingTripImage", selectedImage);
+    } else {
+      sessionStorage.removeItem("pendingTripImage");
+    }
+
     // Pass the raw prompt to the planner page to parse and generate
-    router.push(`/trip-planner?prompt=${encodeURIComponent(finalPrompt)}`);
+    const queryParams = new URLSearchParams();
+    if (finalPrompt.trim()) queryParams.append("prompt", finalPrompt);
+    if (selectedImage) queryParams.append("hasImage", "true");
+    
+    router.push(`/trip-planner?${queryParams.toString()}`);
   };
 
   const autoResize = () => {
@@ -96,16 +120,50 @@ export function HeroSearchBar() {
               rows={1}
               disabled={isSubmitting}
             />
-            {mounted && browserSupportsSpeechRecognition && (
+            
+            {/* Image Preview Thumbnail */}
+            {selectedImage && (
+              <div className="absolute left-4 top-3 h-16 w-16 md:h-20 md:w-20 rounded-xl overflow-hidden border-2 border-primary/50 shadow-sm z-20">
+                <img src={selectedImage} alt="Upload preview" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+
+            <div className="absolute top-3 md:top-4 right-3 md:right-4 flex items-center gap-1 md:gap-2">
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleImageUpload} 
+              />
               <button
                 type="button"
-                onClick={handleMicClick}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={isSubmitting}
-                className={`absolute top-3 md:top-4 right-3 md:right-4 p-2 md:p-3 rounded-full transition-all ${listening ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                title="Upload Inspiration Image"
+                className={`p-2 md:p-3 rounded-full transition-all ${selectedImage ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
               >
-                <Mic className="h-5 w-5 md:h-6 md:w-6" />
+                <ImageIcon className="h-5 w-5 md:h-6 md:w-6" />
               </button>
-            )}
+              
+              {mounted && browserSupportsSpeechRecognition && (
+                <button
+                  type="button"
+                  onClick={handleMicClick}
+                  disabled={isSubmitting}
+                  className={`p-2 md:p-3 rounded-full transition-all ${listening ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 animate-pulse" : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                >
+                  <Mic className="h-5 w-5 md:h-6 md:w-6" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between px-3 md:px-4 pb-2 md:pb-3 pt-1 md:pt-2">
@@ -116,7 +174,7 @@ export function HeroSearchBar() {
 
             <button
               type="submit"
-              disabled={(!prompt.trim() && !listening) || isSubmitting}
+              disabled={(!prompt.trim() && !listening && !selectedImage) || isSubmitting}
               className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 md:h-12 px-5 md:px-8 rounded-full font-bold flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95 text-sm md:text-base w-full sm:w-auto justify-center"
             >
               {isSubmitting ? (

@@ -22,6 +22,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Collaborator } from "@/hooks/useSocket";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 
 export function ExpenseTracker({
   tripId,
@@ -186,6 +187,55 @@ export function ExpenseTracker({
           )}
         </CardContent>
       </Card>
+
+      {/* Expense Category Breakdown Chart */}
+      {expenses.length > 0 && (
+        <Card className="glass-card overflow-hidden">
+          <CardHeader className="bg-muted/30 border-b pb-4">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" /> Category Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={Object.values(
+                      expenses.reduce((acc, exp) => {
+                        if (!acc[exp.category]) {
+                          acc[exp.category] = { name: exp.category, value: 0 };
+                        }
+                        acc[exp.category].value += parseFloat(exp.amount as unknown as string);
+                        return acc;
+                      }, {} as Record<string, { name: string; value: number }>)
+                    )}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {Object.values(
+                      expenses.reduce((acc, exp) => {
+                        if (!acc[exp.category]) acc[exp.category] = { name: exp.category, value: 0 };
+                        acc[exp.category].value += parseFloat(exp.amount as unknown as string);
+                        return acc;
+                      }, {} as Record<string, { name: string; value: number }>)
+                    ).map((entry, index) => {
+                      const colors = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <RechartsTooltip formatter={(value: number) => [`₹${value.toLocaleString()}`, "Amount"]} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add Expense Form (Inline Modal/Expandable) */}
       <AnimatePresence>

@@ -35,16 +35,33 @@ export async function POST(req: Request) {
       });
     }
 
-    const { prompt } = await req.json();
+    const { prompt, imageBase64 } = await req.json();
 
-    if (!prompt) {
-      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+    if (!prompt && !imageBase64) {
+      return NextResponse.json({ error: "Prompt or Image is required" }, { status: 400 });
+    }
+
+    const content: any[] = [];
+    if (imageBase64) {
+      content.push({ 
+        type: "text", 
+        text: prompt ? `Extract travel preferences from this text and image: "${prompt}"` : `Analyze this image (e.g., an Instagram travel post, a landscape, or a hotel). Extract the likely destination, travel style, and any relevant interests or activities visible.` 
+      });
+      content.push({
+        type: "image",
+        image: imageBase64.includes("base64,") ? imageBase64.split("base64,")[1] : imageBase64
+      });
+    } else {
+      content.push({ 
+        type: "text", 
+        text: `Extract travel preferences from the following prompt: "${prompt}"` 
+      });
     }
 
     const result = await generateObject({
-      model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
-      system: "You are a travel assistant parsing unstructured text into a structured travel JSON object.",
-      prompt: `Extract travel preferences from the following prompt: "${prompt}"`,
+      model: google(process.env.GEMINI_MODEL || "gemini-1.5-pro"),
+      system: "You are a travel assistant parsing unstructured text or visual images into a structured travel JSON object. If an image is provided, identify the location (e.g. Eiffel Tower -> Paris) and guess the travel style based on the vibe.",
+      messages: [{ role: "user", content }],
       schema: PromptSchema,
     });
 

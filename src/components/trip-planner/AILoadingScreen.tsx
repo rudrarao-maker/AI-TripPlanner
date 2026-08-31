@@ -4,7 +4,7 @@ import { Loader2, CheckCircle2, Sparkles, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { PipelineStep } from "@/hooks/useTripPlanner";
 
-export function AILoadingScreen({ formData, pipelineSteps }: { formData: any, pipelineSteps?: PipelineStep[] }) {
+export function AILoadingScreen({ formData, pipelineSteps, hasImage, imagePreview }: { formData: any, pipelineSteps?: PipelineStep[], hasImage?: boolean, imagePreview?: string }) {
   
   // Calculate progress based on steps
   const totalSteps = pipelineSteps?.length || 1;
@@ -17,15 +17,28 @@ export function AILoadingScreen({ formData, pipelineSteps }: { formData: any, pi
         <div className="absolute inset-0 bg-primary/20 rounded-full blur-[100px] animate-pulse" />
         <Card className="glass relative z-10 p-10 border-primary/30 shadow-2xl rounded-3xl overflow-hidden">
           <div className="text-center mb-8">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-              className="inline-block mb-4"
-            >
-              <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50">
-                <Sparkles className="h-8 w-8 text-primary" />
+            {hasImage && imagePreview ? (
+              <div className="inline-block mb-4">
+                <div className="relative h-24 w-24 rounded-2xl overflow-hidden border-2 border-primary/50 shadow-lg mx-auto">
+                  <img src={imagePreview} alt="Scanning" className="h-full w-full object-cover opacity-60" />
+                  <motion.div
+                    className="absolute top-0 left-0 w-full h-1 bg-primary shadow-[0_0_15px_3px_rgba(var(--primary),0.8)]"
+                    animate={{ top: ["0%", "100%", "0%"] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  />
+                </div>
               </div>
-            </motion.div>
+            ) : (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                className="inline-block mb-4"
+              >
+                <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50 mx-auto">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                </div>
+              </motion.div>
+            )}
             <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               AI is crafting your perfect trip
             </h2>

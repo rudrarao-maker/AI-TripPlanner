@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, Clock, ArrowDown, Plus, GripVertical, Settings2, Trash2, Lock } from "lucide-react";
+import { MapPin, Calendar, Clock, ArrowDown, Plus, GripVertical, Settings2, Trash2, Lock, Wand2, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ export function DestinationBuilder({
   onChange: (entries: DestinationEntry[]) => void;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const router = useRouter();
 
   const { data: userProfile } = useQuery({
@@ -168,6 +170,25 @@ export function DestinationBuilder({
     onChange(newArray);
   };
 
+  const handleOptimizeRoute = async () => {
+    setIsOptimizing(true);
+    try {
+      const res = await api.post("/trips/optimize-route", {
+        destinations: entries
+      });
+      if (res.data.success && res.data.optimizedOrder) {
+        // Reapply proper order indices
+        const properlyOrdered = res.data.optimizedOrder.map((e: any, idx: number) => ({ ...e, order: idx + 1 }));
+        onChange(properlyOrdered);
+        toast.success("Route optimized for shortest distance!");
+      }
+    } catch (e) {
+      toast.error("Failed to optimize route.");
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
   const totalDays = entries.reduce((sum, e) => sum + e.numberOfDays, 0);
 
   return (
@@ -223,12 +244,29 @@ export function DestinationBuilder({
       )}
 
       {entries.length > 0 && (
-        <div className="mt-6 flex items-center justify-between bg-accent/30 p-4 rounded-xl border">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <span className="font-medium">Total Trip Duration</span>
+        <div className="mt-6 flex flex-col gap-4 bg-accent/30 p-4 rounded-xl border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="font-medium">Total Trip Duration</span>
+            </div>
+            <span className="text-xl font-bold">{totalDays} Days</span>
           </div>
-          <span className="text-xl font-bold">{totalDays} Days</span>
+
+          {entries.length >= 3 && (
+            <Button 
+              variant="default" 
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg border-0"
+              onClick={handleOptimizeRoute}
+              disabled={isOptimizing}
+            >
+              {isOptimizing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Optimizing Route...</>
+              ) : (
+                <><Wand2 className="h-4 w-4 mr-2" /> Optimize Route Order (AI)</>
+              )}
+            </Button>
+          )}
         </div>
       )}
 

@@ -181,11 +181,17 @@ function TripPlannerContent() {
   // AI Prompt Parsing Logic
   useEffect(() => {
     const initialPrompt = searchParams.get("prompt");
-    if (initialPrompt && step === 1 && !isGenerating) {
+    const hasImage = searchParams.get("hasImage");
+    
+    if ((initialPrompt || hasImage) && step === 1 && !isGenerating) {
       const processPrompt = async () => {
         setIsGenerating(true);
         try {
-          const parsed = await parsePromptMutation.mutateAsync(initialPrompt);
+          const imageBase64 = hasImage ? sessionStorage.getItem("pendingTripImage") || undefined : undefined;
+          const parsed = await parsePromptMutation.mutateAsync({ 
+            prompt: initialPrompt || undefined, 
+            imageBase64 
+          });
 
           // Apply parsed data to form
           const newFormData = { ...formData };
@@ -341,7 +347,9 @@ function TripPlannerContent() {
   // ------------------
 
   if (isGenerating && !partialItinerary) {
-    return <AILoadingScreen formData={formData} pipelineSteps={pipelineSteps} />;
+    const hasImage = searchParams.get("hasImage") === "true";
+    const imagePreview = hasImage ? sessionStorage.getItem("pendingTripImage") || undefined : undefined;
+    return <AILoadingScreen formData={formData} pipelineSteps={pipelineSteps} hasImage={hasImage} imagePreview={imagePreview} />;
   }
 
   const selectedPlan = selectedPlanIndex !== null ? plans[selectedPlanIndex] : null;

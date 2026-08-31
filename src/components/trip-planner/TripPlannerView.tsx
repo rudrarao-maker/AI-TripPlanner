@@ -58,6 +58,7 @@ import { ReceiptImporter } from "@/components/itinerary/ReceiptImporter";
 import { SocialImporter } from "@/components/itinerary/SocialImporter";
 import { TripPlannerMobileNav } from "@/components/trip-planner/TripPlannerMobileNav";
 import { findDestinationInfo } from "@/lib/destinationData";
+import { LiveFlightsWidget } from "@/components/itinerary/LiveFlightsWidget";
 import { useRegenerateDay } from "@/hooks/useTrips";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -760,47 +761,13 @@ export function TripPlannerView({
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="divide-y divide-border/50">
-                      <div 
-                        className="p-4 hover:bg-muted/30 transition-colors flex justify-between items-center cursor-pointer group"
-                        onClick={() => {
-                          const origin = formData.departureCity || "Any";
-                          const dest = activeItinerary.destination || formData.destinations[0];
-                          
-                          // Skyscanner uses YYMMDD format
-                          let dateParams = "";
-                          if (activeItinerary.days && activeItinerary.days.length > 0) {
-                            const startDate = new Date(activeItinerary.days[0].date);
-                            const endDate = new Date(activeItinerary.days[activeItinerary.days.length - 1].date);
-                            
-                            const formatSSDate = (d: Date) => {
-                              const yy = String(d.getFullYear()).slice(2);
-                              const mm = String(d.getMonth() + 1).padStart(2, '0');
-                              const dd = String(d.getDate()).padStart(2, '0');
-                              return `${yy}${mm}${dd}`;
-                            };
-                            
-                            dateParams = `/${formatSSDate(startDate)}/${formatSSDate(endDate)}`;
-                          }
-                          
-                          window.open(`https://www.skyscanner.com/transport/flights/${origin}/${dest}${dateParams}`, "_blank");
-                        }}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="bg-primary/20 p-3 rounded-xl text-primary group-hover:scale-110 transition-transform">
-                            <Plane className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <p className="font-bold flex items-center gap-2 text-lg">
-                              Search Flights to {formData.destinations[0]}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Find the cheapest flights on Skyscanner
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <Button variant="gradient" className="rounded-full shadow-lg">Search Flights →</Button>
-                        </div>
+                      <div className="p-4 border-b border-border/50">
+                        <LiveFlightsWidget 
+                          origin={formData.departureCity || "Any"} 
+                          destination={activeItinerary.destination || formData.destinations[0]} 
+                          date={activeItinerary?.days?.[0]?.date} 
+                          passengers={Number(formData.adults || 1) + Number(formData.children || 0)}
+                        />
                       </div>
                       
                       <div 

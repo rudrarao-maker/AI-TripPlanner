@@ -1,6 +1,7 @@
 import { PipelineState, FinalItinerarySchema } from "./types";
 import { generateObject, streamObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { retrieveSimilarContext } from "@/lib/rag";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -25,6 +26,10 @@ export class ItineraryGenerator {
     const dietaryStr = preferences.dietary?.length ? `Dietary restrictions: ${preferences.dietary.join(', ')}. Food suggestions MUST accommodate this.` : '';
     const paceStr = preferences.pace ? `Pacing preference: ${preferences.pace}. Adjust activity density and breaks accordingly.` : '';
 
+    // Retrieve hyper-local hidden gems from RAG Knowledge Base
+    const localInsights = await retrieveSimilarContext(`hidden gems, local favorites, off-the-beaten-path in ${preferences.destination}`, 5);
+    const insightsStr = localInsights.map(i => `- ${i.content}`).join("\n");
+
     const prompt = `You are a professional travel-planning AI.
     Create a strict ${numDays}-day travel itinerary for a trip to ${preferences.destination}.
     Preferences: ${JSON.stringify(preferences)}
@@ -32,16 +37,20 @@ export class ItineraryGenerator {
     
     CRITICAL RULES:
     1. NEVER invent real-world places. You MUST select activities ONLY from the provided Verified Places List below (or generic widely known landmarks if the list is insufficient).
-    2. Group activities by geographic proximity.
-    3. Include realistic travel time.
-    4. Respect the user's budget and pace.
-    5. VERY IMPORTANT: The \`packingList\` in \`tripSummary\` MUST be generated dynamically based on the \`weatherSummary\` provided in the Context. If the weather says rain, include rain gear. If it's cold, include winter wear.
-    6. Return the exact requested JSON structure.
-    7. ${accessibilityStr}
-    8. ${dietaryStr}
-    9. ${paceStr}
-    10. Include 3-4 local financial tips in \`financialAdvice\` (e.g. tipping, cash vs card).
+    2. PRIORITIZE HYPER-LOCAL HIDDEN GEMS: We have retrieved local expert knowledge for you. You MUST incorporate these insights into the itinerary over generic tourist traps if they fit the user's preferences.
+    3. Group activities by geographic proximity.
+    4. Include realistic travel time.
+    5. Respect the user's budget and pace.
+    6. VERY IMPORTANT: The \`packingList\` in \`tripSummary\` MUST be generated dynamically based on the \`weatherSummary\` provided in the Context. If the weather says rain, include rain gear. If it's cold, include winter wear.
+    7. Return the exact requested JSON structure.
+    8. ${accessibilityStr}
+    9. ${dietaryStr}
+    10. ${paceStr}
+    11. Include 3-4 local financial tips in \`financialAdvice\` (e.g. tipping, cash vs card).
     
+    Expert Hyper-Local Insights (RAG Knowledge Base):
+    ${insightsStr || "No hyper-local insights available in knowledge base."}
+
     Verified Places List:
     ${topPlacesStr || "No verified places provided. Rely only on highly accurate world knowledge."}
     `;
