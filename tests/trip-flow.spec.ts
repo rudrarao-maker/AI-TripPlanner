@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+declare global {
+  interface Window {
+    Clerk: any;
+  }
+}
+
 test.describe('Trip Planner Core Flow', () => {
   test('should load the homepage and navigate to Trip Planner', async ({ page }) => {
     // 1. Visit the home page

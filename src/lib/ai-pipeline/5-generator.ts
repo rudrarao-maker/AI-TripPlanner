@@ -68,10 +68,6 @@ export class ItineraryGenerator {
           experimental_telemetry: {
             isEnabled: true,
             functionId: "generate-single-itinerary",
-            metadata: { 
-              destination: preferences.destination,
-              numDays: String(numDays)
-            }
           }
         });
 

@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
 
 # next.js
 /.next/
@@ -41,3 +43,12 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# scratch / temporary files
+/scratch/
+
+# data files (potential PII)
+*.csv
+
+# one-off migration/fix scripts (keep in scripts/ if needed)
+/models.json

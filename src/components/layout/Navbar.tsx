@@ -10,13 +10,12 @@ import { cn } from "@/lib/utils";
 import { useAuth, useUser, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Download } from "lucide-react";
 
-export function Navbar({ dbIsAdmin = false }: { dbIsAdmin?: boolean }) {
+export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const { isSignedIn } = useAuth();
   const { user } = useUser();
-  const isClerkAdmin = user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "super_admin";
-  const isAdmin = dbIsAdmin || isClerkAdmin;
+  const isAdmin = user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "super_admin" || user?.publicMetadata?.role === "owner";
 
   useEffect(() => {
     const handleScroll = () => {

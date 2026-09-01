@@ -7,10 +7,6 @@ import { PostHogProvider } from '@/providers/PostHogProvider'
 import { QueryProvider } from '@/providers/QueryProvider'
 import { PostHogPageView } from '@/components/analytics/PostHogPageView'
 import { UserAnalyticsProvider } from '@/components/analytics/UserAnalyticsProvider'
-import { auth } from '@clerk/nextjs/server'
-import { db } from '@/db'
-import { users } from '@/db/schema'
-import { eq } from 'drizzle-orm'
 import Script from "next/script";
 import { SplashScreen } from "@/components/ui/splash-screen";
 
@@ -29,7 +25,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Trip Planner - AI Travel Companion",
-  description: "Plan your perfect trip with AI",
+  description: "Plan your perfect trip with AI-powered itineraries, expense tracking, and real-time collaboration.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -47,27 +43,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+// Admin status is determined at the layout/page level where it's needed (e.g., admin/layout.tsx).
+// Removed the per-request DB query that was running on EVERY page load to check admin role,
+// which added unnecessary latency. The MainLayout now handles admin nav visibility client-side.
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { userId } = await auth();
-  let isAdmin = false;
-  
-  if (userId) {
-    try {
-      const userRecord = await db.query.users.findFirst({
-        where: eq(users.clerkId, userId),
-      });
-      if (userRecord && (userRecord.role === "admin" || userRecord.role === "owner")) {
-        isAdmin = true;
-      }
-    } catch (e) {
-      console.error("Failed to fetch user role in layout:", e);
-    }
-  }
-
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
@@ -83,7 +66,7 @@ export default async function RootLayout({
                 <SplashScreen />
                 <PostHogPageView />
                 <QueryProvider>
-                  <MainLayout isAdmin={isAdmin}>{children}</MainLayout>
+                  <MainLayout>{children}</MainLayout>
                 </QueryProvider>
               </UserAnalyticsProvider>
             </PostHogProvider>
@@ -93,3 +76,4 @@ export default async function RootLayout({
     </ClerkProvider>
   );
 }
+

@@ -1,16 +1,19 @@
 {
-  "name": "next-app",
+  "name": "ai-trip-planner",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "socket": "node socket-server.js",
+    "socket": "ts-node socket-server.ts",
     "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
@@ -88,6 +91,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.185.1",
     "xlsx": "^0.18.5",
+    "zod": "^3.23.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -95,6 +99,8 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",

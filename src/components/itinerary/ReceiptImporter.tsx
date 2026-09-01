@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Receipt, Loader2, CheckCircle2, AlertCircle, Plane, Hotel, MapPin, Calendar, Clock, CreditCard } from "lucide-react";
@@ -68,15 +68,14 @@ export function ReceiptImporter({ onImportSuccess }: ReceiptImporterProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
         <Button
           variant="outline"
           size="sm"
+          onClick={() => setIsOpen(true)}
           className="hidden lg:flex border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400"
         >
           <Receipt className="h-4 w-4 mr-2" /> Import Receipt
         </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

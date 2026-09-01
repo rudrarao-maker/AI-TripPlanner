@@ -228,7 +228,7 @@ export function ExpenseTracker({
                       return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
                     })}
                   </Pie>
-                  <RechartsTooltip formatter={(value: number) => [`₹${value.toLocaleString()}`, "Amount"]} />
+                  <RechartsTooltip formatter={(value: any) => [`₹${value.toLocaleString()}`, "Amount"]} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>

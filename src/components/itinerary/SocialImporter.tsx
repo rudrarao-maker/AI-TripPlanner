@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Instagram, Loader2, CheckCircle2, AlertCircle, MapPin, Tag, PlusCircle } from "lucide-react";
+import { Camera, Loader2, CheckCircle2, AlertCircle, MapPin, Tag, PlusCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 interface SocialImporterProps {
@@ -66,19 +66,18 @@ export function SocialImporter({ onImportSuccess }: SocialImporterProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
         <Button
           variant="outline"
           size="sm"
+          onClick={() => setIsOpen(true)}
           className="hidden lg:flex border-pink-200 bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-800 dark:text-pink-400"
         >
-          <Instagram className="h-4 w-4 mr-2" /> Add from Socials
+          <Camera className="h-4 w-4 mr-2" /> Add from Socials
         </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Instagram className="h-5 w-5 text-pink-500" /> Social Media AI Importer
+            <Camera className="h-5 w-5 text-pink-500" /> Social Media AI Importer
           </DialogTitle>
         </DialogHeader>
 

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -810,9 +810,7 @@ export function TripPlannerView({
 
                 {/* Weather Widget — Real data */}
                 <WeatherWidget
-                  lat={destCoords.lat}
-                  lng={destCoords.lng}
-                  location={formData.destinations[0] || "Destination"}
+                  destination={formData.destinations[0] || "Destination"}
                 />
               </div>
             )}
@@ -905,10 +903,7 @@ export function TripPlannerView({
 
               {/* Compact Weather in sidebar */}
               <WeatherWidget
-                lat={destCoords.lat}
-                lng={destCoords.lng}
-                location={formData.destinations[0]}
-                compact
+                destination={formData.destinations[0] || "Destination"}
               />
 
               <NearbyPlaces

@@ -35,7 +35,7 @@ export async function requireAdmin() {
           email: primaryEmail,
           name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Unknown User',
           avatar: clerkUser.imageUrl,
-          role: "admin", // Auto-make admin for dev fallback
+          role: "user", // Default to user role — promote to admin via DB or admin panel
         })
         .onConflictDoUpdate({
           target: users.email,

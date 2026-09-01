@@ -6,10 +6,10 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { ChatWidget } from "../chat/ChatWidget";
 import { LocationPromptModal } from "../location/LocationPromptModal";
 
-export function MainLayout({ children, isAdmin = false }: { children: React.ReactNode, isAdmin?: boolean }) {
+export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar dbIsAdmin={isAdmin} />
+      <Navbar />
       <main className="flex-1 pb-20 md:pb-0">
         {children}
       </main>
@@ -23,3 +23,4 @@ export function MainLayout({ children, isAdmin = false }: { children: React.Reac
     </div>
   );
 }
+
