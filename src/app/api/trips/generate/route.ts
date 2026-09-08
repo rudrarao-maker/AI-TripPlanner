@@ -68,18 +68,20 @@ export async function POST(req: Request) {
         const user = userRecords[0];
         
         // Subscription & Credit check
+        const isAdmin = user.role === 'admin' || user.role === 'owner';
         const isPro = user.planType === 'pro' || user.subscriptionStatus === 'active';
         const credits = user.tripCredits ?? 0;
         
-        if (!isPro && credits <= 0) {
+        // Admins get unlimited trips — skip credit checks entirely
+        if (!isAdmin && !isPro && credits <= 0) {
           return NextResponse.json({ 
             error: "You have run out of free trips! Upgrade to Pro for unlimited trips.",
             requiresUpgrade: true 
           }, { status: 403 });
         }
         
-        // Deduct credit if on free plan
-        if (!isPro && credits > 0) {
+        // Deduct credit only for non-admin free-plan users
+        if (!isAdmin && !isPro && credits > 0) {
           await db.update(users).set({ tripCredits: credits - 1 }).where(eq(users.id, user.id));
         }
 
