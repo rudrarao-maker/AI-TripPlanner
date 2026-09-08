@@ -49,7 +49,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     If the user is just asking a question, answer it in replyMessage and set actionRequired to false.`;
 
     const result = await generateObject({
-      model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
+      model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash"),
       schema: ChatResponseSchema,
       prompt,
     });

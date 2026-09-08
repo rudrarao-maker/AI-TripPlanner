@@ -47,7 +47,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       Please generate a replacement day schedule adhering to the same JSON structure.`;
 
       const result = await generateObject({
-        model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
+        model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash"),
         schema: DaySchema,
         prompt,
       });

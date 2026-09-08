@@ -44,7 +44,7 @@ export async function autoRescheduleDay(
 
   try {
     const { object } = await generateObject({
-      model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
+      model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash"),
       schema: RescheduledDaySchema,
       prompt,
     });

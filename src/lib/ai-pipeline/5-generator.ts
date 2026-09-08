@@ -61,7 +61,7 @@ export class ItineraryGenerator {
     while (attempts < maxAttempts) {
       try {
         const result = await streamObject({
-          model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
+          model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash"),
           schema: FinalItinerarySchema,
           prompt,
           system: "You are an expert AI travel agent generating highly detailed, geographically sound JSON itineraries.",

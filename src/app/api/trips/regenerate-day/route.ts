@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     `;
 
     const result = await generateObject({
-      model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
+      model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash"),
       system: "You are an expert AI travel agent specializing in itinerary generation.",
       prompt,
       schema: DaySchema,

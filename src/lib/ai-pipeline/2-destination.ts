@@ -62,7 +62,7 @@ export class DestinationAnalyzer {
       ${retrievedContext ? `IMPORTANT: Use the following verified facts from our knowledge base to inform your analysis (especially for transport and safety tips):\n${retrievedContext}` : ""}`;
       
       const result = await generateObject({
-        model: google(process.env.GEMINI_MODEL || "gemini-3.1-pro-preview"),
+        model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash"),
         schema: DestinationContextSchema,
         prompt,
       });
