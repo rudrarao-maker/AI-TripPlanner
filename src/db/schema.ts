@@ -12,6 +12,7 @@ export const reviewStatusEnum = pgEnum("review_status", ["pending", "approved", 
 export const notificationStatusEnum = pgEnum("notification_status", ["unread", "read"]);
 export const bookingStatusEnum = pgEnum("booking_status", ["pending", "confirmed", "cancelled", "refunded"]);
 export const expertReviewStatusEnum = pgEnum("expert_review_status", ["none", "pending", "completed"]);
+export const partnerStatusEnum = pgEnum("partner_status", ["pending", "approved", "rejected", "suspended"]);
 
 export const users = pgTable("User", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -321,6 +322,21 @@ export const notifications = pgTable("Notification", {
   statusIdx: index("notif_status_idx").on(table.status),
 }));
 
+export const partners = pgTable("Partner", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("userId").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  companyName: text("companyName").notNull(),
+  type: text("type").notNull(), // hotel, activity, transport
+  contactEmail: text("contactEmail").notNull(),
+  status: partnerStatusEnum("status").default("pending"),
+  details: text("details"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("partner_userId_idx").on(table.userId),
+  statusIdx: index("partner_status_idx").on(table.status),
+}));
+
 // --- Relations ---
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -332,6 +348,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   payments: many(payments),
   reviews: many(reviews),
   notifications: many(notifications),
+  partners: many(partners),
 }));
 
 export const tripsRelations = relations(trips, ({ one, many }) => ({
@@ -492,6 +509,13 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const partnersRelations = relations(partners, ({ one }) => ({
+  user: one(users, {
+    fields: [partners.userId],
     references: [users.id],
   }),
 }));

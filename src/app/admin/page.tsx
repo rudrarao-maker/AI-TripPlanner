@@ -26,6 +26,7 @@ export default function AdminDashboardOverview() {
       serverLoad: number;
     };
     recentSignups: any[];
+    pendingPartners: any[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,15 +175,15 @@ export default function AdminDashboardOverview() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/5">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+                {overviewData.pendingPartners && overviewData.pendingPartners.length > 0 ? overviewData.pendingPartners.map((partner) => (
+                  <div key={partner.id} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
                         <Building2 className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-semibold text-sm">Grand Resort {i}</p>
-                        <p className="text-xs text-muted-foreground">Hotel Partner • Goa</p>
+                        <p className="font-semibold text-sm">{partner.companyName}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{partner.type} Partner</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -194,7 +195,9 @@ export default function AdminDashboardOverview() {
                       </Button>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No pending partners</div>
+                )}
               </div>
             </CardContent>
           </Card>
