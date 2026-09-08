@@ -49,7 +49,7 @@ export async function requireAdmin() {
     }
   }
 
-  if (!userRecord || userRecord.role !== "admin") {
+  if (!userRecord || (userRecord.role !== "admin" && userRecord.role !== "owner")) {
     // Redirect non-admin users to dashboard
     redirect("/dashboard");
   }
