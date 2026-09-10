@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, MoreVertical, Shield, ShieldOff, ShieldAlert, Trash2, CheckCircle, RefreshCw, Eye, Download, FileText, FileSpreadsheet, FileIcon } from "lucide-react";
+import { Search, MoreVertical, Shield, ShieldOff, ShieldAlert, Trash2, CheckCircle, RefreshCw, Eye, Download, FileText, FileSpreadsheet, FileIcon, KeyRound } from "lucide-react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { UserProfileModal } from "./UserProfileModal";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import toast from "react-hot-toast";
 
 export function UserTable() {
@@ -25,6 +26,7 @@ export function UserTable() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [viewingUser, setViewingUser] = useState<any>(null);
+  const [passwordChangeUser, setPasswordChangeUser] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (format: "csv" | "excel" | "pdf") => {
@@ -226,6 +228,7 @@ export function UserTable() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent isOpen={openMenuId === user.id} onClose={() => setOpenMenuId(null)}>
                             <DropdownMenuItem onClick={() => { setViewingUser(user); setOpenMenuId(null); }}><Eye className="h-4 w-4 mr-2"/> View Profile</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setPasswordChangeUser(user); setOpenMenuId(null); }}><KeyRound className="h-4 w-4 mr-2"/> Change Password</DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => { setSelectedIds(new Set([user.id])); handleBulkAction('delete'); setOpenMenuId(null); }}>
                               <Trash2 className="h-4 w-4 mr-2"/> Delete User
@@ -252,6 +255,7 @@ export function UserTable() {
       </div>
 
       <UserProfileModal user={viewingUser} isOpen={!!viewingUser} onClose={() => setViewingUser(null)} />
+      <ChangePasswordModal user={passwordChangeUser} isOpen={!!passwordChangeUser} onClose={() => setPasswordChangeUser(null)} />
     </div>
   );
 }
