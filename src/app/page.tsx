@@ -1,5 +1,5 @@
 "use client";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, MapPin, Star, Globe } from "lucide-react";
@@ -18,10 +18,14 @@ import { CobeGlobe } from "@/components/ui/cobe-globe";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { TiltCard } from "@/components/ui/tilt-card";
 
-// Lazy load the heavy 3D background component
-const Scroll3DBackground = lazy(() => import("@/components/home/Scroll3DBackground").then(module => ({ default: module.Scroll3DBackground })));
-
 import dynamic from "next/dynamic";
+
+// Dynamic load heavy 3D components with ssr:false to avoid chunk load errors with Turbopack
+const Scroll3DBackground = dynamic(() => import("@/components/home/Scroll3DBackground").then(module => ({ default: module.Scroll3DBackground })), {
+  ssr: false,
+  loading: () => <div className="fixed inset-0 bg-background -z-10" />
+});
+
 const InteractiveGlobe = dynamic(() => import("@/components/home/3d/InteractiveGlobe").then(mod => mod.InteractiveGlobe), { 
   ssr: false,
   loading: () => <div className="w-full h-full flex items-center justify-center animate-pulse bg-primary/5 rounded-full" />
