@@ -42,6 +42,36 @@ async function updateUserHandler(
   }
 }
 
+async function changePasswordHandler(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { password } = body;
+
+    if (!password || password.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long" },
+        { status: 400 }
+      );
+    }
+
+    const client = await clerkClient();
+    await client.users.updateUser(id, { password });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Change Password Error:", error);
+    const message = error.errors?.[0]?.longMessage || error.errors?.[0]?.message || "Failed to change password";
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
+  }
+}
+
 async function deleteUserHandler(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -62,4 +92,5 @@ async function deleteUserHandler(
 }
 
 export const PUT = (req: Request, ctx: any) => withAdminAuth(updateUserHandler, "UPDATE_USER")(req, ctx);
+export const PATCH = (req: Request, ctx: any) => withAdminAuth(changePasswordHandler, "CHANGE_USER_PASSWORD")(req, ctx);
 export const DELETE = (req: Request, ctx: any) => withAdminAuth(deleteUserHandler, "DELETE_USER")(req, ctx);
